@@ -5,7 +5,6 @@ import base64
 import requests
 import os
 import asyncio
-from utils.playwright import close_browser, capture_failed_screenshot  # Assuming these are implemented
 
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
 VISION_MODELS = ["llava", "llava:13b", "bakllava"]  # Add more if needed

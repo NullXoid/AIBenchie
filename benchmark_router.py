@@ -48,11 +48,15 @@ def benchmark_model(model: str, prompt: str, use_router=False, headless=False):
     token_count = 0
 
     if use_router:
-        response = smart_model_router(prompt=prompt, model_hint=model, stream=False)
-        if isinstance(response, tuple):
-            response = response[0]
-        output = response
-        token_count = len(output.split()) if output else 0
+        try:
+            response = smart_model_router(prompt=prompt, model_hint=model, stream=False)
+            if isinstance(response, tuple):
+                response = response[0]
+            output = response
+            token_count = len(output.split()) if output else 0
+        except Exception as e:
+            print(f"[red]Router error:[/red] {e}")
+            return
     else:
         payload = {
             "model": model,
