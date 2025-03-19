@@ -1,0 +1,13 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs and system junk
+*.log
+*.sqlite3
+*.env
+
+# IDE/editor folders
+.vscode/
