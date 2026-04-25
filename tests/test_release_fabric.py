@@ -23,6 +23,7 @@ from training.release_fabric import (
     validate_release_policy,
     validate_resource_policy,
     validate_runner_policy,
+    validate_source_hosts_policy,
     validate_suite_adapter_compliance,
     validate_workflow_text,
     authorize_nullbridge_route,
@@ -34,7 +35,8 @@ def valid_manifest(digest: str = "a" * 64) -> dict:
         "product": "NullXoid",
         "version": "1.4.2",
         "source_commit": "abc1234",
-        "forgejo_repo": "forgejo.example.invalid/YOUR_ORG/NullXoid",
+        "source_provider": "forgejo",
+        "source_repo": "git.example.invalid/YOUR_ORG/NullXoid",
         "aibenchie_report": "reports/aibenchie/1.4.2/summary.json",
         "aibenchie_verdict": "ship_candidate",
         "artifacts": [{"name": "nullxoid-wrapper.zip", "sha256": digest}],
@@ -88,6 +90,7 @@ def test_policy_tree_and_workflows_are_valid():
 
 def test_core_policies_fail_closed():
     assert validate_release_policy(load_json(POLICIES_ROOT / "release-policy.json")) == []
+    assert validate_source_hosts_policy(load_json(POLICIES_ROOT / "source-hosts.json")) == []
     assert validate_runner_policy(load_json(POLICIES_ROOT / "runner-policy.json")) == []
     assert validate_actions_policy(load_json(POLICIES_ROOT / "actions-policy.json")) == []
     assert validate_aibenchie_gates(load_json(POLICIES_ROOT / "aibenchie-gates.json")) == []
@@ -95,6 +98,32 @@ def test_core_policies_fail_closed():
     assert validate_privacy_levels(load_json(POLICIES_ROOT / "privacy-levels.json")) == []
     assert validate_nullbridge_registry(load_json(POLICIES_ROOT / "nullbridge-registry.json")) == []
     assert validate_nullbridge_capabilities(load_json(POLICIES_ROOT / "nullbridge-capabilities.json")) == []
+
+
+def test_source_host_policy_supports_user_choice_without_persisted_credentials():
+    policy = load_json(POLICIES_ROOT / "source-hosts.json")
+    assert validate_source_hosts_policy(policy) == []
+    providers = {provider["id"]: provider for provider in policy["allowed_providers"]}
+    assert providers["forgejo"]["kind"] == "open_source_self_hosted"
+    assert providers["gitea"]["kind"] == "open_source_self_hosted"
+    assert providers["github"]["kind"] == "commercial_saas"
+    assert policy["credential_storage"] == "session_only"
+    assert policy["forbid_persisted_credentials"] is True
+
+    broken = {
+        "default_provider": "private_only",
+        "recommended_provider": "private_only",
+        "credential_storage": "persisted",
+        "forbid_persisted_credentials": False,
+        "allowed_providers": [{"id": "forgejo", "label": "Forgejo", "personal_config": "stored_secret"}],
+    }
+    errors = validate_source_hosts_policy(broken)
+    assert "provider:missing:gitea" in errors
+    assert "provider:missing:github" in errors
+    assert "default_provider:not_allowed" in errors
+    assert "credential_storage:not_session_only" in errors
+    assert "forbid_persisted_credentials:not_enforced" in errors
+    assert "forgejo:personal_config:not_ephemeral" in errors
 
 
 def valid_bridge_request(**overrides) -> dict:
@@ -292,8 +321,10 @@ def test_workflow_policy_rejects_mutable_actions_and_production_secret_refs():
 def test_release_manifest_requires_hardware_signature_and_valid_digests():
     assert validate_release_manifest(valid_manifest()) == []
     broken = valid_manifest("not-a-digest")
+    broken["source_provider"] = "unapproved_host"
     broken["signed_by"] = "ci_runner"
     errors = validate_release_manifest(broken)
+    assert "source_provider:not_allowed" in errors
     assert "signature:not_hardware_identity" in errors
     assert any("sha256" in error for error in errors)
 

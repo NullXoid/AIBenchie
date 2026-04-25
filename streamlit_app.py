@@ -18,6 +18,7 @@ from aibenchie.local_ollama import (
 )
 from aibenchie.local_nullbridge_runner import find_repo_root, run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
+from aibenchie.release_report import build_release_report
 
 
 ROOT = Path(__file__).resolve().parent
@@ -45,13 +46,80 @@ def policy_status() -> list[tuple[str, str, str]]:
     resource = load_json(POLICIES / "resource-policy.json")
     privacy = load_json(POLICIES / "privacy-levels.json")
     release = load_json(POLICIES / "release-policy.json")
+    source_hosts = load_json(POLICIES / "source-hosts.json")
     tracks = gates.get("required_tracks") or []
+    providers = source_hosts.get("allowed_providers") or []
     return [
         ("Release gates", f"{len(tracks)} tracked", "Quality, platform, privacy, security, and release checks."),
         ("Resource policy", "bounded" if resource.get("deny_unbounded_resources") else "review", "Heavy work requires capped leases."),
         ("Privacy levels", f"{len(privacy.get('levels', {}))} levels", "Local, secure remote, relay, and sovereign modes."),
-        ("Release source", str(release.get("source_of_truth", "not configured")), "Forgejo remains the canonical release source."),
+        ("Source providers", f"{len(providers)} options", f"Recommended: {release.get('recommended_source_provider', 'not configured')}."),
     ]
+
+
+def render_source_provider_panel() -> None:
+    source_hosts = load_json(POLICIES / "source-hosts.json")
+    providers = source_hosts.get("allowed_providers") or []
+    by_label = {f"{item.get('label')} ({item.get('id')})": item for item in providers}
+    default_id = source_hosts.get("default_provider", "forgejo")
+    default_index = 0
+    for index, item in enumerate(providers):
+        if item.get("id") == default_id:
+            default_index = index
+            break
+
+    st.subheader("Source Host")
+    st.write(
+        "Choose where this run should treat source, policy, manifests, and release evidence as coming from. "
+        "AIBenchie does not store access tokens here; credentials should be entered only for the current session or supplied by an ignored local add-on."
+    )
+    if not by_label:
+        st.warning("No source providers are configured.")
+        return
+
+    labels = list(by_label.keys())
+    selected_label = st.selectbox("Provider", labels, index=default_index)
+    selected = by_label[selected_label]
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Provider", selected.get("label", "unknown"))
+    col2.metric("Type", str(selected.get("kind", "unknown")).replace("_", " "))
+    col3.metric("Credentials", str(selected.get("personal_config", "session_only")).replace("_", " "))
+    st.caption(
+        "Forgejo/Gitea are the recommended open-source self-hosted path. GitHub, GitLab, and custom Git remain supported so teams can adopt AIBenchie without changing hosts first."
+    )
+
+
+def render_release_verdict_panel() -> None:
+    st.subheader("Release Verdict")
+    st.write(
+        "Generates a public-safe release summary plus an encrypted full report. The generated key is local-only and should be replaced with a device or hardware-key flow for production."
+    )
+    run_trust = st.checkbox("Include local NullBridge trust smoke", value=False)
+    if st.button("Generate release verdict"):
+        with st.spinner("Running release verdict checks..."):
+            try:
+                summary, encrypted, _key = build_release_report(ROOT, run_trust_smoke=run_trust)
+            except Exception as exc:
+                st.error(f"Release verdict failed: {exc}")
+                return
+
+        if summary["verdict"] == "ship_candidate":
+            st.success("Release verdict: ship_candidate")
+        else:
+            st.error(f"Release verdict: {summary['verdict']}")
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Source commit", summary["source_commit"][:12])
+        col2.metric("Critical blocks", len(summary["critical_blocks"]))
+        col3.metric("Encrypted report", "ready" if encrypted.get("ciphertext") else "missing")
+
+        with st.expander("Track summary", expanded=True):
+            st.dataframe(
+                [{"track": track.replace("_", " "), "status": status} for track, status in summary["tracks"].items()],
+                use_container_width=True,
+            )
+        with st.expander("Public-safe summary JSON", expanded=False):
+            st.json(summary)
 
 
 def render_ollama_panel() -> None:
@@ -237,6 +305,12 @@ def main() -> None:
         "This Streamlit app does not require personal Forgejo settings, service tokens, or local backend credentials. "
         "Private configuration belongs in ignored local add-ons and should be entered only for the current session when needed."
     )
+
+    st.divider()
+    render_source_provider_panel()
+
+    st.divider()
+    render_release_verdict_panel()
 
     st.divider()
     render_trust_fabric_panel()

@@ -43,6 +43,7 @@ REQUIRED_POLICY_FILES = [
     "release-policy.json",
     "resource-policy.json",
     "runner-policy.json",
+    "source-hosts.json",
 ]
 
 REQUIRED_MANIFEST_FILES = [
@@ -98,10 +99,16 @@ def validate_policy_tree(root: Path = PROJECT_ROOT) -> list[str]:
 
 def validate_release_policy(policy: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if policy.get("source_of_truth") != "forgejo":
-        errors.append("source_of_truth:not_forgejo")
-    if policy.get("github_posture") != "read_only_ci":
-        errors.append("github_posture:not_read_only_ci")
+    allowed = set(policy.get("allowed_source_providers", []))
+    if policy.get("source_of_truth") != "user_selected_provider":
+        errors.append("source_of_truth:not_user_selected_provider")
+    if policy.get("recommended_source_provider") not in allowed:
+        errors.append("recommended_source_provider:not_allowed")
+    for required_provider in ["forgejo", "gitea", "github"]:
+        if required_provider not in allowed:
+            errors.append(f"allowed_source_provider:missing:{required_provider}")
+    if policy.get("github_posture") not in {"user_selected_or_read_only_mirror", "read_only_ci"}:
+        errors.append("github_posture:not_user_selected_or_read_only")
     for key in [
         "forbid_github_production_release",
         "forbid_github_production_secrets",
@@ -110,12 +117,39 @@ def validate_release_policy(policy: dict[str, Any]) -> list[str]:
         "publisher_rejects_digest_mismatch",
         "publisher_rejects_unsigned_verdict",
         "publisher_rejects_unsigned_manifest",
-        "publisher_rejects_non_forgejo_source",
+        "publisher_rejects_unapproved_source",
     ]:
         if policy.get(key) is not True:
             errors.append(f"{key}:not_enforced")
     if "release_hardware_key" not in policy.get("hardware_signing_identities", []):
         errors.append("hardware_signing_identities:missing_release_key")
+    return errors
+
+
+def validate_source_hosts_policy(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    providers = policy.get("allowed_providers", [])
+    ids = [provider.get("id") for provider in providers]
+    id_set = set(ids)
+    if len(ids) != len(id_set):
+        errors.append("provider:duplicate")
+    for provider_id in ["forgejo", "gitea", "github"]:
+        if provider_id not in id_set:
+            errors.append(f"provider:missing:{provider_id}")
+    if policy.get("default_provider") not in id_set:
+        errors.append("default_provider:not_allowed")
+    if policy.get("recommended_provider") not in id_set:
+        errors.append("recommended_provider:not_allowed")
+    if policy.get("forbid_persisted_credentials") is not True:
+        errors.append("forbid_persisted_credentials:not_enforced")
+    if policy.get("credential_storage") != "session_only":
+        errors.append("credential_storage:not_session_only")
+    for provider in providers:
+        provider_id = provider.get("id", "unknown")
+        if not provider.get("label"):
+            errors.append(f"{provider_id}:label:missing")
+        if provider.get("personal_config") not in {"addon_only", "session_only"}:
+            errors.append(f"{provider_id}:personal_config:not_ephemeral")
     return errors
 
 
@@ -136,10 +170,16 @@ def validate_runner_policy(policy: dict[str, Any]) -> list[str]:
 
 def validate_actions_policy(policy: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if policy.get("source_of_truth") != "forgejo":
-        errors.append("source_of_truth:not_forgejo")
-    if policy.get("github_posture") != "read_only_ci":
-        errors.append("github_posture:not_read_only_ci")
+    allowed = set(policy.get("allowed_source_providers", []))
+    if policy.get("source_of_truth") != "user_selected_provider":
+        errors.append("source_of_truth:not_user_selected_provider")
+    if policy.get("recommended_source_provider") not in allowed:
+        errors.append("recommended_source_provider:not_allowed")
+    for required_provider in ["forgejo", "gitea", "github"]:
+        if required_provider not in allowed:
+            errors.append(f"allowed_source_provider:missing:{required_provider}")
+    if policy.get("github_posture") not in {"user_selected_or_read_only_mirror", "read_only_ci"}:
+        errors.append("github_posture:not_user_selected_or_read_only")
     if policy.get("require_pin_or_mirror_for_release") is not True:
         errors.append("release_actions:not_pin_or_mirror_required")
     if policy.get("internal_action_mirror", {}).get("enabled") is not True:
@@ -378,6 +418,8 @@ def validate_release_manifest(manifest: dict[str, Any], schema_path: Path | None
     validator = Draft202012Validator(schema)
     errors.extend(f"schema:{'.'.join(str(part) for part in error.path) or 'root'}:{error.message}" for error in validator.iter_errors(manifest))
     release_policy = load_json(POLICIES_ROOT / "release-policy.json")
+    if manifest.get("source_provider") not in release_policy.get("allowed_source_providers", []):
+        errors.append("source_provider:not_allowed")
     if manifest.get("signed_by") not in release_policy.get("hardware_signing_identities", []):
         errors.append("signature:not_hardware_identity")
     if manifest.get("aibenchie_verdict") not in release_policy.get("accepted_aibenchie_verdicts", []):

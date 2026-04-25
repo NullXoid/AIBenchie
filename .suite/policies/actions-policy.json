@@ -1,7 +1,9 @@
 {
   "version": 1,
-  "source_of_truth": "forgejo",
-  "github_posture": "read_only_ci",
+  "source_of_truth": "user_selected_provider",
+  "recommended_source_provider": "forgejo",
+  "allowed_source_providers": ["forgejo", "gitea", "github", "gitlab", "custom_git"],
+  "github_posture": "user_selected_or_read_only_mirror",
   "forbidden_action_refs": ["main", "master", "latest", "HEAD"],
   "allow_external_actions": true,
   "require_pin_or_mirror_for_release": true,
@@ -12,7 +14,7 @@
   ],
   "internal_action_mirror": {
     "enabled": true,
-    "forgejo_owner": "YOUR_ORG",
+    "mirror_owner": "YOUR_ORG",
     "update_flow": "aibenchie_action_updater_pr"
   }
 }

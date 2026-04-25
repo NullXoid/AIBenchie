@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "default_provider": "forgejo",
+  "recommended_provider": "forgejo",
+  "credential_storage": "session_only",
+  "forbid_persisted_credentials": true,
+  "require_user_selected_provider": true,
+  "allowed_providers": [
+    {
+      "id": "forgejo",
+      "label": "Forgejo",
+      "kind": "open_source_self_hosted",
+      "release_role": "full_source_of_truth",
+      "supports_package_registry": true,
+      "supports_actions": true,
+      "personal_config": "addon_only"
+    },
+    {
+      "id": "gitea",
+      "label": "Gitea",
+      "kind": "open_source_self_hosted",
+      "release_role": "full_source_of_truth",
+      "supports_package_registry": true,
+      "supports_actions": true,
+      "personal_config": "addon_only"
+    },
+    {
+      "id": "github",
+      "label": "GitHub",
+      "kind": "commercial_saas",
+      "release_role": "source_or_mirror",
+      "supports_package_registry": true,
+      "supports_actions": true,
+      "personal_config": "session_only"
+    },
+    {
+      "id": "gitlab",
+      "label": "GitLab",
+      "kind": "open_core_or_commercial",
+      "release_role": "source_or_mirror",
+      "supports_package_registry": true,
+      "supports_actions": true,
+      "personal_config": "session_only"
+    },
+    {
+      "id": "custom_git",
+      "label": "Custom Git",
+      "kind": "custom",
+      "release_role": "source_only",
+      "supports_package_registry": false,
+      "supports_actions": false,
+      "personal_config": "session_only"
+    }
+  ]
+}
