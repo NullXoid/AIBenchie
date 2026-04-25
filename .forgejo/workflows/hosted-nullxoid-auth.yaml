@@ -1,0 +1,20 @@
+name: hosted-nullxoid-auth
+
+on:
+  workflow_dispatch:
+
+jobs:
+  hosted-auth:
+    runs-on: runner-aibenchie
+    env:
+      AIBENCHIE_NULLXOID_ORIGIN: ${{ secrets.AIBENCHIE_NULLXOID_ORIGIN }}
+      AIBENCHIE_NULLXOID_BASE_PATH: ${{ secrets.AIBENCHIE_NULLXOID_BASE_PATH }}
+      AIBENCHIE_NULLXOID_USERNAME: ${{ secrets.AIBENCHIE_NULLXOID_USERNAME }}
+      AIBENCHIE_NULLXOID_PASSWORD: ${{ secrets.AIBENCHIE_NULLXOID_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python aibenchie_local.py --hosted-nullxoid-auth --json

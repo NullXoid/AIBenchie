@@ -81,3 +81,25 @@ python aibenchie_local.py --model gemma3:1b --json
 ```
 
 The local runner only accepts localhost Ollama URLs. Personal Forgejo URLs, NullBridge service credentials, and private backend settings still belong in ignored local add-ons or one-session inputs.
+
+## Hosted NullXoid Auth Gate
+
+The hosted NullXoid login check is a manual AIBenchie gate. Configure these as
+private Forgejo secrets or one-session environment variables:
+
+```text
+AIBENCHIE_NULLXOID_ORIGIN
+AIBENCHIE_NULLXOID_BASE_PATH
+AIBENCHIE_NULLXOID_USERNAME
+AIBENCHIE_NULLXOID_PASSWORD
+```
+
+Then run:
+
+```text
+python aibenchie_local.py --hosted-nullxoid-auth --json
+```
+
+The check verifies anonymous auth state, login response, auth cookies, and
+post-login `/auth/me`. It does not print or persist the password or cookie
+values.
