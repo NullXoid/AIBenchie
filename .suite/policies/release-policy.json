@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "source_of_truth": "forgejo",
+  "github_posture": "read_only_ci",
+  "forbid_github_production_release": true,
+  "forbid_github_production_secrets": true,
+  "forbid_unsigned_updates": true,
+  "publisher_requires_manifest_verification": true,
+  "publisher_rejects_digest_mismatch": true,
+  "publisher_rejects_unsigned_verdict": true,
+  "publisher_rejects_unsigned_manifest": true,
+  "publisher_rejects_non_forgejo_source": true,
+  "accepted_aibenchie_verdicts": ["pass", "ship_candidate"],
+  "hardware_signing_identities": ["release_hardware_key"],
+  "release_requires": [
+    "forgejo_source_commit",
+    "aibenchie_signed_verdict",
+    "artifact_digests",
+    "sbom",
+    "signed_release_manifest",
+    "hardware_key_approval",
+    "approved_release_policy"
+  ]
+}

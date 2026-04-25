@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "deny_by_default": true,
+  "capabilities": [
+    {
+      "capability": "chat.stream",
+      "allowed_callers": ["website_backend", "wrapper_backend", "windows_backend", "android_backend", "ios_backend"],
+      "allowed_platforms": ["website", "website_wrapper", "windows", "android", "ios"],
+      "allowed_targets": ["ollama_service", "media_service"],
+      "requires_user_auth": true
+    },
+    {
+      "capability": "artifacts.send_to_codex",
+      "allowed_callers": ["website_backend", "wrapper_backend", "windows_backend"],
+      "allowed_platforms": ["website", "website_wrapper", "windows"],
+      "allowed_targets": ["codex_service"],
+      "requires_user_auth": true
+    },
+    {
+      "capability": "repo.audit",
+      "allowed_callers": ["wrapper_backend", "windows_backend"],
+      "allowed_platforms": ["website_wrapper", "windows"],
+      "allowed_targets": ["codex_service"],
+      "requires_user_auth": true
+    }
+  ]
+}

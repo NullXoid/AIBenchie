@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "levels": {
+    "0": {
+      "name": "Restricted / Locked",
+      "required_controls": ["security_lock"],
+      "forbidden_controls": []
+    },
+    "1": {
+      "name": "Fast Secure",
+      "required_controls": ["https_tls"],
+      "forbidden_controls": ["url_tokens", "legacy_auth"]
+    },
+    "2": {
+      "name": "Secure Remote",
+      "required_controls": ["https_tls", "secure_sessions", "prompt_editor_enabled"],
+      "forbidden_controls": ["url_tokens", "frontend_service_credentials"]
+    },
+    "3": {
+      "name": "ISP Destination Hidden",
+      "required_controls": ["vpn_or_exit_node", "dns_through_tunnel", "kill_switch"],
+      "forbidden_controls": ["direct_fallback"]
+    },
+    "4": {
+      "name": "Relay Shield",
+      "required_controls": ["two_hop_relay", "encrypted_relay_payload"],
+      "forbidden_controls": ["raw_tokens_in_relay_logs"]
+    },
+    "5": {
+      "name": "Local Sovereign",
+      "required_controls": ["local_backend", "e2ee_storage", "remote_inference_explicit_approval"],
+      "forbidden_controls": ["unapproved_remote_inference"]
+    }
+  },
+  "e2ee_storage_targets": [
+    "saved_chats",
+    "private_artifacts",
+    "ccc_memory",
+    "workspace_notes",
+    "private_uploads",
+    "offline_cache",
+    "sync_blobs",
+    "private_aibenchie_reports"
+  ]
+}

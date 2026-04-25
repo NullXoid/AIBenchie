@@ -6,6 +6,19 @@ __pycache__/
 
 # Keep model weights and local adapter outputs out of source control.
 models/
+models/adapters/lv7_sft_smoke/
+models/adapters/lv7_sft_smoke_v0_6/
+models/adapters/lv7_sft_smoke_v0_7/
+models/adapters/lv7_sft_smoke_v0_8/
+models/adapters/lv7_sft_smoke_v1_0/
+models/adapters/lv7_sft_smoke_v1_0_2/
+models/adapters/lv7_sft_smoke_v1_0_3/
+models/adapters/lv7_sft_smoke_v1_0_5/
+models/adapters/lv7_sft_shared_contract_v1_3_6/
+models/adapters/lv7_sft_shared_contract_v1_3_6_2/
+models/adapters/lv7_dpo_smoke_v1_2/
+models/adapters/lv7_dpo_smoke_v1_2_4/
+models/adapters/lv7_dpo_smoke_v1_3_3/
 
 # Local scratch/import notes.
 Pasted text.txt

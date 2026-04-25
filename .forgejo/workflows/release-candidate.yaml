@@ -1,0 +1,19 @@
+name: release-candidate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: runner-build
+    steps:
+      - uses: actions/checkout@v4
+      - run: python training/run_test_suite.py --suite release_fabric --no-record
+      - run: echo "Generate artifacts, SBOM, and digests here."
+
+  sign:
+    needs: build
+    runs-on: runner-release-signer
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Hardware-key release manifest signing placeholder."

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "source_of_truth": "forgejo",
+  "github_posture": "read_only_ci",
+  "forbidden_action_refs": ["main", "master", "latest", "HEAD"],
+  "allow_external_actions": true,
+  "require_pin_or_mirror_for_release": true,
+  "approved_external_actions": [
+    "actions/checkout",
+    "actions/setup-python",
+    "actions/upload-artifact"
+  ],
+  "internal_action_mirror": {
+    "enabled": true,
+    "forgejo_owner": "EchoLabs",
+    "update_flow": "aibenchie_action_updater_pr"
+  }
+}

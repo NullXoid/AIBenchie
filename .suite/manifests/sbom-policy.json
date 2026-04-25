@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "required": true,
+  "accepted_formats": ["spdx-json", "cyclonedx-json"],
+  "manifest_digest_required": true,
+  "publisher_rejects_sbom_digest_mismatch": true
+}

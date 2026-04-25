@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "required_backend_identities": [
+    "website_backend",
+    "wrapper_backend",
+    "windows_backend",
+    "android_backend",
+    "ios_backend",
+    "release_builder",
+    "aibenchie_service",
+    "artifact_service",
+    "ccc_service",
+    "codex_service",
+    "ollama_service",
+    "diagnostics_service",
+    "media_service",
+    "addon_service"
+  ],
+  "requires_service_auth": true,
+  "deny_unknown_backends": true,
+  "deny_unknown_targets": true,
+  "deny_unknown_capabilities": true,
+  "audit_required": true
+}

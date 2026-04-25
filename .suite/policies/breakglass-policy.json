@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "default_state": "security_locked",
+  "requires_hardware_key": true,
+  "requires_signed_grant": true,
+  "requires_checkpoint": true,
+  "requires_encrypted_forgejo_record": true,
+  "max_duration_minutes": 30,
+  "allowed_environments": ["staging", "dev"],
+  "allowed_capabilities": ["release.publish_candidate", "diagnostics.emergency"],
+  "allowed_targets": ["forgejo_package_registry", "aibenchie_service", "nullbridge_backend"],
+  "forbidden_actions": [
+    "read_user_data",
+    "export_secrets",
+    "disable_aibenchie",
+    "disable_signing",
+    "publish_unsigned_update"
+  ],
+  "network_profiles": {
+    "throttled_quarantine": {
+      "max_requests_per_minute": 20,
+      "max_bytes_per_minute": 5242880,
+      "max_parallel_jobs": 1,
+      "egress_allowlist": ["forgejo.internal", "aibenchie.internal", "nullbridge.internal"],
+      "deny_external_network": true,
+      "deny_secret_access": true,
+      "deny_user_data_access": true
+    }
+  }
+}

@@ -16,6 +16,7 @@
         "tests/test_adapters.py",
         "tests/test_collect_model_outputs.py",
         "tests/test_run_eval.py",
+        "tests/test_release_fabric.py",
         "tests/test_scoring.py"
       ],
       "pytest_args": []
@@ -41,6 +42,14 @@
         "tests/test_analyze_v1_4_3_runtime_scenario_results.py",
         "tests/test_analyze_v1_4_3a_runtime_backend_identity_update.py",
         "tests/test_analyze_v1_5_13_cancel_timeout_fallback_android_contract.py"
+      ],
+      "pytest_args": []
+    },
+    "release_fabric": {
+      "kind": "release",
+      "description": "Run Forgejo, runner, release manifest, AIBenchie verdict, and break-glass policy checks.",
+      "paths": [
+        "tests/test_release_fabric.py"
       ],
       "pytest_args": []
     },

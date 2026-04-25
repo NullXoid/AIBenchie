@@ -1,0 +1,11 @@
+name: publish
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: runner-publisher
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Verify signed manifest, AIBenchie verdict, SBOM, and artifact digests before publish."

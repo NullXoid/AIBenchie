@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "rule": "No runner may have both arbitrary code execution and high-value secrets or signing authority.",
+  "runners": [
+    {
+      "name": "runner-pr-untrusted",
+      "arbitrary_code": true,
+      "production_secrets": false,
+      "signing_authority": false,
+      "package_publish": false,
+      "internal_network": false,
+      "disposable": true
+    },
+    {
+      "name": "runner-ci-trusted",
+      "arbitrary_code": false,
+      "production_secrets": false,
+      "signing_authority": false,
+      "package_publish": false,
+      "internal_network": "read_only"
+    },
+    {
+      "name": "runner-aibenchie",
+      "arbitrary_code": false,
+      "production_secrets": false,
+      "signing_authority": false,
+      "package_publish": false,
+      "can_write_signed_encrypted_reports": true
+    },
+    {
+      "name": "runner-build",
+      "arbitrary_code": false,
+      "production_secrets": false,
+      "signing_authority": false,
+      "package_publish": false,
+      "produces_artifact_digests": true
+    },
+    {
+      "name": "runner-release-signer",
+      "arbitrary_code": false,
+      "production_secrets": false,
+      "signing_authority": true,
+      "package_publish": false,
+      "hardware_key_required": true
+    },
+    {
+      "name": "runner-publisher",
+      "arbitrary_code": false,
+      "production_secrets": false,
+      "signing_authority": false,
+      "package_publish": true,
+      "publishes_signed_artifacts_only": true,
+      "egress_allowlist_only": true
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "verdicts": [
+    "pass",
+    "warn",
+    "requires_ack",
+    "ship_candidate",
+    "quarantine_candidate",
+    "blocks_release",
+    "critical_block"
+  ],
+  "accepted_release_verdicts": ["pass", "ship_candidate"],
+  "required_tracks": [
+    "quality",
+    "performance",
+    "platform_health",
+    "streaming",
+    "nullbridge_enforcement",
+    "website_auth_cleanup",
+    "privacy",
+    "e2ee_storage",
+    "prompt_editor_leakage",
+    "artifact_sandboxing",
+    "ccc_scoping",
+    "forgejo_workflow_policy",
+    "runner_isolation",
+    "release_manifest_validation",
+    "sbom_validation",
+    "hardware_signature_verification",
+    "breakglass_grant_verification"
+  ],
+  "critical_blocks": [
+    "auth_token_in_url",
+    "audit_admin_token_in_local_storage",
+    "frontend_service_credential_leakage",
+    "legacy_auth_in_production",
+    "unauthenticated_nullbridge_route_success",
+    "unknown_backend_accepted",
+    "unknown_capability_accepted",
+    "android_codex_admin_repo_access",
+    "unsigned_update_acceptance",
+    "unsandboxed_artifact_execution",
+    "release_without_signed_manifest",
+    "release_without_artifact_digest",
+    "release_without_aibenchie_verdict",
+    "release_without_hardware_signature",
+    "runner_with_arbitrary_code_and_signing_key",
+    "package_publish_token_available_to_pr_workflow"
+  ]
+}
