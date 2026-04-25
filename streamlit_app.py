@@ -16,6 +16,7 @@ from aibenchie.local_ollama import (
     list_ollama_models,
     model_name,
 )
+from aibenchie.local_nullbridge_runner import find_repo_root, run_local_trust_path
 
 
 ROOT = Path(__file__).resolve().parent
@@ -101,6 +102,55 @@ def render_ollama_panel() -> None:
         st.text_area("Model response", value=result["response"], height=180)
 
 
+def render_trust_fabric_panel() -> None:
+    st.subheader("Trust Fabric Smoke Test")
+    st.write(
+        "Runs a local NullBridge instance with temporary generated service secrets, proves one allowed route "
+        "and one denied route, then tears the instance down. No personal Forgejo settings or service secrets are saved."
+    )
+
+    repo = find_repo_root()
+    if repo is None:
+        st.warning("NullBridge repo was not found. Set AIBENCHIE_NULLBRIDGE_REPO before launching Streamlit.")
+        return
+
+    st.caption("NullBridge repo detected for this local session.")
+    if st.button("Run trust smoke test"):
+        with st.spinner("Starting temporary NullBridge and checking route policy..."):
+            try:
+                result = run_local_trust_path()
+            except Exception as exc:
+                st.error(f"Trust smoke test failed to run: {exc}")
+                return
+
+        if result.get("ok"):
+            st.success("Trust fabric smoke test passed.")
+        else:
+            st.error("Trust fabric smoke test failed.")
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Allowed route", f"HTTP {result['allow']['status']}")
+        col2.metric("Denied route", f"HTTP {result['deny']['status']}")
+        col3.metric("Secrets persisted", str(result["secrets_persisted"]).lower())
+
+        with st.expander("Route proof", expanded=False):
+            safe_result = {
+                "allow": {
+                    "status": result["allow"]["status"],
+                    "accepted": result["allow"]["body"].get("accepted"),
+                    "caller": result["allow"]["body"].get("caller"),
+                    "capability": result["allow"]["body"].get("capability"),
+                },
+                "deny": {
+                    "status": result["deny"]["status"],
+                    "errorCode": result["deny"]["body"].get("errorCode"),
+                    "reason": result["deny"]["body"].get("reason"),
+                },
+                "secrets_persisted": result["secrets_persisted"],
+            }
+            st.json(safe_result)
+
+
 def main() -> None:
     st.set_page_config(
         page_title="AIBenchie",
@@ -166,6 +216,9 @@ def main() -> None:
         "This Streamlit app does not require personal Forgejo settings, service tokens, or local backend credentials. "
         "Private configuration belongs in ignored local add-ons and should be entered only for the current session when needed."
     )
+
+    st.divider()
+    render_trust_fabric_panel()
 
     st.divider()
     render_ollama_panel()

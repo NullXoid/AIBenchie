@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import aibenchie_local
 from aibenchie.local_nullbridge_runner import (
     BACKEND_IDS,
     LocalNullBridgeRunner,
@@ -51,3 +52,23 @@ def test_local_nullbridge_runner_temp_root_is_removed_after_stop():
         assert temp_root.exists()
         assert (temp_root / "infra" / "nullbridge" / "backend-registry.json").is_file()
     assert not Path(temp_root).exists()
+
+
+def test_cli_trust_smoke_uses_local_runner_without_ollama(monkeypatch, capsys):
+    monkeypatch.setattr(
+        aibenchie_local,
+        "run_local_trust_path",
+        lambda: {
+            "ok": True,
+            "allow": {"status": 202},
+            "deny": {"status": 403},
+            "secrets_persisted": False,
+        },
+    )
+
+    assert aibenchie_local.main(["--trust-smoke"]) == 0
+    output = capsys.readouterr().out
+    assert "Trust Fabric Smoke Test" in output
+    assert "Allow route: HTTP 202" in output
+    assert "Deny route: HTTP 403" in output
+    assert "Result: PASS" in output

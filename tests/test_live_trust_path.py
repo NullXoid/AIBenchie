@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -49,6 +50,15 @@ def test_live_route_check_builds_signed_backend_envelope(monkeypatch):
     assert captured["headers"]["Authorization"].startswith("Bearer ")
     assert captured["body"]["actingUser"]["platform"] == "android"
     assert captured["body"]["actingUser"]["userId"] == "aibenchie_live_user"
+
+
+def test_streamlit_exposes_public_safe_trust_smoke_button():
+    text = (Path(__file__).resolve().parents[1] / "streamlit_app.py").read_text(encoding="utf-8")
+    assert "Trust Fabric Smoke Test" in text
+    assert "run_local_trust_path" in text
+    assert "temporary generated service secrets" in text
+    assert "AIBENCHIE_LIVE_NULLBRIDGE_SERVICE_JWT_SECRETS" not in text
+    assert "st.secrets" not in text
 
 
 @pytest.mark.skipif(not live_trust_path.enabled(), reason="set AIBENCHIE_LIVE_TRUST_PATH=1 to run live stack probes")

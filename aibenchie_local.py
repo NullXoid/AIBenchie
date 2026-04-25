@@ -5,6 +5,7 @@ import json
 import sys
 
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
+from aibenchie.local_nullbridge_runner import run_local_trust_path
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -16,12 +17,29 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", default="", help="Model to test. Defaults to the first detected model.")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT, help="Bounded prompt for the local model test.")
     parser.add_argument("--list-models", action="store_true", help="List detected local Ollama models and exit.")
+    parser.add_argument(
+        "--trust-smoke",
+        action="store_true",
+        help="Run a local NullBridge trust-fabric smoke test with temporary generated secrets.",
+    )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.trust_smoke:
+        result = run_local_trust_path()
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print("Trust Fabric Smoke Test")
+            print(f"Allow route: HTTP {result['allow']['status']}")
+            print(f"Deny route: HTTP {result['deny']['status']}")
+            print(f"Secrets persisted: {result['secrets_persisted']}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
     models = list_ollama_models(args.ollama_url)
     model_names = [model_name(item) for item in models if model_name(item)]
 
