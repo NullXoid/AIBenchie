@@ -17,6 +17,7 @@ from aibenchie.local_ollama import (
     model_name,
 )
 from aibenchie.local_nullbridge_runner import find_repo_root, run_local_trust_path
+from aibenchie.nullprivacy import run_e2ee_storage_proof
 
 
 ROOT = Path(__file__).resolve().parent
@@ -151,6 +152,26 @@ def render_trust_fabric_panel() -> None:
             st.json(safe_result)
 
 
+def render_privacy_panel() -> None:
+    st.subheader("NullPrivacy Foundation")
+    st.write(
+        "Runs a local E2EE storage proof with temporary generated keys. The proof verifies that encrypted blobs "
+        "round-trip with the right key, reject the wrong key, reject tampering, and do not contain plaintext."
+    )
+
+    if st.button("Run E2EE storage proof"):
+        result = run_e2ee_storage_proof().as_dict()
+        if result["ok"]:
+            st.success("E2EE storage proof passed.")
+        else:
+            st.error("E2EE storage proof failed.")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Roundtrip", str(result["roundtrip_ok"]).lower())
+        col2.metric("Wrong key", "rejected" if result["wrong_key_rejected"] else "accepted")
+        col3.metric("Tamper", "rejected" if result["tamper_rejected"] else "accepted")
+        col4.metric("Plaintext visible", str(result["plaintext_visible_in_blob"]).lower())
+
+
 def main() -> None:
     st.set_page_config(
         page_title="AIBenchie",
@@ -219,6 +240,9 @@ def main() -> None:
 
     st.divider()
     render_trust_fabric_panel()
+
+    st.divider()
+    render_privacy_panel()
 
     st.divider()
     render_ollama_panel()

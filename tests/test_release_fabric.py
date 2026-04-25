@@ -18,6 +18,7 @@ from training.release_fabric import (
     validate_nullbridge_registry,
     validate_policy_tree,
     validate_publisher_inputs,
+    validate_privacy_levels,
     validate_release_manifest,
     validate_release_policy,
     validate_resource_policy,
@@ -91,6 +92,7 @@ def test_core_policies_fail_closed():
     assert validate_actions_policy(load_json(POLICIES_ROOT / "actions-policy.json")) == []
     assert validate_aibenchie_gates(load_json(POLICIES_ROOT / "aibenchie-gates.json")) == []
     assert validate_resource_policy(load_json(POLICIES_ROOT / "resource-policy.json")) == []
+    assert validate_privacy_levels(load_json(POLICIES_ROOT / "privacy-levels.json")) == []
     assert validate_nullbridge_registry(load_json(POLICIES_ROOT / "nullbridge-registry.json")) == []
     assert validate_nullbridge_capabilities(load_json(POLICIES_ROOT / "nullbridge-capabilities.json")) == []
 
@@ -213,6 +215,30 @@ def test_resource_policy_requires_bounded_leases_and_mobile_limits():
     assert "android_unbounded:mobile_duration_limit:too_high" in errors
     assert "model.inference:lease:not_required" in errors
     assert "model.inference:allowed_profiles:missing" in errors
+
+
+def test_privacy_levels_require_level_1_to_3_controls_and_e2ee_targets():
+    valid = load_json(POLICIES_ROOT / "privacy-levels.json")
+    assert validate_privacy_levels(valid) == []
+
+    broken = {
+        "levels": {
+            "1": {"name": "Fast Secure", "required_controls": [], "forbidden_controls": []},
+            "2": {"name": "Secure Remote", "required_controls": ["https_tls"], "forbidden_controls": []},
+            "3": {"name": "ISP Destination Hidden", "required_controls": ["vpn_or_exit_node"], "forbidden_controls": []},
+        },
+        "e2ee_storage_targets": ["saved_chats"],
+    }
+    errors = validate_privacy_levels(broken)
+    assert "privacy_level:missing:0" in errors
+    assert "privacy_level:1:required_controls:missing" in errors
+    assert "privacy_level:1:required_control_missing:https_tls" in errors
+    assert "privacy_level:1:forbidden_control_missing:legacy_auth" in errors
+    assert "privacy_level:2:required_control_missing:secure_sessions" in errors
+    assert "privacy_level:2:required_control_missing:prompt_editor_enabled" in errors
+    assert "privacy_level:3:required_control_missing:dns_through_tunnel" in errors
+    assert "privacy_level:3:required_control_missing:kill_switch" in errors
+    assert "e2ee_storage_target:missing:private_artifacts" in errors
 
 
 def test_aibenchie_report_preview_includes_mascot_asset():

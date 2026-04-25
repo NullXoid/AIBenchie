@@ -202,6 +202,58 @@ def validate_resource_policy(policy: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_privacy_levels(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    levels = policy.get("levels", {})
+    for level in map(str, range(0, 6)):
+        if level not in levels:
+            errors.append(f"privacy_level:missing:{level}")
+            continue
+        entry = levels.get(level) or {}
+        if not entry.get("name"):
+            errors.append(f"privacy_level:{level}:name:missing")
+        if not entry.get("required_controls"):
+            errors.append(f"privacy_level:{level}:required_controls:missing")
+        if "forbidden_controls" not in entry:
+            errors.append(f"privacy_level:{level}:forbidden_controls:missing")
+
+    required_by_level = {
+        "1": {"https_tls"},
+        "2": {"https_tls", "secure_sessions", "prompt_editor_enabled"},
+        "3": {"vpn_or_exit_node", "dns_through_tunnel", "kill_switch"},
+    }
+    forbidden_by_level = {
+        "1": {"url_tokens", "legacy_auth"},
+        "2": {"url_tokens", "frontend_service_credentials"},
+        "3": {"direct_fallback"},
+    }
+    for level, required_controls in required_by_level.items():
+        controls = set((levels.get(level) or {}).get("required_controls", []))
+        missing = required_controls - controls
+        for control in sorted(missing):
+            errors.append(f"privacy_level:{level}:required_control_missing:{control}")
+    for level, forbidden_controls in forbidden_by_level.items():
+        controls = set((levels.get(level) or {}).get("forbidden_controls", []))
+        missing = forbidden_controls - controls
+        for control in sorted(missing):
+            errors.append(f"privacy_level:{level}:forbidden_control_missing:{control}")
+
+    targets = set(policy.get("e2ee_storage_targets", []))
+    for target in {
+        "saved_chats",
+        "private_artifacts",
+        "ccc_memory",
+        "workspace_notes",
+        "private_uploads",
+        "offline_cache",
+        "sync_blobs",
+        "private_aibenchie_reports",
+    }:
+        if target not in targets:
+            errors.append(f"e2ee_storage_target:missing:{target}")
+    return errors
+
+
 def validate_nullbridge_registry(policy: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     required = set(policy.get("required_backend_identities", []))

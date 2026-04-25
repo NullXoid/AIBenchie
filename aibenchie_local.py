@@ -6,6 +6,7 @@ import sys
 
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
 from aibenchie.local_nullbridge_runner import run_local_trust_path
+from aibenchie.nullprivacy import run_e2ee_storage_proof
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -22,6 +23,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Run a local NullBridge trust-fabric smoke test with temporary generated secrets.",
     )
+    parser.add_argument(
+        "--privacy-proof",
+        action="store_true",
+        help="Run a local E2EE storage proof with temporary generated keys.",
+    )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
 
@@ -37,6 +43,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Allow route: HTTP {result['allow']['status']}")
             print(f"Deny route: HTTP {result['deny']['status']}")
             print(f"Secrets persisted: {result['secrets_persisted']}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.privacy_proof:
+        result = run_e2ee_storage_proof().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print("NullPrivacy E2EE Storage Proof")
+            print(f"Roundtrip: {result['roundtrip_ok']}")
+            print(f"Wrong key rejected: {result['wrong_key_rejected']}")
+            print(f"Tamper rejected: {result['tamper_rejected']}")
+            print(f"Plaintext visible in blob: {result['plaintext_visible_in_blob']}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

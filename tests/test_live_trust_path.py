@@ -61,6 +61,14 @@ def test_streamlit_exposes_public_safe_trust_smoke_button():
     assert "st.secrets" not in text
 
 
+def test_streamlit_exposes_nullprivacy_foundation_without_saved_keys():
+    text = (Path(__file__).resolve().parents[1] / "streamlit_app.py").read_text(encoding="utf-8")
+    assert "NullPrivacy Foundation" in text
+    assert "run_e2ee_storage_proof" in text
+    assert "temporary generated keys" in text
+    assert "PRIVATE_KEY" not in text
+
+
 @pytest.mark.skipif(not live_trust_path.enabled(), reason="set AIBENCHIE_LIVE_TRUST_PATH=1 to run live stack probes")
 def test_live_nullbridge_trust_path_allows_and_denies_expected_routes():
     base_url = live_trust_path.live_nullbridge_url()

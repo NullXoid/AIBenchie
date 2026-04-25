@@ -72,3 +72,23 @@ def test_cli_trust_smoke_uses_local_runner_without_ollama(monkeypatch, capsys):
     assert "Allow route: HTTP 202" in output
     assert "Deny route: HTTP 403" in output
     assert "Result: PASS" in output
+
+
+def test_cli_privacy_proof_uses_ephemeral_keys(monkeypatch, capsys):
+    class Proof:
+        def as_dict(self):
+            return {
+                "ok": True,
+                "roundtrip_ok": True,
+                "wrong_key_rejected": True,
+                "tamper_rejected": True,
+                "plaintext_visible_in_blob": False,
+            }
+
+    monkeypatch.setattr(aibenchie_local, "run_e2ee_storage_proof", lambda: Proof())
+
+    assert aibenchie_local.main(["--privacy-proof"]) == 0
+    output = capsys.readouterr().out
+    assert "NullPrivacy E2EE Storage Proof" in output
+    assert "Wrong key rejected: True" in output
+    assert "Result: PASS" in output
