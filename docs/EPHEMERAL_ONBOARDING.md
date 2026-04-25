@@ -52,3 +52,15 @@ plain diagnostic dumps
 ## AIBenchie Gate
 
 AIBenchie must block release if tracked files contain personal hosts, private IP defaults, user paths, service credentials, or organization-specific secrets.
+
+## Streamlit Cloud
+
+The public Streamlit app should use:
+
+```text
+Repository: https://github.com/NullXoid/AIBenchie
+Branch: main
+Main file path: streamlit_app.py
+```
+
+Do not place personal Forgejo tokens or NullBridge service credentials in Streamlit secrets for the public app. If a private deployment needs them, use a separate private app and keep the values session-scoped or in that private deployment's secret store.

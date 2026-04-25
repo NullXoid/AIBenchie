@@ -138,6 +138,20 @@ def test_aibenchie_report_preview_includes_mascot_asset():
     assert "Resource management" in text
 
 
+def test_streamlit_entrypoint_is_public_safe():
+    app = ROOT / "streamlit_app.py"
+    requirements = ROOT / "requirements.txt"
+    assert app.is_file()
+    assert requirements.is_file()
+    text = app.read_text(encoding="utf-8")
+    assert "st.set_page_config" in text
+    assert "https://github.com/NullXoid/AIBenchie" in text
+    assert "st.secrets" not in text
+    assert "NULLBRIDGE_SERVICE_TOKEN" not in text
+    assert "localStorage" not in text
+    assert "streamlit==1.43.2" in requirements.read_text(encoding="utf-8")
+
+
 def test_runner_policy_blocks_sensitive_power_on_arbitrary_code_runners():
     policy = {"runners": [{"name": "bad", "arbitrary_code": True, "signing_authority": True}]}
     errors = validate_runner_policy(policy)
