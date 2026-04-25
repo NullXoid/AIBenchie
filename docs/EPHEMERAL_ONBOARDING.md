@@ -64,3 +64,11 @@ Main file path: streamlit_app.py
 ```
 
 Do not place personal Forgejo tokens or NullBridge service credentials in Streamlit secrets for the public app. If a private deployment needs them, use a separate private app and keep the values session-scoped or in that private deployment's secret store.
+
+The public Streamlit app can test Ollama only when it is running on the same machine as Ollama:
+
+```text
+streamlit run streamlit_app.py
+```
+
+Streamlit Cloud cannot directly reach Ollama on a user's PC. Browser-to-local model testing should later go through a local backend or NullBridge adapter with explicit user approval, not through saved public app secrets.

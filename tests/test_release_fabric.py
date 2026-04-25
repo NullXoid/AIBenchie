@@ -149,6 +149,11 @@ def test_streamlit_entrypoint_is_public_safe():
     assert "st.secrets" not in text
     assert "NULLBRIDGE_SERVICE_TOKEN" not in text
     assert "localStorage" not in text
+    assert "/api/tags" in text
+    assert "/api/generate" in text
+    assert "MAX_PREDICT_TOKENS = 128" in text
+    assert "MAX_PROMPT_CHARS = 500" in text
+    assert "host in {\"127.0.0.1\", \"localhost\", \"::1\"}" in text
     assert "streamlit==1.43.2" in requirements.read_text(encoding="utf-8")
 
 
