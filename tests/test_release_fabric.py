@@ -126,6 +126,18 @@ def test_resource_policy_requires_bounded_leases_and_mobile_limits():
     assert "model.inference:allowed_profiles:missing" in errors
 
 
+def test_aibenchie_report_preview_includes_mascot_asset():
+    preview = ROOT / "docs" / "AIBENCHIE_REPORT_PREVIEW.html"
+    mascot = ROOT / "docs" / "assets" / "aibenchie-mascots.png"
+    assert preview.is_file()
+    assert mascot.is_file()
+    assert mascot.stat().st_size > 100_000
+    text = preview.read_text(encoding="utf-8")
+    assert "AIBenchie Release Verdict" in text
+    assert "assets/aibenchie-mascots.png" in text
+    assert "Resource management" in text
+
+
 def test_runner_policy_blocks_sensitive_power_on_arbitrary_code_runners():
     policy = {"runners": [{"name": "bad", "arbitrary_code": True, "signing_authority": True}]}
     errors = validate_runner_policy(policy)
@@ -220,7 +232,7 @@ def test_tracked_release_fabric_files_do_not_embed_private_local_settings():
         re.compile("C:" + r"\\\\Users\\\\", re.IGNORECASE),
         re.compile("/home/" + "echolabs", re.IGNORECASE),
     ]
-    scanned_suffixes = {".json", ".yaml", ".yml", ".md", ".py", ".txt", ".toml"}
+    scanned_suffixes = {".html", ".json", ".yaml", ".yml", ".md", ".py", ".txt", ".toml"}
     offenders = []
     for relative in tracked:
         path = ROOT / relative
