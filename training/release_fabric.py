@@ -19,6 +19,18 @@ WORKFLOWS_ROOT = PROJECT_ROOT / ".forgejo" / "workflows"
 
 SHA256_RE = re.compile(r"^[a-fA-F0-9]{64}$")
 USE_RE = re.compile(r"uses:\s*([^\s#]+)")
+NULLBRIDGE_RUNTIME_RE = re.compile(
+    r"(^|/)(inbox|outbox|processed|failed|approvals)/",
+    re.IGNORECASE,
+)
+SERVICE_CREDENTIAL_RE = re.compile(
+    r"NULLBRIDGE_(?:ANDROID_)?SERVICE_(?:JWT_)?SECRET|NULLBRIDGE_SERVICE_TOKEN|X-NullBridge-Service|Authorization\s*:\s*[\"']?\s*Bearer",
+    re.IGNORECASE,
+)
+DIRECT_NULLBRIDGE_ROUTE_RE = re.compile(
+    r"/bridge/requests|/bridge/routes|/bridge/dispatch",
+    re.IGNORECASE,
+)
 
 
 REQUIRED_POLICY_FILES = [
@@ -423,3 +435,104 @@ def validate_publisher_inputs(manifest: dict[str, Any], report: dict[str, Any], 
     elif sha256_file(sbom_path) != sbom.get("sha256"):
         errors.append("sbom:sha256_mismatch")
     return errors
+
+
+def validate_suite_adapter_compliance(suite_root: Path) -> list[str]:
+    """Validate backend-side NullBridge adapter boundaries across a checked-out suite.
+
+    This intentionally accepts a caller-provided root instead of storing private
+    repo locations. Missing repos are reported as gaps by repo label.
+    """
+    errors: list[str] = []
+    specs = [
+        {
+            "label": "wrapper",
+            "adapter": Path("Felnx/NullXoid/.NullXoid/backend/nullbridge_adapter.py"),
+            "backend_roots": [Path("Felnx/NullXoid/.NullXoid/backend")],
+            "frontend_roots": [Path("Felnx/NullXoid/src"), Path("Felnx/NullXoid/.NullXoid/frontend")],
+        },
+        {
+            "label": "windows",
+            "adapter": Path("AiAssistant/src/bridge/nullbridge_service_adapter.cpp"),
+            "backend_roots": [Path("AiAssistant/src/bridge")],
+            "frontend_roots": [Path("AiAssistant/src/ui")],
+        },
+        {
+            "label": "android",
+            "adapter": Path("NullXoidAndroid/app/src/main/java/com/nullxoid/android/backend/nullbridge/NullBridgeAdapter.kt"),
+            "backend_roots": [Path("NullXoidAndroid/app/src/main/java/com/nullxoid/android/backend")],
+            "frontend_roots": [Path("NullXoidAndroid/app/src/main/java/com/nullxoid/android/ui")],
+        },
+    ]
+
+    for spec in specs:
+        adapter = suite_root / spec["adapter"]
+        label = str(spec["label"])
+        if not adapter.is_file():
+            errors.append(f"{label}:adapter:missing")
+            continue
+        adapter_text = adapter.read_text(encoding="utf-8", errors="ignore")
+        if "actingUser" not in adapter_text and "acting_user" not in adapter_text:
+            errors.append(f"{label}:acting_user:missing")
+
+        for frontend_root in spec["frontend_roots"]:
+            root = suite_root / frontend_root
+            if root.exists():
+                errors.extend(
+                    f"{label}:frontend:{error}"
+                    for error in validate_frontend_nullbridge_boundaries(root)
+                )
+
+    nullbridge_root = suite_root / "NullBridge"
+    if nullbridge_root.exists():
+        errors.extend(
+            f"nullbridge:{error}"
+            for error in validate_nullbridge_runtime_artifacts_untracked(nullbridge_root)
+        )
+    else:
+        errors.append("nullbridge:repo:missing")
+    return errors
+
+
+def validate_frontend_nullbridge_boundaries(frontend_root: Path) -> list[str]:
+    errors: list[str] = []
+    for path in iter_source_files(frontend_root):
+        relative = path.relative_to(frontend_root).as_posix()
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if SERVICE_CREDENTIAL_RE.search(text):
+            errors.append(f"{relative}:service_credential_reference")
+        if DIRECT_NULLBRIDGE_ROUTE_RE.search(text):
+            errors.append(f"{relative}:direct_privileged_nullbridge_route")
+    return errors
+
+
+def validate_nullbridge_runtime_artifacts_untracked(nullbridge_repo: Path) -> list[str]:
+    errors: list[str] = []
+    try:
+        tracked = subprocess_check_output(["git", "ls-files"], cwd=nullbridge_repo).splitlines()
+    except Exception as exc:  # pragma: no cover - defensive for non-git fixture use
+        errors.append(f"git_ls_files:failed:{type(exc).__name__}")
+        return errors
+    for relative in tracked:
+        normalized = relative.replace("\\", "/")
+        if "backend/infra/nullbridge/" in normalized and NULLBRIDGE_RUNTIME_RE.search(normalized):
+            errors.append(f"runtime_artifact_tracked:{normalized}")
+    return errors
+
+
+def subprocess_check_output(args: list[str], cwd: Path) -> str:
+    import subprocess
+
+    return subprocess.check_output(args, cwd=cwd, text=True)
+
+
+def iter_source_files(root: Path):
+    suffixes = {".js", ".jsx", ".ts", ".tsx", ".kt", ".cpp", ".h", ".hpp", ".py", ".json", ".md", ".yaml", ".yml"}
+    ignored_parts = {".git", "node_modules", "dist", "build", ".gradle", "__pycache__"}
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        if any(part in ignored_parts for part in path.parts):
+            continue
+        if path.suffix.lower() in suffixes:
+            yield path

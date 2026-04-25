@@ -22,6 +22,7 @@ from training.release_fabric import (
     validate_release_policy,
     validate_resource_policy,
     validate_runner_policy,
+    validate_suite_adapter_compliance,
     validate_workflow_text,
     authorize_nullbridge_route,
 )
@@ -353,3 +354,64 @@ def test_tracked_release_fabric_files_do_not_embed_private_local_settings():
                 offenders.append(relative)
                 break
     assert offenders == []
+
+
+def test_suite_adapter_compliance_requires_acting_user_and_frontend_boundaries(tmp_path):
+    suite = tmp_path / "suite"
+    wrapper_backend = suite / "Felnx" / "NullXoid" / ".NullXoid" / "backend"
+    wrapper_frontend = suite / "Felnx" / "NullXoid" / "src"
+    windows_backend = suite / "AiAssistant" / "src" / "bridge"
+    windows_frontend = suite / "AiAssistant" / "src" / "ui"
+    android_backend = (
+        suite
+        / "NullXoidAndroid"
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "com"
+        / "nullxoid"
+        / "android"
+        / "backend"
+    )
+    android_adapter = android_backend / "nullbridge"
+    android_frontend = (
+        suite
+        / "NullXoidAndroid"
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "com"
+        / "nullxoid"
+        / "android"
+        / "ui"
+    )
+    nullbridge = suite / "NullBridge"
+
+    for directory in [wrapper_backend, wrapper_frontend, windows_backend, windows_frontend, android_adapter, android_frontend]:
+        directory.mkdir(parents=True)
+    (wrapper_backend / "nullbridge_adapter.py").write_text('body = {"actingUser": acting_user}\n', encoding="utf-8")
+    (wrapper_frontend / "App.tsx").write_text("export const ok = true\n", encoding="utf-8")
+    (windows_backend / "nullbridge_service_adapter.cpp").write_text('request.insert("actingUser", actingUser);\n', encoding="utf-8")
+    (windows_frontend / "main_window.cpp").write_text("// UI talks to backend only\n", encoding="utf-8")
+    (android_adapter / "NullBridgeAdapter.kt").write_text('put("actingUser", actingUser)\n', encoding="utf-8")
+    (android_frontend / "Home.kt").write_text("// Compose UI talks to embedded backend only\n", encoding="utf-8")
+
+    (nullbridge / "backend" / "infra" / "nullbridge" / "inbox").mkdir(parents=True)
+    (nullbridge / "backend" / "infra" / "nullbridge" / "backend-registry.json").write_text("{}", encoding="utf-8")
+    subprocess.run(["git", "init"], cwd=nullbridge, check=True, capture_output=True, text=True)
+    subprocess.run(["git", "add", "backend/infra/nullbridge/backend-registry.json"], cwd=nullbridge, check=True)
+
+    assert validate_suite_adapter_compliance(suite) == []
+
+    (wrapper_backend / "nullbridge_adapter.py").write_text('body = {"payload": payload}\n', encoding="utf-8")
+    (wrapper_frontend / "App.tsx").write_text('fetch("/bridge/requests", { headers: { Authorization: "Bearer token" } })\n', encoding="utf-8")
+    (nullbridge / "backend" / "infra" / "nullbridge" / "inbox" / "queued.json").write_text("{}", encoding="utf-8")
+    subprocess.run(["git", "add", "backend/infra/nullbridge/inbox/queued.json"], cwd=nullbridge, check=True)
+
+    errors = validate_suite_adapter_compliance(suite)
+    assert "wrapper:acting_user:missing" in errors
+    assert "wrapper:frontend:App.tsx:service_credential_reference" in errors
+    assert "wrapper:frontend:App.tsx:direct_privileged_nullbridge_route" in errors
+    assert "nullbridge:runtime_artifact_tracked:backend/infra/nullbridge/inbox/queued.json" in errors
