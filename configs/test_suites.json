@@ -1,0 +1,67 @@
+{
+  "default_suite": "fast",
+  "suites": {
+    "all": {
+      "kind": "full",
+      "description": "Run the complete LV7 pytest suite.",
+      "paths": [
+        "tests"
+      ],
+      "pytest_args": []
+    },
+    "benchmark_smoke": {
+      "kind": "benchmark",
+      "description": "Run deterministic eval and scoring smoke coverage for local release confidence.",
+      "paths": [
+        "tests/test_adapters.py",
+        "tests/test_collect_model_outputs.py",
+        "tests/test_run_eval.py",
+        "tests/test_scoring.py"
+      ],
+      "pytest_args": []
+    },
+    "fast": {
+      "kind": "local",
+      "description": "Run quick parser, adapter, scoring, and harness checks.",
+      "paths": [
+        "tests/test_adapters.py",
+        "tests/test_convert_records.py",
+        "tests/test_run_eval.py",
+        "tests/test_scoring.py"
+      ],
+      "pytest_args": []
+    },
+    "runtime": {
+      "kind": "runtime",
+      "description": "Run runtime contract and integration-readiness checks.",
+      "paths": [
+        "tests/test_analyze_v1_4_runtime_eval_readiness.py",
+        "tests/test_analyze_v1_4_1_external_m6_runtime_eval.py",
+        "tests/test_analyze_v1_4_2_runtime_scenario_eval_plan.py",
+        "tests/test_analyze_v1_4_3_runtime_scenario_results.py",
+        "tests/test_analyze_v1_4_3a_runtime_backend_identity_update.py",
+        "tests/test_analyze_v1_5_13_cancel_timeout_fallback_android_contract.py"
+      ],
+      "pytest_args": []
+    },
+    "v1_5_baseline": {
+      "kind": "baseline",
+      "description": "Run the accepted v1.5 runtime repair and Android contract baseline checks.",
+      "paths": [
+        "tests/test_analyze_v1_5_0_narrow_runtime_model_repair_planning.py",
+        "tests/test_analyze_v1_5_1_narrow_runtime_sft_repair_implementation.py",
+        "tests/test_analyze_v1_5_2_narrow_runtime_sft_training_run.py",
+        "tests/test_analyze_v1_5_3_candidate_runtime_recheck_bridge.py",
+        "tests/test_analyze_v1_5_4_candidate_runtime_scenario_results.py",
+        "tests/test_analyze_v1_5_5_candidate_runtime_failure_diagnosis.py",
+        "tests/test_analyze_v1_5_6_candidate_runtime_repair_spec.py",
+        "tests/test_analyze_v1_5_9_candidate_runtime_repair_acceptance.py",
+        "tests/test_analyze_v1_5_10_accepted_runtime_repair_promotion.py",
+        "tests/test_analyze_v1_5_11_post_promotion_identity_sync.py",
+        "tests/test_analyze_v1_5_12_promoted_runtime_release_readiness.py",
+        "tests/test_analyze_v1_5_13_cancel_timeout_fallback_android_contract.py"
+      ],
+      "pytest_args": []
+    }
+  }
+}

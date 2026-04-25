@@ -1,0 +1,292 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NullXoid Level 7-lite Training Record Schema v1.6",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "record_type",
+    "id",
+    "scenario_id",
+    "scenario_name",
+    "risk_level",
+    "prompt",
+    "tool_scope_context",
+    "policy_rationale",
+    "metadata",
+    "traceability"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.6"
+    },
+    "record_type": {
+      "enum": [
+        "sft_trajectory",
+        "dpo_pair"
+      ]
+    },
+    "id": {
+      "type": "string"
+    },
+    "scenario_id": {
+      "type": "string"
+    },
+    "scenario_name": {
+      "type": "string"
+    },
+    "risk_level": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "prompt": {
+      "type": "string"
+    },
+    "tool_scope_context": {
+      "type": "object",
+      "required": [
+        "available_tools",
+        "required_scopes",
+        "blocked_scopes",
+        "approval_required"
+      ],
+      "properties": {
+        "available_tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocked_scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "approval_required": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy_rationale": {
+      "type": "object",
+      "required": [
+        "mode",
+        "risk_assessment",
+        "authority_boundary",
+        "safe_next_move"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "execute",
+            "challenge",
+            "clarify",
+            "halt",
+            "escalate"
+          ]
+        },
+        "risk_assessment": {
+          "type": "string"
+        },
+        "authority_boundary": {
+          "type": "string"
+        },
+        "safe_next_move": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "trajectory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "step",
+          "action",
+          "observation",
+          "expected_output"
+        ],
+        "properties": {
+          "step": {
+            "type": "integer"
+          },
+          "action": {
+            "type": "string"
+          },
+          "observation": {
+            "type": "string"
+          },
+          "expected_output": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ideal_behavior": {
+      "type": "object",
+      "required": [
+        "mode",
+        "response"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "execute",
+            "challenge",
+            "clarify",
+            "halt",
+            "escalate"
+          ]
+        },
+        "response": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "chosen": {
+      "type": "string"
+    },
+    "rejected": {
+      "type": "string"
+    },
+    "label": {
+      "enum": [
+        "challenge_behavior",
+        "ambiguity_handling",
+        "shutdown_compliance",
+        "approval_behavior",
+        "tool_scope",
+        "observation_integrity",
+        "privilege_boundary",
+        "audit_integrity",
+        "mape_recovery",
+        "execute_behavior",
+        "rubric_repair",
+        "remaining_failure_repair",
+        "final_safety_repair",
+        "paraphrase_sft_repair"
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "required": [
+        "source",
+        "created_at",
+        "voice",
+        "notes",
+        "derived_from_failure_family",
+        "holdout_prompt_copied"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "derived_from_failure_family": {
+          "type": "string"
+        },
+        "holdout_prompt_copied": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "traceability": {
+      "type": "object",
+      "required": [
+        "literature_anchor",
+        "failure_mode_prevented",
+        "level7_attribute",
+        "eval_harness_link",
+        "requirement_id",
+        "paper_claim_supported"
+      ],
+      "properties": {
+        "literature_anchor": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure_mode_prevented": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "level7_attribute": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "eval_harness_link": {
+          "type": "string"
+        },
+        "requirement_id": {
+          "type": "string"
+        },
+        "paper_claim_supported": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "record_type": {
+            "const": "sft_trajectory"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "trajectory",
+          "ideal_behavior"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "record_type": {
+            "const": "dpo_pair"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "chosen",
+          "rejected",
+          "label"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": false
+}

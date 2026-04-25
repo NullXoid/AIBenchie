@@ -1,0 +1,12 @@
+{
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "starting_adapter": "/mnt/c/Users/kasom/projects/Lv7/models/adapters/lv7_sft_runtime_repair_v1_5_8_attempt_01",
+  "dataset": "data/runtime_repair_v1_5_8_attempt_04/sft_messages.jsonl",
+  "prepared_dataset": "data/runtime_repair_v1_5_8_attempt_04/sft_train_ready.jsonl",
+  "output_dir": "models/adapters/lv7_sft_runtime_repair_v1_5_8_attempt_04/",
+  "max_steps": 240,
+  "learning_rate": 8e-05,
+  "seed": 150804,
+  "data_seed": 150804,
+  "run_started_at": "2026-04-23T02:17:07.266369+00:00"
+}

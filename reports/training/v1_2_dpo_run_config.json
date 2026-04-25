@@ -1,0 +1,11 @@
+{
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "starting_adapter": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "dataset": "data/dpo_smoke_v1_1/dpo_train_ready.jsonl",
+  "output_dir": "models/adapters/lv7_dpo_smoke_v1_2/",
+  "stage": "dpo_smoke",
+  "seed": 42,
+  "max_steps": 24,
+  "beta": 0.1,
+  "saved_at": "2026-04-20T17:56:54.178305+00:00"
+}

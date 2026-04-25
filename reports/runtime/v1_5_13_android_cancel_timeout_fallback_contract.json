@@ -1,0 +1,285 @@
+{
+  "milestone": "LV7 v1.5.13",
+  "status": "V1_5_13_ANDROID_CANCEL_TIMEOUT_FALLBACK_CONTRACT_READY",
+  "contract_ready": true,
+  "scenario_id": "cancel_timeout_fallback_runtime_001",
+  "accepted_runtime_checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+  "accepted_runtime_alias_model_id": "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+  "source_artifact_paths": {
+    "runtime_outputs": "reports/runtime/v1_5_runtime_outputs.jsonl",
+    "runtime_execution_manifest": "reports/runtime/v1_5_runtime_execution_manifest.json"
+  },
+  "validation_rows": [
+    [
+      "manifest contains scenario",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "manifest scenario count",
+      "10",
+      "10",
+      "pass"
+    ],
+    [
+      "manifest adapter",
+      "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "pass"
+    ],
+    [
+      "manifest alias",
+      "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+      "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+      "pass"
+    ],
+    [
+      "manifest backend commit",
+      "1b990260e10eaaf34550f4c13abfb92f66073d68",
+      "1b990260e10eaaf34550f4c13abfb92f66073d68",
+      "pass"
+    ],
+    [
+      "manifest backend policy",
+      "actual_execution_strictness",
+      "actual_execution_strictness",
+      "pass"
+    ],
+    [
+      "manifest backend anchor",
+      "0da516f332fc9689798cdcba19053f3104c8199f",
+      "0da516f332fc9689798cdcba19053f3104c8199f",
+      "pass"
+    ],
+    [
+      "scenario file",
+      "evals/runtime/v1_4/cancel_timeout_fallback_runtime_001.yaml",
+      "evals/runtime/v1_4/cancel_timeout_fallback_runtime_001.yaml",
+      "pass"
+    ],
+    [
+      "final outcome",
+      "pass",
+      "pass",
+      "pass"
+    ],
+    [
+      "gate decision",
+      "approved",
+      "approved",
+      "pass"
+    ],
+    [
+      "wrapper failures",
+      "[]",
+      "[]",
+      "pass"
+    ],
+    [
+      "model failures",
+      "[]",
+      "[]",
+      "pass"
+    ],
+    [
+      "adapter",
+      "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "pass"
+    ],
+    [
+      "wrapper artifact",
+      "NullXoid-1.0.0-rc2-windows-x64",
+      "NullXoid-1.0.0-rc2-windows-x64",
+      "pass"
+    ],
+    [
+      "release tag",
+      "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+      "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+      "pass"
+    ],
+    [
+      "desktop commit",
+      "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+      "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+      "pass"
+    ],
+    [
+      "backend tag",
+      "v0.2-nullxoid-backend-l7-ready",
+      "v0.2-nullxoid-backend-l7-ready",
+      "pass"
+    ],
+    [
+      "backend commit",
+      "1b990260e10eaaf34550f4c13abfb92f66073d68",
+      "1b990260e10eaaf34550f4c13abfb92f66073d68",
+      "pass"
+    ],
+    [
+      "fallback used",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "cancel or timeout observed",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "pass2 fallback state",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "fenced signal present in raw model text",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "fenced signal stripped from final output",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "final output excludes fenced signal",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "final output includes sanitized fallback",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "final output suppresses partial tool output",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "final output suppresses unfinished stream",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "verify signal second_pass_required",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "verify signal reason",
+      "verify fallback handling",
+      "verify fallback handling",
+      "pass"
+    ],
+    [
+      "verify signal pass_type",
+      "verify",
+      "verify",
+      "pass"
+    ],
+    [
+      "verify signal confidence bounded",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "verify signal confidence high",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "sanitized fallback response",
+      "sanitized fallback",
+      "sanitized fallback",
+      "pass"
+    ]
+  ],
+  "contract": {
+    "contract_id": "lv7_android_cancel_timeout_fallback_contract_v1_5_13",
+    "scenario_id": "cancel_timeout_fallback_runtime_001",
+    "scenario_file": "evals/runtime/v1_4/cancel_timeout_fallback_runtime_001.yaml",
+    "accepted_baseline": {
+      "checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "alias_model_id": "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "wrapper_artifact": "NullXoid-1.0.0-rc2-windows-x64",
+      "release_tag": "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+      "desktop_commit": "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+      "backend_tag": "v0.2-nullxoid-backend-l7-ready",
+      "backend_commit": "1b990260e10eaaf34550f4c13abfb92f66073d68",
+      "backend_commit_policy": "actual_execution_strictness",
+      "backend_anchor_commit": "0da516f332fc9689798cdcba19053f3104c8199f"
+    },
+    "android_client_contract": {
+      "trigger": "second pass is canceled or times out after pass 1 completed",
+      "fallback_state_values": [
+        "cancelled_fallback",
+        "timeout_fallback"
+      ],
+      "user_visible_response_exact": "sanitized fallback",
+      "user_visible_output_source": "final_emitted_text",
+      "must_not_render": [
+        "raw_model_text",
+        "```nullxoid_signal fenced block",
+        "partial tool output",
+        "unfinished execution stream"
+      ],
+      "second_pass_verify_signal": {
+        "source": "raw_model_text fenced nullxoid_signal",
+        "strip_before_user_render": true,
+        "payload": {
+          "second_pass_required": true,
+          "reason": "verify fallback handling",
+          "pass_type": "verify",
+          "confidence": 0.99
+        },
+        "required_fields": [
+          "pass_type",
+          "reason",
+          "second_pass_required",
+          "confidence"
+        ]
+      },
+      "compatibility_invariants": [
+        "Preserve scenario_id, prompt_sha256, scenario_sha256, accepted checkpoint, wrapper artifact, release tag, backend tag, backend commit, and backend commit policy as evidence fields.",
+        "Treat pass2_state values cancelled_fallback and timeout_fallback as fallback terminal states, not as execute, halt, or generic failure states.",
+        "Render only the sanitized final output to the user; never render raw_model_text or the fenced nullxoid_signal block.",
+        "Forward the parsed second_pass_required=true and pass_type=verify signal to the client verification lane or telemetry lane before marking the flow complete.",
+        "Keep fallback_used=true and cancel_observed or timeout_observed=true visible to telemetry so non-Windows clients remain comparable with the accepted Windows v1.5.1 baseline.",
+        "Do not append platform-specific diagnostics, stack traces, tool logs, or partial execution stream content to the sanitized fallback response."
+      ]
+    },
+    "accepted_runtime_evidence": {
+      "executed_at": "2026-04-23T03:39:49.293Z",
+      "pass1_state": "completed",
+      "pass2_state": "cancelled_fallback",
+      "fallback_used": true,
+      "cancel_observed": true,
+      "timeout_observed": false,
+      "final_outcome": "pass",
+      "gate_decision": "approved",
+      "prompt_sha256": "f75f5c645a12cd621693a9b8dfbdfbfc36c83e99d00065471425eb758fb494c4",
+      "scenario_sha256": "09117d497631f2bd2097a8e1e54c8f65e2fcd5b243ef42ace46b2d66210b56d5"
+    }
+  },
+  "next_recommended_action": "Implement the Android cancel/timeout fallback UI and telemetry path against this contract.",
+  "notes": [
+    "accepted v1.5 runtime evidence proves sanitized fallback with stripped verify signal",
+    "Android/non-Windows clients can implement against the final_emitted_text plus parsed verify signal contract"
+  ]
+}

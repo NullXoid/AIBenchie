@@ -1,0 +1,77 @@
+stage: dpo_smoke
+planning_only: false
+execute: true
+dataset_profile: expanded_40
+decision_profile: expanded_v1_3_3
+base_model: Qwen/Qwen2.5-1.5B-Instruct
+starting_adapter: models/adapters/lv7_sft_smoke_v1_0_5/
+dataset: data/dpo_expansion_v1_3_2/dpo_pairs_selected_plus_expansion.jsonl
+train_ready_dataset: data/dpo_expansion_v1_3_2/dpo_train_ready.jsonl
+source_selected_dataset: data/dpo_smoke_v1_1/dpo_pairs_selected.jsonl
+output_dir: models/adapters/lv7_dpo_smoke_v1_3_3/
+required_output_dir: models/adapters/lv7_dpo_smoke_v1_3_3/
+exact_scenarios_dir: evals/scenarios
+development_holdout_dir: evals/holdout/paraphrase_v0
+blind_holdout_dir: evals/holdout/blind_v1_3
+blind_probe_dir: evals/dpo_probes/blind_v1_3
+wsl_distro: Ubuntu-24.04
+repo_wsl_path: /mnt/c/Users/kasom/projects/Lv7
+venv_path: ~/.venvs/lv7-sft
+hf_home: ~/.cache/huggingface
+transformers_cache: ~/.cache/huggingface/transformers
+seed: 42
+data_seed: 42
+beta: 0.05
+max_steps: 12
+learning_rate: 3.0e-6
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 4
+max_length: 1024
+max_prompt_length: 768
+save_adapter_only: true
+min_vram_gb: 16
+expected_total_records: 40
+expected_prefix_records: 28
+expected_expansion_records: 12
+expected_expansion_split:
+  overrefusal_vs_bounded_execute: 2
+  unnecessary_escalation_vs_low_risk_execute: 2
+  audit_evasion_vs_audit_preservation: 4
+  unsafe_compliance_vs_safe_challenge: 4
+preflight_title: V1.3.3 Expanded DPO Preflight
+preflight_report: reports/training/V1_3_3_DPO_PREFLIGHT.md
+run_config_report: reports/training/v1_3_3_dpo_run_config.json
+train_log_report: reports/training/v1_3_3_dpo_train_log.jsonl
+exact_eval_outputs: reports/training/v1_3_3_dpo_exact_eval_outputs.jsonl
+exact_eval_results: reports/training/v1_3_3_dpo_exact_eval_results.jsonl
+holdout_eval_outputs: reports/training/v1_3_3_dpo_holdout_eval_outputs.jsonl
+holdout_eval_results: reports/training/v1_3_3_dpo_holdout_eval_results.jsonl
+blind_holdout_eval_outputs: reports/training/v1_3_3_dpo_blind_holdout_outputs.jsonl
+blind_holdout_eval_results: reports/training/v1_3_3_dpo_blind_holdout_results.jsonl
+blind_probe_eval_outputs: reports/training/v1_3_3_dpo_blind_probe_outputs.jsonl
+blind_probe_eval_results: reports/training/v1_3_3_dpo_blind_probe_results.jsonl
+ambiguous_goal_precheck_report: reports/training/v1_3_3_ambiguous_goal_precheck.json
+ambiguous_goal_postcheck_report: reports/training/v1_3_3_ambiguous_goal_postcheck.json
+analysis_title: V1.3.3 Expanded DPO Smoke Analysis
+analysis_report: reports/training/V1_3_3_EXPANDED_DPO_SMOKE_ANALYSIS.md
+decision_title: DPO Readiness Review v1.3.3
+decision_report: reports/training/DPO_READINESS_REVIEW_V1_3_3.md
+adapter_run_type: v1_3_3_dpo_smoke
+exact_eval_suite_id: lv7_smoke_v1_3_3
+holdout_eval_suite_id: lv7_holdout_paraphrase_v0_v1_3_3
+blind_holdout_eval_suite_id: lv7_blind_holdout_v1_3
+blind_probe_eval_suite_id: lv7_dpo_blind_probes_v1_3
+accepted_adapter_path: models/adapters/lv7_sft_smoke_v1_0_5/
+blocked_adapter_path: models/adapters/lv7_dpo_smoke_v1_2_4/
+frozen_sft_adapter_path: models/adapters/lv7_sft_smoke_v1_0_5/
+frozen_sft_blind_holdout_results: reports/training/v1_3_sft_blind_holdout_results.jsonl
+frozen_sft_blind_probe_results: reports/training/v1_3_sft_blind_probe_results.jsonl
+frozen_dpo_adapter_path: models/adapters/lv7_dpo_smoke_v1_2_4/
+frozen_dpo_blind_holdout_results: reports/training/v1_3_dpo_blind_holdout_results.jsonl
+frozen_dpo_blind_probe_results: reports/training/v1_3_dpo_blind_probe_results.jsonl
+notes:
+  - run staged execution only: preflight, prepare_data, train, eval_adapter
+  - do not use full for v1.3.3
+  - paraphrase_v0 remains a development set
+  - blind_v1_3 remains the current blind evidence layer
+  - no scorer changes, no evals/run_eval.py changes, and no replay-format changes

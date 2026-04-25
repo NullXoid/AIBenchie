@@ -1,0 +1,1867 @@
+{
+  "created_at": "2026-04-21T00:45:00+00:00",
+  "schema_versions_present": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+  ],
+  "total_records": 226,
+  "batch_001R": {
+    "sft_count": 15,
+    "dpo_count": 15,
+    "total": 30
+  },
+  "batch_002": {
+    "sft_count": 15,
+    "dpo_count": 15,
+    "total": 30
+  },
+  "batch_003": {
+    "sft_count": 25,
+    "dpo_count": 25,
+    "total": 50
+  },
+  "batch_004": {
+    "sft_count": 33,
+    "dpo_count": 0,
+    "total": 33
+  },
+  "batch_005": {
+    "sft_count": 29,
+    "dpo_count": 0,
+    "total": 29
+  },
+  "batch_006": {
+    "sft_count": 19,
+    "dpo_count": 0,
+    "total": 19
+  },
+  "batch_007": {
+    "repair_sft_count": 24,
+    "retention_sft_count": 11,
+    "sft_count": 35,
+    "dpo_count": 0,
+    "total": 35
+  },
+  "prompt_similarity": {
+    "exact_match_count": 0,
+    "exact_matches": [],
+    "near_duplicate_threshold": 0.88,
+    "near_duplicate_count": 0,
+    "near_duplicates": []
+  },
+  "all_valid": true,
+  "validation_records": [
+    {
+      "id": "sft_gs_001_danger_shortcut_001_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_002_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_003_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_004_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_005_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_001_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_002_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_003_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_004_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_005_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_001_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_002_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_003_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_004_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_005_001R",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_001_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_002_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_003_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_004_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_005_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_001_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_002_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_003_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_004_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_005_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_001_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_002_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_003_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_004_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_005_001R",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_001_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_002_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_003_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_004_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_005_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_001_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_002_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_003_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_004_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_005_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_001_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_002_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_003_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_004_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_005_002",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_006_privilege_escalation_001_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_006_privilege_escalation_002_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_006_privilege_escalation_003_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_006_privilege_escalation_004_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_006_privilege_escalation_005_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_008_audit_evasion_001_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_008_audit_evasion_002_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_008_audit_evasion_003_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_008_audit_evasion_004_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_008_audit_evasion_005_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_015_mape_recovery_001_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_015_mape_recovery_002_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_015_mape_recovery_003_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_015_mape_recovery_004_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_015_mape_recovery_005_002",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_001_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_002_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_003_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_004_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_005_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_001_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_002_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_003_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_004_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_005_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_001_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_002_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_003_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_004_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_005_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_001_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_002_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_003_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_004_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_005_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_001_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_002_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_003_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_004_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_005_003",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_021_low_risk_readonly_001_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_021_low_risk_readonly_002_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_021_low_risk_readonly_003_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_021_low_risk_readonly_004_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_021_low_risk_readonly_005_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_022_safe_test_run_001_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_022_safe_test_run_002_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_022_safe_test_run_003_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_022_safe_test_run_004_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_022_safe_test_run_005_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_023_simple_file_lookup_001_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_023_simple_file_lookup_002_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_023_simple_file_lookup_003_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_023_simple_file_lookup_004_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_023_simple_file_lookup_005_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_024_memory_read_summary_001_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_024_memory_read_summary_002_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_024_memory_read_summary_003_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_024_memory_read_summary_004_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_024_memory_read_summary_005_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_025_model_invoke_safe_001_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_025_model_invoke_safe_002_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_025_model_invoke_safe_003_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_025_model_invoke_safe_004_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "dpo_gs_025_model_invoke_safe_005_003",
+      "record_type": "dpo_pair",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_001_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_002_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_003_004",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.3",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_002_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_003_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_004_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_002_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_003_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_004_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_002_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_003_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_004_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_002_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_003_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_004_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_002_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_003_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_004_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_002_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_003_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_004_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_retention_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_retention_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_retention_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_retention_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_retention_001_005",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_002_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_003_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_004_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_005_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_002_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_003_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_004_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_005_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_retention_001_006",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_holdout_001_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_holdout_001_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_holdout_001_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_holdout_003_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_holdout_003_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_holdout_003_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_holdout_003_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_holdout_003_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_holdout_003_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_holdout_002_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_holdout_002_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_holdout_002_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_holdout_003_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_holdout_003_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_holdout_003_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_holdout_001_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_holdout_001_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_holdout_001_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_holdout_003_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_holdout_003_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_holdout_003_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_holdout_003_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_holdout_003_002_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_holdout_003_003_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_008_audit_evasion_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_008_audit_evasion",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_001_danger_shortcut",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_021_low_risk_readonly_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_015_mape_recovery_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_015_mape_recovery",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_024_memory_read_summary_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_024_memory_read_summary",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_025_model_invoke_safe_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_006_privilege_escalation_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_006_privilege_escalation",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_022_safe_test_run_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_022_safe_test_run",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "id": "sft_gs_023_simple_file_lookup_retention_001_007",
+      "record_type": "sft_trajectory",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "schema_version": "1.6",
+      "valid": true,
+      "errors": []
+    }
+  ]
+}

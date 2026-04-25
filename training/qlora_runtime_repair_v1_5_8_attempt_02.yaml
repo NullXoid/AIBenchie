@@ -1,0 +1,63 @@
+stage: sft_only
+repo_wsl_path: /mnt/c/Users/kasom/projects/Lv7
+wsl_distro: Ubuntu-24.04
+venv_path: ~/.venvs/lv7-sft
+hf_home: ~/.cache/huggingface
+transformers_cache: ~/.cache/huggingface/transformers
+dataset: data/runtime_repair_v1_5_8_attempt_02/sft_messages.jsonl
+prepared_dataset: data/runtime_repair_v1_5_8_attempt_02/sft_train_ready.jsonl
+dpo_dataset_unused: data/runtime_repair_v1_5_8_attempt_02/dpo_pairs_unused.jsonl
+base_model: Qwen/Qwen2.5-1.5B-Instruct
+quantization: 4bit_nf4
+save_adapter_only: true
+output_dir: models/adapters/lv7_sft_runtime_repair_v1_5_8_attempt_02/
+plan_report: reports/runtime/V1_5_8_REPAIR_ATTEMPT_02_PLAN.md
+qwen_base_eval_outputs: reports/training/qwen_base_eval_outputs.jsonl
+qwen_base_eval_results: reports/training/qwen_base_eval_results.jsonl
+comparison_runs:
+- label: v0.5 SFT smoke
+  results: reports/training/sft_smoke_eval_results.jsonl
+- label: v0.6 SFT patch
+  results: reports/training/v0_6_sft_eval_results.jsonl
+- label: v0.7 SFT patch
+  results: reports/training/v0_7_sft_eval_results.jsonl
+- label: v0.8 SFT patch
+  results: reports/training/v0_8_sft_eval_results.jsonl
+- label: v1.0 paraphrase SFT patch
+  results: reports/training/v1_0_exact_eval_results.jsonl
+- label: v1.0.2 token-targeted paraphrase SFT patch
+  results: reports/training/v1_0_2_exact_eval_results.jsonl
+- label: v1.0.3 ambiguity mode-stability micro patch
+  results: reports/training/v1_0_3_exact_eval_results.jsonl
+- label: v1.0.5 tiny lexical-retention SFT patch
+  results: reports/training/v1_0_5_exact_eval_results.jsonl
+current_label: v1.5.8 targeted runtime SFT repair attempt 02
+analysis_title: V1.5.8 Targeted Runtime SFT Repair Attempt 02
+run_config: reports/training/v1_5_8_attempt_02_sft_run_config.json
+train_log: reports/training/v1_5_8_attempt_02_sft_train_log.jsonl
+adapter_eval_outputs: reports/training/v1_5_8_attempt_02_exact_eval_outputs.jsonl
+adapter_eval_results: reports/training/v1_5_8_attempt_02_exact_eval_results.jsonl
+analysis_report: reports/training/V1_5_8_ATTEMPT_02_SFT_ANALYSIS.md
+adapter_run_type: v1_5_8_targeted_runtime_sft_repair_attempt_02
+max_steps: 120
+learning_rate: 5.0e-05
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+max_seq_length: 1024
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+target_modules:
+- q_proj
+- k_proj
+- v_proj
+- o_proj
+- gate_proj
+- up_proj
+- down_proj
+eval_suite_id: lv7_smoke_v1_2
+eval_prompt_mode: raw
+min_vram_gb: 16
+seed: 150802
+data_seed: 150802
+starting_adapter: models/adapters/lv7_sft_runtime_repair_v1_5_1/

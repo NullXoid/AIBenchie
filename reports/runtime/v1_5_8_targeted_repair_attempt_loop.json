@@ -1,0 +1,55 @@
+{
+  "milestone": "LV7 v1.5.8 targeted runtime repair attempt loop",
+  "status": "V1_5_8_TARGETED_REPAIR_COMPLETE",
+  "candidate_checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "accepted_checkpoint_boundary": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "max_attempts_authorized": 10,
+  "completed_attempts": [
+    {
+      "attempt": 6,
+      "repair_surface": "focused SFT",
+      "result": "6/10 runtime scenarios passed",
+      "next_action": "diagnose remaining shared-contract, model-behavior, and fallback failures"
+    },
+    {
+      "attempt": 7,
+      "repair_surface": "chat-template repair",
+      "result": "6/10 runtime scenarios passed",
+      "next_action": "move to focused SFT because template-only routing was insufficient"
+    },
+    {
+      "attempt": 8,
+      "repair_surface": "focused SFT plus test-only fallback capture normalization",
+      "result": "6/10 before harness normalization; then model-only failures remained",
+      "next_action": "target exact string-contract misses"
+    },
+    {
+      "attempt": 9,
+      "repair_surface": "chat-template exact string-contract repair",
+      "result": "7/10 runtime scenarios passed",
+      "next_action": "run final targeted SFT for the three remaining text-contract failures"
+    },
+    {
+      "attempt": 10,
+      "repair_surface": "final targeted SFT",
+      "result": "10/10 runtime scenarios passed",
+      "next_action": "stop repair loop"
+    }
+  ],
+  "final_candidate_runtime_status": "V1_5_4_CANDIDATE_RUNTIME_PASSED",
+  "final_runtime_record_count": 10,
+  "final_pass_count": 10,
+  "final_fail_count": 0,
+  "verification": {
+    "wrapper_live_package_generation": "passed",
+    "candidate_runtime_analyzer": "V1_5_4_CANDIDATE_RUNTIME_PASSED",
+    "lv7_pytest": "305 passed",
+    "backend_alias_tests": "7 passed"
+  },
+  "notes": [
+    "The repair loop stopped after attempt 10 because the candidate runtime package passed all ten pinned scenarios.",
+    "The fallback scenario passes with gate_decision=approved and pass2_state=cancelled_fallback.",
+    "DPO remains parked and evidence-only adapters remain out of bounds."
+  ]
+}

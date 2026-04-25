@@ -1,0 +1,52 @@
+{
+    "alias_model_id": "lv7_sft_smoke_v1_0_5:qwen2.5-1.5b-instruct",
+    "backend_anchor_commit": "0da516f332fc9689798cdcba19053f3104c8199f",
+    "backend_anchor_tag": "v0.2-nullxoid-backend-l7-ready",
+    "backend_commit": "1b990260e10eaaf34550f4c13abfb92f66073d68",
+    "backend_commit_policy": "actual_execution_strictness",
+    "backend_tag": "v0.2-nullxoid-backend-l7-ready",
+    "desktop_commit": "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+    "execution_finished_at": "2026-04-22T21:08:50.377Z",
+    "execution_started_at": "2026-04-22T21:07:39.813Z",
+    "model_adapter_path": "models/adapters/lv7_sft_smoke_v1_0_5/",
+    "prompt_sha256": {
+        "ambiguous_goal_runtime_001": "f9239fcc9edebafbcdc1596f90e66d30be999dfd17761f776838ba9f29dbe4fc",
+        "approved_recovery_runtime_001": "9a7436663cf8f6274be0e0189fc1b8ec80dced72696350e408823165a4b7a5fb",
+        "audit_evasion_runtime_001": "d748e6451d6164c913b89e39617235e0357a18409e5575d0cb96db1e1fd13701",
+        "cancel_timeout_fallback_runtime_001": "f75f5c645a12cd621693a9b8dfbdfbfc36c83e99d00065471425eb758fb494c4",
+        "hidden_persistence_pressure_runtime_001": "09b9761e74cb1d2273c32159f792fb429a846a60e2df589e743014ffa37879e4",
+        "low_risk_readonly_filesystem_runtime_001": "4380efb68815ddc04505b038afcddc6b6425edceb476723dc8964ff5d426c5e4",
+        "privilege_escalation_runtime_001": "f4a8e99d30fa02cefc6e0dddd818715bfdf879fe062900d1454b9f780a4cf7f0",
+        "safe_test_run_runtime_001": "8712a81589e6d533b0bc095d6b29202cb297fb7d3671e2d4d9d904d6bc7dc16c",
+        "shutdown_conflict_runtime_001": "7af7c621d5a9bf6a17ececb801b0b7247ba9d7f18af25f7269182c64fa474668",
+        "unsafe_shortcut_runtime_001": "caef14349a1c3a16b95895ea1261ef69cc43b29da0ae8a57a8c2136c3b98a873"
+    },
+    "release_tag": "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+    "scenario_count": 10,
+    "scenario_ids": [
+        "ambiguous_goal_runtime_001",
+        "unsafe_shortcut_runtime_001",
+        "shutdown_conflict_runtime_001",
+        "audit_evasion_runtime_001",
+        "privilege_escalation_runtime_001",
+        "low_risk_readonly_filesystem_runtime_001",
+        "safe_test_run_runtime_001",
+        "approved_recovery_runtime_001",
+        "hidden_persistence_pressure_runtime_001",
+        "cancel_timeout_fallback_runtime_001"
+    ],
+    "scenario_sha256": {
+        "ambiguous_goal_runtime_001": "e02f4846a2685c67d59a5fd6fbb797db9d74cf7aae320cc4d9f0c2a8c8844ef0",
+        "approved_recovery_runtime_001": "03d219ad5803cb4167bc936772757eac5c84e335c0bcf90581f9d8c2dd80c521",
+        "audit_evasion_runtime_001": "e414c3ab567712ace96847b6744fd514ab09793ae79123bfda4f9bcff93a4c95",
+        "cancel_timeout_fallback_runtime_001": "09117d497631f2bd2097a8e1e54c8f65e2fcd5b243ef42ace46b2d66210b56d5",
+        "hidden_persistence_pressure_runtime_001": "60e6128a6f144a8e0c47e234d6b8d6f6f79a6e39b8e3e53ef7d160294a2426ff",
+        "low_risk_readonly_filesystem_runtime_001": "b5b72aa01173d8e6dc85a627939801a4b39b3a69ed08e2aa087342c322d840f6",
+        "privilege_escalation_runtime_001": "00dea268a35c0b6c638f605b01ac80e2fe21903e71203399e398e34c16fd48e5",
+        "safe_test_run_runtime_001": "1bd9f4675b346237786a1b4db0f87a509fb95beddcf3c7d558d20242ab2fcfca",
+        "shutdown_conflict_runtime_001": "53ef2837527afa9d44aa738aab19da6164f1b945c1a1a88c0803d1bf4f804a0a",
+        "unsafe_shortcut_runtime_001": "5481f773a338fe5bc0c36ea8b6ddfcaa65c2fba0b298456d8556c3c8c263ef2b"
+    },
+    "suite_id": "lv7_runtime_v1_4",
+    "wrapper_artifact": "NullXoid-1.0.0-rc2-windows-x64"
+}

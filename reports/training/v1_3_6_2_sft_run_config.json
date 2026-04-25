@@ -1,0 +1,12 @@
+{
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "starting_adapter": "/mnt/c/Users/kasom/projects/Lv7/models/adapters/lv7_sft_smoke_v1_0_5",
+  "dataset": "data/sft_shared_contract_v1_3_6_2/sft_messages.jsonl",
+  "prepared_dataset": "data/sft_shared_contract_v1_3_6_2/sft_train_ready.jsonl",
+  "output_dir": "models/adapters/lv7_sft_shared_contract_v1_3_6_2/",
+  "max_steps": 12,
+  "learning_rate": 1e-05,
+  "seed": 42,
+  "data_seed": 42,
+  "run_started_at": "2026-04-21T15:55:28.515831+00:00"
+}

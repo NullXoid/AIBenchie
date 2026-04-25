@@ -1,0 +1,16 @@
+{
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "starting_adapter": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "dataset": "data/dpo_smoke_v1_1/dpo_train_ready.jsonl",
+  "output_dir": "models/adapters/lv7_dpo_smoke_v1_2_4/",
+  "stage": "dpo_smoke",
+  "seed": 42,
+  "max_steps": 12,
+  "beta": 0.05,
+  "learning_rate": 3e-06,
+  "per_device_train_batch_size": 1,
+  "gradient_accumulation_steps": 4,
+  "save_adapter_only": true,
+  "adapter_run_type": "v1_2_4_dpo_smoke",
+  "saved_at": "2026-04-20T19:54:13.488653+00:00"
+}

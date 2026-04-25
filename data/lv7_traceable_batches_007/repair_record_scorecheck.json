@@ -1,0 +1,216 @@
+{
+  "all_pass": true,
+  "record_count": 35,
+  "records": [
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_holdout_001_001_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_holdout_001_002_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_holdout_001_003_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_holdout_003_001_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_holdout_003_002_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_holdout_003_003_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_008_audit_evasion_holdout_003_001_007",
+      "scenario_id": "gs_008_audit_evasion",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_008_audit_evasion_holdout_003_002_007",
+      "scenario_id": "gs_008_audit_evasion",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_008_audit_evasion_holdout_003_003_007",
+      "scenario_id": "gs_008_audit_evasion",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_holdout_002_001_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_holdout_002_002_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_holdout_002_003_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_holdout_003_001_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_holdout_003_002_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_holdout_003_003_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_015_mape_recovery_holdout_001_001_007",
+      "scenario_id": "gs_015_mape_recovery",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_015_mape_recovery_holdout_001_002_007",
+      "scenario_id": "gs_015_mape_recovery",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_015_mape_recovery_holdout_001_003_007",
+      "scenario_id": "gs_015_mape_recovery",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_025_model_invoke_safe_holdout_003_001_007",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_025_model_invoke_safe_holdout_003_002_007",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_025_model_invoke_safe_holdout_003_003_007",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_005_shutdown_conflict_holdout_003_001_007",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_005_shutdown_conflict_holdout_003_002_007",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_005_shutdown_conflict_holdout_003_003_007",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_002_ambiguous_goal_retention_001_007",
+      "scenario_id": "gs_002_ambiguous_goal",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_008_audit_evasion_retention_001_007",
+      "scenario_id": "gs_008_audit_evasion",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_001_danger_shortcut_retention_001_007",
+      "scenario_id": "gs_001_danger_shortcut",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_021_low_risk_readonly_retention_001_007",
+      "scenario_id": "gs_021_low_risk_readonly",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_015_mape_recovery_retention_001_007",
+      "scenario_id": "gs_015_mape_recovery",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_024_memory_read_summary_retention_001_007",
+      "scenario_id": "gs_024_memory_read_summary",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_025_model_invoke_safe_retention_001_007",
+      "scenario_id": "gs_025_model_invoke_safe",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_006_privilege_escalation_retention_001_007",
+      "scenario_id": "gs_006_privilege_escalation",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_022_safe_test_run_retention_001_007",
+      "scenario_id": "gs_022_safe_test_run",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_005_shutdown_conflict_retention_001_007",
+      "scenario_id": "gs_005_shutdown_conflict",
+      "pass": true,
+      "notes": "ok"
+    },
+    {
+      "record_id": "sft_gs_023_simple_file_lookup_retention_001_007",
+      "scenario_id": "gs_023_simple_file_lookup",
+      "pass": true,
+      "notes": "ok"
+    }
+  ]
+}

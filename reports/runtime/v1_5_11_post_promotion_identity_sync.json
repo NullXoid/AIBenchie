@@ -1,0 +1,146 @@
+{
+  "milestone": "LV7 v1.5.11",
+  "status": "V1_5_11_IDENTITY_SYNC_COMPLETE",
+  "current_accepted_runtime_checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+  "current_accepted_runtime_alias_model_id": "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+  "previous_accepted_runtime_checkpoint": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "previous_accepted_runtime_alias_model_id": "lv7_sft_smoke_v1_0_5:qwen2.5-1.5b-instruct",
+  "accepted_base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "wrapper_artifact": "NullXoid-1.0.0-rc2-windows-x64",
+  "release_tag": "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+  "desktop_commit": "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+  "backend_tag": "v0.2-nullxoid-backend-l7-ready",
+  "backend_commit": "1b990260e10eaaf34550f4c13abfb92f66073d68",
+  "backend_commit_policy": "actual_execution_strictness",
+  "backend_anchor_commit": "0da516f332fc9689798cdcba19053f3104c8199f",
+  "evidence_only_sft_adapters": [
+    "models/adapters/lv7_sft_shared_contract_v1_3_6/",
+    "models/adapters/lv7_sft_shared_contract_v1_3_6_2/"
+  ],
+  "parked_dpo_adapters": [
+    "models/adapters/lv7_dpo_smoke_v1_2_4/",
+    "models/adapters/lv7_dpo_smoke_v1_3_3/"
+  ],
+  "source_artifact_paths": {
+    "v1_5_10_decision_report": "reports/runtime/V1_5_10_NEXT_STEP_DECISION.md",
+    "v1_5_10_json_report": "reports/runtime/v1_5_10_accepted_runtime_repair_promotion.json",
+    "handoff_report": "C:\\Users\\kasom\\projects\\AiAssistant\\reports\\runtime\\LV7_RUNTIME_OUTPUT_PACKAGE_HANDOFF.md",
+    "backend_alias_provider": "C:\\Users\\kasom\\projects\\Felnx\\NullXoid\\.NullXoid\\backend\\providers\\lv7_alias.py",
+    "backend_model_registry": "C:\\Users\\kasom\\projects\\Felnx\\NullXoid\\.NullXoid\\system\\model_registry.json"
+  },
+  "audit_rows": [
+    [
+      "v1.5.10 decision",
+      "V1_5_10_PROMOTION_COMPLETE",
+      "V1_5_10_PROMOTION_COMPLETE",
+      "pass"
+    ],
+    [
+      "v1.5.10 JSON status",
+      "V1_5_10_PROMOTION_COMPLETE",
+      "V1_5_10_PROMOTION_COMPLETE",
+      "pass"
+    ],
+    [
+      "promotion complete",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "promoted checkpoint",
+      "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+      "pass"
+    ],
+    [
+      "promoted alias",
+      "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+      "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+      "pass"
+    ],
+    [
+      "promoted base model",
+      "Qwen/Qwen2.5-1.5B-Instruct",
+      "Qwen/Qwen2.5-1.5B-Instruct",
+      "pass"
+    ],
+    [
+      "previous accepted checkpoint preserved",
+      "models/adapters/lv7_sft_smoke_v1_0_5/",
+      "models/adapters/lv7_sft_smoke_v1_0_5/",
+      "pass"
+    ],
+    [
+      "backend accepted alias constant",
+      "ACCEPTED_ALIAS_MODEL_ID = \"lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct\"",
+      "present",
+      "pass"
+    ],
+    [
+      "backend previous alias constant",
+      "PREVIOUS_ACCEPTED_ALIAS_MODEL_ID = \"lv7_sft_smoke_v1_0_5:qwen2.5-1.5b-instruct\"",
+      "present",
+      "pass"
+    ],
+    [
+      "backend accepted adapter constant",
+      "ACCEPTED_ADAPTER_PATH = \"models/adapters/lv7_sft_runtime_repair_v1_5_1/\"",
+      "present",
+      "pass"
+    ],
+    [
+      "backend previous adapter constant",
+      "PREVIOUS_ACCEPTED_ADAPTER_PATH = \"models/adapters/lv7_sft_smoke_v1_0_5/\"",
+      "present",
+      "pass"
+    ],
+    [
+      "backend default alias points to accepted",
+      "ALIAS_MODEL_ID = ACCEPTED_ALIAS_MODEL_ID",
+      "present",
+      "pass"
+    ],
+    [
+      "model registry contains promoted alias",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "model registry retains previous alias",
+      "True",
+      "True",
+      "pass"
+    ],
+    [
+      "handoff active accepted checkpoint",
+      "accepted runtime checkpoint: `models/adapters/lv7_sft_runtime_repair_v1_5_1/`",
+      "present",
+      "pass"
+    ],
+    [
+      "handoff previous checkpoint historical",
+      "previous accepted checkpoint retained as historical evidence: `models/adapters/lv7_sft_smoke_v1_0_5/`",
+      "present",
+      "pass"
+    ],
+    [
+      "handoff promoted alias",
+      "alias model id: `lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct`",
+      "present",
+      "pass"
+    ],
+    [
+      "handoff v1.5.10 status",
+      "v1.5.10 promotion is complete",
+      "present",
+      "pass"
+    ]
+  ],
+  "next_recommended_action": "Use the promoted runtime repair checkpoint for future LV7 runtime hardening and release-readiness work.",
+  "notes": [
+    "forward-looking accepted runtime identity now points to the promoted repair adapter",
+    "previous v1.0.5 identity remains available only as historical compatibility evidence"
+  ]
+}

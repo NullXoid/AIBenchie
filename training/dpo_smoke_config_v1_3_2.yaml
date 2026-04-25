@@ -1,0 +1,11 @@
+base_model: Qwen/Qwen2.5-1.5B-Instruct
+starting_adapter: models/adapters/lv7_sft_smoke_v1_0_5/
+dataset: data/dpo_expansion_v1_3_2/dpo_pairs_selected_plus_expansion.jsonl
+output_dir: models/adapters/lv7_dpo_smoke_v1_3_3/
+max_steps: 12
+beta: 0.05
+learning_rate: 3e-6
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 4
+save_adapter_only: true
+seed: 42

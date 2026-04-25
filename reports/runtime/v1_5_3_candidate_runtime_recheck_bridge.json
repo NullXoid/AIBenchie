@@ -1,0 +1,32 @@
+{
+  "milestone": "LV7 v1.5.3",
+  "status": "V1_5_3_RUNTIME_BRIDGE_READY",
+  "accepted_checkpoint": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "candidate_checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+  "candidate_alias_model_id": "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+  "candidate_base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "wrapper_artifact": "NullXoid-1.0.0-rc2-windows-x64",
+  "release_tag": "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+  "desktop_commit": "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+  "backend_tag": "v0.2-nullxoid-backend-l7-ready",
+  "source_artifact_paths": {
+    "v1_5_2_decision_report_path": "reports/runtime/V1_5_2_NEXT_STEP_DECISION.md",
+    "v1_5_2_json_report_path": "reports/runtime/v1_5_2_narrow_runtime_sft_training_run.json",
+    "v1_4_3a_decision_report_path": "reports/runtime/V1_4_3A_NEXT_STEP_DECISION.md",
+    "v1_4_3a_policy_json_path": "reports/runtime/v1_4_3a_backend_identity_policy.json",
+    "current_exact_results_path": "reports/training/v1_5_1_exact_eval_results.jsonl",
+    "baseline_exact_results_path": "reports/training/v1_0_5_exact_eval_results.jsonl",
+    "v1_4_3_analyzer_path": "training/analyze_v1_4_3_runtime_scenario_results.py",
+    "backend_alias_provider_path": "C:/Users/kasom/projects/Felnx/NullXoid/.NullXoid/backend/providers/lv7_alias.py",
+    "backend_ollama_provider_path": "C:/Users/kasom/projects/Felnx/NullXoid/.NullXoid/backend/providers/ollama.py",
+    "backend_alias_test_path": "C:/Users/kasom/projects/Felnx/NullXoid/.NullXoid/backend/tests/test_lv7_model_alias.py"
+  },
+  "current_runtime_gate_accepts_only_accepted_checkpoint": true,
+  "candidate_exact_eval_passed": 11,
+  "baseline_exact_eval_passed": 11,
+  "exact_eval_total": 11,
+  "regression_ids": [],
+  "backend_candidate_alias_present": true,
+  "backend_request_shape_unchanged": true,
+  "next_executable_milestone": "Wrapper candidate runtime output package rerun for models/adapters/lv7_sft_runtime_repair_v1_5_1/"
+}

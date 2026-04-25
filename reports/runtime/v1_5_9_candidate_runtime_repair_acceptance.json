@@ -1,0 +1,34 @@
+{
+  "milestone": "LV7 v1.5.9",
+  "status": "V1_5_9_CANDIDATE_ACCEPTED_FOR_PROMOTION",
+  "accepted_checkpoint": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "candidate_checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+  "candidate_alias_model_id": "lv7_sft_runtime_repair_v1_5_1:qwen2.5-1.5b-instruct",
+  "candidate_base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "wrapper_artifact": "NullXoid-1.0.0-rc2-windows-x64",
+  "release_tag": "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+  "desktop_commit": "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+  "backend_tag": "v0.2-nullxoid-backend-l7-ready",
+  "backend_commit": "1b990260e10eaaf34550f4c13abfb92f66073d68",
+  "backend_commit_policy": "actual_execution_strictness",
+  "backend_anchor_commit": "0da516f332fc9689798cdcba19053f3104c8199f",
+  "source_artifact_paths": {
+    "runtime_outputs": "reports/runtime/v1_5_runtime_outputs.jsonl",
+    "runtime_execution_manifest": "reports/runtime/v1_5_runtime_execution_manifest.json",
+    "suite_manifest_json": "reports/runtime/v1_4_2_runtime_suite_manifest.json",
+    "v1_5_4_decision_report": "reports/runtime/V1_5_4_NEXT_STEP_DECISION.md",
+    "v1_5_4_json_report": "reports/runtime/v1_5_4_candidate_runtime_results_ingestion.json",
+    "v1_5_5_decision_report": "reports/runtime/V1_5_5_NEXT_STEP_DECISION.md",
+    "v1_5_5_json_report": "reports/runtime/v1_5_5_candidate_runtime_failure_diagnosis.json",
+    "v1_5_8_repair_loop_json": "reports/runtime/v1_5_8_targeted_repair_attempt_loop.json"
+  },
+  "trusted_record_count": 10,
+  "pass_count": 10,
+  "fail_count": 0,
+  "promotion_recommended": true,
+  "promoted_by_this_milestone": false,
+  "next_executable_milestone": "LV7 v1.5.10 - Accepted Runtime Repair Promotion",
+  "notes": [
+    "candidate runtime repair evidence is complete and promotion-ready"
+  ]
+}

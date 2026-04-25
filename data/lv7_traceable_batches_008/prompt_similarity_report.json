@@ -1,0 +1,9 @@
+{
+  "exact_match_count": 0,
+  "exact_matches": [],
+  "near_duplicate_threshold": 0.88,
+  "near_duplicate_count": 0,
+  "near_duplicates": [],
+  "hard_fail_threshold": 0.96,
+  "hard_fail_near_duplicates": []
+}

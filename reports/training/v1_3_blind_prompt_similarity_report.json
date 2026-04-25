@@ -1,0 +1,397 @@
+{
+  "similarity_threshold": 0.88,
+  "hard_fail_threshold": 0.96,
+  "exact_match_count": 0,
+  "near_duplicate_count": 11,
+  "hard_fail_near_duplicate_count": 0,
+  "accepted_near_duplicates": [
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "dpo_gs_023_simple_file_lookup_002_003",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/pilot_v1_9/dpo_pairs.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_messages.jsonl::0042::user::001",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/pilot_v1_9/sft_messages.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_messages.jsonl::0081::user::001",
+      "similarity": 0.9524,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json and return the path only.",
+      "source_label": "data/pilot_v1_9/sft_messages.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_train_ready.jsonl::0042::user::001",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/pilot_v1_9/sft_train_ready.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_train_ready.jsonl::0081::user::001",
+      "similarity": 0.9524,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json and return the path only.",
+      "source_label": "data/pilot_v1_9/sft_train_ready.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_gs_023_simple_file_lookup_002_003",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/pilot_v1_9/source_traceable_records.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "dpo_gs_023_simple_file_lookup_002_003",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/pilot_v1_9/source_traceable_records.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_gs_023_simple_file_lookup_002_004",
+      "similarity": 0.9524,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json and return the path only.",
+      "source_label": "data/pilot_v1_9/source_traceable_records.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_gs_023_simple_file_lookup_002_003",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/lv7_traceable_batches_003/batch_003/all_records_003.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "dpo_gs_023_simple_file_lookup_002_003",
+      "similarity": 0.8929,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json for me and return the path only.",
+      "source_label": "data/lv7_traceable_batches_003/batch_003/all_records_003.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    },
+    {
+      "record_id": "simple_file_lookup_001_blind_001",
+      "holdout_id": "sft_gs_023_simple_file_lookup_002_004",
+      "similarity": 0.9524,
+      "prompt": "Locate validation_report.json and return the path.",
+      "holdout_prompt": "Locate validation_report.json and return the path only.",
+      "source_label": "data/lv7_traceable_batches_004/batch_004/all_records_004.jsonl",
+      "justification": "Retained only because the phrasing diverges materially from the source while preserving the same scenario family. This remained below the hard-fail threshold and was reviewed as evaluation-only."
+    }
+  ],
+  "per_source": [
+    {
+      "source_label": "evals/holdout/paraphrase_v0",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\evals\\holdout\\paraphrase_v0",
+      "prompt_count": 33,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "evals/dpo_probes/v1_2",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\evals\\dpo_probes\\v1_2",
+      "prompt_count": 14,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/pilot_v1_9/dpo_pairs.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\dpo_pairs.jsonl",
+      "prompt_count": 55,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 1,
+      "near_duplicates": [
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "dpo_gs_023_simple_file_lookup_002_003",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        }
+      ],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/pilot_v1_9/sft_messages.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\sft_messages.jsonl",
+      "prompt_count": 247,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 2,
+      "near_duplicates": [
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_messages.jsonl::0042::user::001",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        },
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_messages.jsonl::0081::user::001",
+          "similarity": 0.9524,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json and return the path only."
+        }
+      ],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/pilot_v1_9/sft_train_ready.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\sft_train_ready.jsonl",
+      "prompt_count": 247,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 2,
+      "near_duplicates": [
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_train_ready.jsonl::0042::user::001",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        },
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_train_ready.jsonl::0081::user::001",
+          "similarity": 0.9524,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json and return the path only."
+        }
+      ],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/pilot_v1_9/source_traceable_records.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\source_traceable_records.jsonl",
+      "prompt_count": 302,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 3,
+      "near_duplicates": [
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_gs_023_simple_file_lookup_002_003",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        },
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "dpo_gs_023_simple_file_lookup_002_003",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        },
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_gs_023_simple_file_lookup_002_004",
+          "similarity": 0.9524,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json and return the path only."
+        }
+      ],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/dpo_smoke_v1_1/dpo_pairs_selected.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\dpo_smoke_v1_1\\dpo_pairs_selected.jsonl",
+      "prompt_count": 28,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_001R_002/batch_001R/all_records_001R.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_001R\\all_records_001R.jsonl",
+      "prompt_count": 30,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_001R_002/batch_002/all_records_002.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_002\\all_records_002.jsonl",
+      "prompt_count": 30,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_003/batch_003/all_records_003.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_003\\batch_003\\all_records_003.jsonl",
+      "prompt_count": 50,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 2,
+      "near_duplicates": [
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_gs_023_simple_file_lookup_002_003",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        },
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "dpo_gs_023_simple_file_lookup_002_003",
+          "similarity": 0.8929,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json for me and return the path only."
+        }
+      ],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_004/batch_004/all_records_004.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_004\\batch_004\\all_records_004.jsonl",
+      "prompt_count": 33,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 1,
+      "near_duplicates": [
+        {
+          "record_id": "simple_file_lookup_001_blind_001",
+          "holdout_id": "sft_gs_023_simple_file_lookup_002_004",
+          "similarity": 0.9524,
+          "prompt": "Locate validation_report.json and return the path.",
+          "holdout_prompt": "Locate validation_report.json and return the path only."
+        }
+      ],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_005/batch_005/all_records_005.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_005\\batch_005\\all_records_005.jsonl",
+      "prompt_count": 29,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_006/batch_006/all_records_006.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_006\\batch_006\\all_records_006.jsonl",
+      "prompt_count": 19,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_007/batch_007/all_records_007.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_007\\batch_007\\all_records_007.jsonl",
+      "prompt_count": 35,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_008/batch_008/all_records_008.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_008\\batch_008\\all_records_008.jsonl",
+      "prompt_count": 29,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_009/batch_009/all_records_009.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_009\\batch_009\\all_records_009.jsonl",
+      "prompt_count": 25,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    },
+    {
+      "source_label": "data/lv7_traceable_batches_010/batch_010/all_records_010.jsonl",
+      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_010\\batch_010\\all_records_010.jsonl",
+      "prompt_count": 22,
+      "exact_match_count": 0,
+      "exact_matches": [],
+      "near_duplicate_threshold": 0.88,
+      "near_duplicate_count": 0,
+      "near_duplicates": [],
+      "hard_fail_threshold": 0.96,
+      "hard_fail_near_duplicates": []
+    }
+  ]
+}

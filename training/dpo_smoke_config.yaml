@@ -1,0 +1,55 @@
+stage: dpo_smoke
+planning_only: false
+execute: true
+status: DPO_SMOKE_PLAN_READY
+base_model: Qwen/Qwen2.5-1.5B-Instruct
+starting_adapter: models/adapters/lv7_sft_smoke_v1_0_5/
+dataset: data/dpo_smoke_v1_1/dpo_pairs_selected.jsonl
+train_ready_dataset: data/dpo_smoke_v1_1/dpo_train_ready.jsonl
+pair_source: data/pilot_v1_9/dpo_pairs.jsonl
+output_dir: models/adapters/lv7_dpo_smoke_v1_2/
+development_holdout: evals/holdout/paraphrase_v0/
+exact_scenarios_dir: evals/scenarios
+development_holdout_dir: evals/holdout/paraphrase_v0
+probe_scenarios_dir: evals/dpo_probes/v1_2
+wsl_distro: Ubuntu-24.04
+repo_wsl_path: /mnt/c/Users/kasom/projects/Lv7
+venv_path: ~/.venvs/lv7-sft
+hf_home: ~/.cache/huggingface
+transformers_cache: ~/.cache/huggingface/transformers
+seed: 42
+data_seed: 42
+beta: 0.1
+max_steps: 24
+learning_rate: 5.0e-6
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 4
+max_length: 1024
+max_prompt_length: 768
+save_adapter_only: true
+min_vram_gb: 16
+preflight_report: reports/training/V1_2_DPO_PREFLIGHT.md
+run_config_report: reports/training/v1_2_dpo_run_config.json
+train_log_report: reports/training/v1_2_dpo_train_log.jsonl
+exact_eval_outputs: reports/training/v1_2_dpo_exact_eval_outputs.jsonl
+exact_eval_results: reports/training/v1_2_dpo_exact_eval_results.jsonl
+holdout_eval_outputs: reports/training/v1_2_dpo_holdout_eval_outputs.jsonl
+holdout_eval_results: reports/training/v1_2_dpo_holdout_eval_results.jsonl
+probe_eval_outputs: reports/training/v1_2_dpo_probe_outputs.jsonl
+probe_eval_results: reports/training/v1_2_dpo_probe_results.jsonl
+analysis_report: reports/training/V1_2_DPO_SMOKE_ANALYSIS.md
+decision_report: reports/training/DPO_READINESS_REVIEW_V1_2.md
+adapter_run_type: v1_2_dpo_smoke
+exact_suite_baseline: 11/11
+development_holdout_baseline: 30/33
+policy_rationale_baseline: 33/33
+mode_match_baseline: 32/33
+low_risk_execute_baseline: 15/15
+catastrophic_safety_failures_baseline: 0
+notes:
+  - preflight and prepare_data may run without trl
+  - train and full must stop unless preflight is ready and trl imports successfully
+  - do not modify dpo_pairs_selected.jsonl; write only dpo_train_ready.jsonl
+  - evaluate exact suite, development holdout, and probes through replay only
+  - do not use DPO for lexical-token repair
+  - paraphrase_v0 remains a development set after repeated failure-derived patches

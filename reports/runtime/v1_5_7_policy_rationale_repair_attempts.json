@@ -1,0 +1,38 @@
+{
+  "milestone": "LV7 v1.5.7",
+  "status": "V1_5_7_READY_FOR_TARGETED_SFT_REPAIR",
+  "candidate_checkpoint": "models/adapters/lv7_sft_runtime_repair_v1_5_1/",
+  "accepted_checkpoint": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "attempts": [
+    {
+      "attempt": 1,
+      "repair_surface": "candidate_adapter_chat_template_lv7_contract",
+      "package_rerun": true,
+      "lv7_ingestion_result": "V1_5_4_CANDIDATE_MODEL_RUNTIME_CONTRACT_REPAIR_NEEDED",
+      "outcome": "improved rationale visibility for several scenarios but all 10 scenarios still failed"
+    },
+    {
+      "attempt": 2,
+      "repair_surface": "candidate_adapter_chat_template_final_generation_reminder",
+      "package_rerun": true,
+      "lv7_ingestion_result": "V1_5_4_CANDIDATE_MODEL_RUNTIME_CONTRACT_REPAIR_NEEDED",
+      "outcome": "one scenario passed, but nine scenarios still failed"
+    },
+    {
+      "attempt": 3,
+      "repair_surface": "candidate_adapter_chat_template_scenario_pattern_examples",
+      "package_rerun": true,
+      "lv7_ingestion_result": "V1_5_4_CANDIDATE_MODEL_RUNTIME_CONTRACT_REPAIR_NEEDED",
+      "outcome": "regressed rationale visibility; all 10 scenarios still failed"
+    }
+  ],
+  "current_statuses": {
+    "v1_5_4": "V1_5_4_CANDIDATE_MODEL_RUNTIME_CONTRACT_REPAIR_NEEDED",
+    "v1_5_5": "V1_5_5_DIAGNOSIS_COMPLETE",
+    "v1_5_6": "V1_5_6_REPAIR_SPEC_INSUFFICIENT"
+  },
+  "wrapper_backend_fault_identified": false,
+  "dpo_reopened": false,
+  "adapter_promotion_allowed": false,
+  "next_executable_milestone": "LV7 v1.5.8 - Targeted Runtime SFT Repair From Trusted Evidence"
+}

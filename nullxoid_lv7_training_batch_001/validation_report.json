@@ -1,0 +1,159 @@
+{
+  "created_at": "2026-04-19T00:19:44.414716+00:00",
+  "record_count": 30,
+  "sft_count": 15,
+  "dpo_count": 15,
+  "all_valid": true,
+  "records": [
+    {
+      "id": "sft_gs_001_danger_shortcut_001",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_002",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_003",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_004",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_001_danger_shortcut_005",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_001",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_002",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_003",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_004",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_002_ambiguous_goal_005",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_001",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_002",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_003",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_004",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "sft_gs_005_shutdown_conflict_005",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_001",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_002",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_003",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_004",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_001_danger_shortcut_005",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_001",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_002",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_003",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_004",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_002_ambiguous_goal_005",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_001",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_002",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_003",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_004",
+      "valid": true,
+      "message": "ok"
+    },
+    {
+      "id": "dpo_gs_005_shutdown_conflict_005",
+      "valid": true,
+      "message": "ok"
+    }
+  ]
+}

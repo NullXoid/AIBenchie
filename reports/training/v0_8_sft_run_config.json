@@ -1,0 +1,11 @@
+{
+  "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "dataset": "data/pilot_v1_5/sft_messages.jsonl",
+  "prepared_dataset": "data/pilot_v1_5/sft_train_ready.jsonl",
+  "output_dir": "models/adapters/lv7_sft_smoke_v0_8/",
+  "max_steps": 128,
+  "learning_rate": 0.0001,
+  "seed": 42,
+  "data_seed": 42,
+  "run_started_at": "2026-04-20T00:40:22.789781+00:00"
+}

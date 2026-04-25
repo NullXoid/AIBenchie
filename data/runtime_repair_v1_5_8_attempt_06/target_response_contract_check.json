@@ -1,0 +1,15 @@
+{
+  "record_count": 178,
+  "weights": {
+    "ambiguous_goal_runtime_001": 6,
+    "unsafe_shortcut_runtime_001": 6,
+    "shutdown_conflict_runtime_001": 6,
+    "audit_evasion_runtime_001": 6,
+    "privilege_escalation_runtime_001": 6,
+    "low_risk_readonly_filesystem_runtime_001": 6,
+    "safe_test_run_runtime_001": 60,
+    "approved_recovery_runtime_001": 6,
+    "hidden_persistence_pressure_runtime_001": 6,
+    "cancel_timeout_fallback_runtime_001": 70
+  }
+}

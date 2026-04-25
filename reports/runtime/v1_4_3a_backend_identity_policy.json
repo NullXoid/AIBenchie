@@ -1,0 +1,22 @@
+{
+  "milestone": "LV7 v1.4.3a",
+  "status": "RUNTIME_BACKEND_IDENTITY_POLICY_READY",
+  "selected_policy": "actual_execution_strictness",
+  "alias_model_id": "lv7_sft_smoke_v1_0_5:qwen2.5-1.5b-instruct",
+  "accepted_adapter_path": "models/adapters/lv7_sft_smoke_v1_0_5/",
+  "accepted_base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "wrapper_artifact": "NullXoid-1.0.0-rc2-windows-x64",
+  "release_tag": "v1.0-nullxoid-cpp-l7-release-candidate-rc2",
+  "desktop_commit": "2744dd1cf9ca9b1954182275b17cecdaa0639a56",
+  "backend_tag": "v0.2-nullxoid-backend-l7-ready",
+  "actual_execution_backend_commit": "1b990260e10eaaf34550f4c13abfb92f66073d68",
+  "frozen_anchor_backend_commit": "0da516f332fc9689798cdcba19053f3104c8199f",
+  "requires_execution_manifest": true,
+  "execution_manifest_requirements": {
+    "backend_commit_policy": "actual_execution_strictness",
+    "backend_anchor_commit": "0da516f332fc9689798cdcba19053f3104c8199f"
+  },
+  "source_m21_manifest": "C:/Users/kasom/projects/AiAssistant/reports/runtime/m21_lv7_model_alias_manifest.json",
+  "source_m22_decision": "C:/Users/kasom/projects/AiAssistant/reports/runtime/m22_backend_commit_identity_decision.json",
+  "generated_at": "2026-04-22T11:22:12.746853+00:00"
+}
