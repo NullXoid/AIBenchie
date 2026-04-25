@@ -17,6 +17,7 @@ from training.release_fabric import (
     validate_publisher_inputs,
     validate_release_manifest,
     validate_release_policy,
+    validate_resource_policy,
     validate_runner_policy,
     validate_workflow_text,
 )
@@ -84,6 +85,45 @@ def test_core_policies_fail_closed():
     assert validate_runner_policy(load_json(POLICIES_ROOT / "runner-policy.json")) == []
     assert validate_actions_policy(load_json(POLICIES_ROOT / "actions-policy.json")) == []
     assert validate_aibenchie_gates(load_json(POLICIES_ROOT / "aibenchie-gates.json")) == []
+    assert validate_resource_policy(load_json(POLICIES_ROOT / "resource-policy.json")) == []
+
+
+def test_resource_policy_requires_bounded_leases_and_mobile_limits():
+    valid = load_json(POLICIES_ROOT / "resource-policy.json")
+    assert validate_resource_policy(valid) == []
+
+    broken = {
+        "deny_unbounded_resources": False,
+        "lease_required_for_heavy_work": False,
+        "default_deny_without_profile": False,
+        "profiles": {
+            "android_unbounded": {
+                "platform": "android",
+                "limits": {
+                    "max_cpu_percent": 250,
+                    "max_memory_mb": 8192,
+                    "max_parallel_jobs": 10,
+                    "max_duration_seconds": 3600,
+                },
+            }
+        },
+        "capability_classes": {
+            "model.inference": {
+                "requires_lease": False,
+                "allowed_profiles": [],
+            }
+        },
+    }
+    errors = validate_resource_policy(broken)
+    assert "deny_unbounded_resources:not_enforced" in errors
+    assert "lease_required_for_heavy_work:not_enforced" in errors
+    assert "default_deny_without_profile:not_enforced" in errors
+    assert "android_unbounded:max_cpu_percent:over_100" in errors
+    assert "android_unbounded:max_parallel_jobs:too_high" in errors
+    assert "android_unbounded:mobile_memory_limit:too_high" in errors
+    assert "android_unbounded:mobile_duration_limit:too_high" in errors
+    assert "model.inference:lease:not_required" in errors
+    assert "model.inference:allowed_profiles:missing" in errors
 
 
 def test_runner_policy_blocks_sensitive_power_on_arbitrary_code_runners():

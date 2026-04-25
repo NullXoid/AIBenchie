@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "deny_unbounded_resources": true,
+  "lease_required_for_heavy_work": true,
+  "default_deny_without_profile": true,
+  "profiles": {
+    "website": {
+      "platform": "website",
+      "description": "Browser/client path. No local heavy work.",
+      "limits": {
+        "max_cpu_percent": 25,
+        "max_memory_mb": 512,
+        "max_parallel_jobs": 1,
+        "max_duration_seconds": 60,
+        "max_network_mb_per_minute": 10
+      }
+    },
+    "website_wrapper": {
+      "platform": "website_wrapper",
+      "description": "Rich local app path with capped local jobs.",
+      "limits": {
+        "max_cpu_percent": 75,
+        "max_memory_mb": 8192,
+        "max_parallel_jobs": 2,
+        "max_duration_seconds": 900,
+        "max_network_mb_per_minute": 200
+      }
+    },
+    "windows": {
+      "platform": "windows",
+      "description": "Desktop local model/tool work with explicit leases.",
+      "limits": {
+        "max_cpu_percent": 80,
+        "max_memory_mb": 8192,
+        "max_parallel_jobs": 2,
+        "max_duration_seconds": 900,
+        "max_network_mb_per_minute": 200
+      }
+    },
+    "android": {
+      "platform": "android",
+      "description": "Mobile-safe work only. Prefer remote or queued work.",
+      "limits": {
+        "max_cpu_percent": 35,
+        "max_memory_mb": 1536,
+        "max_parallel_jobs": 1,
+        "max_duration_seconds": 180,
+        "max_network_mb_per_minute": 25
+      }
+    },
+    "ios": {
+      "platform": "ios",
+      "description": "Conservative mobile-safe work only.",
+      "limits": {
+        "max_cpu_percent": 35,
+        "max_memory_mb": 1536,
+        "max_parallel_jobs": 1,
+        "max_duration_seconds": 180,
+        "max_network_mb_per_minute": 25
+      }
+    },
+    "aibenchie_benchmark": {
+      "platform": "aibenchie",
+      "description": "Explicit benchmark mode with bounded concurrency.",
+      "limits": {
+        "max_cpu_percent": 85,
+        "max_memory_mb": 12288,
+        "max_parallel_jobs": 2,
+        "max_duration_seconds": 1800,
+        "max_network_mb_per_minute": 100
+      }
+    },
+    "lv7_orchestration": {
+      "platform": "lv7",
+      "description": "Agent orchestration is queued and leased to prevent runaway loops.",
+      "limits": {
+        "max_cpu_percent": 75,
+        "max_memory_mb": 8192,
+        "max_parallel_jobs": 1,
+        "max_duration_seconds": 900,
+        "max_network_mb_per_minute": 100
+      }
+    }
+  },
+  "capability_classes": {
+    "model.inference": {
+      "requires_lease": true,
+      "allowed_profiles": ["website_wrapper", "windows", "android", "ios", "lv7_orchestration"]
+    },
+    "model.training": {
+      "requires_lease": true,
+      "allowed_profiles": ["aibenchie_benchmark"]
+    },
+    "benchmark.run": {
+      "requires_lease": true,
+      "allowed_profiles": ["aibenchie_benchmark"]
+    },
+    "media.generation": {
+      "requires_lease": true,
+      "allowed_profiles": ["website_wrapper", "windows"]
+    },
+    "tool.codex": {
+      "requires_lease": true,
+      "allowed_profiles": ["website_wrapper", "windows", "lv7_orchestration"]
+    },
+    "diagnostics.deep": {
+      "requires_lease": true,
+      "allowed_profiles": ["website_wrapper", "windows", "aibenchie_benchmark"]
+    }
+  },
+  "degradation": {
+    "on_denied_lease": "defer_or_route_remote_when_policy_allows",
+    "on_pressure": "reduce_concurrency_then_pause_background_jobs",
+    "on_mobile_battery_low": "deny_heavy_local_work"
+  },
+  "audit": {
+    "log_lease_decisions": true,
+    "redact_payloads": true,
+    "never_log_secrets": true
+  }
+}

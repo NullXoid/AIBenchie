@@ -19,6 +19,8 @@
     "website_auth_cleanup",
     "privacy",
     "e2ee_storage",
+    "resource_management",
+    "ephemeral_secret_handling",
     "prompt_editor_leakage",
     "artifact_sandboxing",
     "ccc_scoping",

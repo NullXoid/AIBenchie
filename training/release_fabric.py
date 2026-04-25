@@ -29,6 +29,7 @@ REQUIRED_POLICY_FILES = [
     "nullbridge-registry.json",
     "privacy-levels.json",
     "release-policy.json",
+    "resource-policy.json",
     "runner-policy.json",
 ]
 
@@ -153,6 +154,39 @@ def validate_aibenchie_gates(policy: dict[str, Any]) -> list[str]:
     for verdict in policy.get("accepted_release_verdicts", []):
         if verdict not in policy.get("verdicts", []):
             errors.append(f"accepted_verdict_unknown:{verdict}")
+    return errors
+
+
+def validate_resource_policy(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if policy.get("deny_unbounded_resources") is not True:
+        errors.append("deny_unbounded_resources:not_enforced")
+    if policy.get("lease_required_for_heavy_work") is not True:
+        errors.append("lease_required_for_heavy_work:not_enforced")
+    if policy.get("default_deny_without_profile") is not True:
+        errors.append("default_deny_without_profile:not_enforced")
+
+    for name, profile in policy.get("profiles", {}).items():
+        limits = profile.get("limits", {})
+        for key in ["max_cpu_percent", "max_memory_mb", "max_parallel_jobs", "max_duration_seconds"]:
+            value = limits.get(key)
+            if not isinstance(value, int) or value <= 0:
+                errors.append(f"{name}:{key}:missing_or_invalid")
+        if limits.get("max_cpu_percent", 101) > 100:
+            errors.append(f"{name}:max_cpu_percent:over_100")
+        if limits.get("max_parallel_jobs", 999) > 4:
+            errors.append(f"{name}:max_parallel_jobs:too_high")
+        if profile.get("platform") in {"android", "ios"}:
+            if limits.get("max_memory_mb", 999999) > 2048:
+                errors.append(f"{name}:mobile_memory_limit:too_high")
+            if limits.get("max_duration_seconds", 999999) > 300:
+                errors.append(f"{name}:mobile_duration_limit:too_high")
+
+    for capability, rule in policy.get("capability_classes", {}).items():
+        if not rule.get("requires_lease"):
+            errors.append(f"{capability}:lease:not_required")
+        if not rule.get("allowed_profiles"):
+            errors.append(f"{capability}:allowed_profiles:missing")
     return errors
 
 
