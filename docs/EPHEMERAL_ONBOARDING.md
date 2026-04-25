@@ -72,3 +72,12 @@ streamlit run streamlit_app.py
 ```
 
 Streamlit Cloud cannot directly reach Ollama on a user's PC. Browser-to-local model testing should later go through a local backend or NullBridge adapter with explicit user approval, not through saved public app secrets.
+
+For command-line local smoke checks, use the public-safe local runner:
+
+```text
+python aibenchie_local.py --list-models
+python aibenchie_local.py --model gemma3:1b --json
+```
+
+The local runner only accepts localhost Ollama URLs. Personal Forgejo URLs, NullBridge service credentials, and private backend settings still belong in ignored local add-ons or one-session inputs.

@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 import json
-import time
 import urllib.error
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 import streamlit as st
+
+from aibenchie.local_ollama import (
+    DEFAULT_OLLAMA_URL,
+    MAX_PROMPT_CHARS,
+    MAX_PREDICT_TOKENS,
+    benchmark_ollama_model,
+    format_model_details,
+    is_allowed_ollama_url,
+    list_ollama_models,
+    model_name,
+)
 
 
 ROOT = Path(__file__).resolve().parent
 POLICIES = ROOT / ".suite" / "policies"
 MASCOT = ROOT / "docs" / "assets" / "aibenchie-mascots.png"
-DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434"
-MAX_PROMPT_CHARS = 500
-MAX_PREDICT_TOKENS = 128
-REQUEST_TIMEOUT_SECONDS = 45
 
 
 def load_json(path: Path) -> dict:
@@ -24,63 +28,6 @@ def load_json(path: Path) -> dict:
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {}
-
-
-def is_allowed_ollama_url(base_url: str) -> bool:
-    parsed = urllib.parse.urlparse(base_url)
-    host = (parsed.hostname or "").lower()
-    return parsed.scheme == "http" and host in {"127.0.0.1", "localhost", "::1"}
-
-
-def ollama_json(base_url: str, path: str, payload: dict | None = None, timeout: int = 5) -> dict:
-    if not is_allowed_ollama_url(base_url):
-        raise ValueError("AIBenchie only probes localhost Ollama from this public app. Run locally for PC model tests.")
-    url = urllib.parse.urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
-    data = None
-    method = "GET"
-    if payload is not None:
-        data = json.dumps(payload).encode("utf-8")
-        method = "POST"
-    request = urllib.request.Request(url, data=data, method=method)
-    request.add_header("Accept", "application/json")
-    if payload is not None:
-        request.add_header("Content-Type", "application/json")
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
-def list_ollama_models(base_url: str = DEFAULT_OLLAMA_URL) -> list[dict]:
-    data = ollama_json(base_url, "/api/tags")
-    models = data.get("models", [])
-    return models if isinstance(models, list) else []
-
-
-def benchmark_ollama_model(base_url: str, model: str, prompt: str) -> dict:
-    prompt = prompt.strip()[:MAX_PROMPT_CHARS]
-    if not model:
-        raise ValueError("Select a model before running a benchmark.")
-    if not prompt:
-        raise ValueError("Enter a short prompt before running a benchmark.")
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-        "options": {
-            "num_predict": MAX_PREDICT_TOKENS,
-        },
-    }
-    started = time.perf_counter()
-    data = ollama_json(base_url, "/api/generate", payload=payload, timeout=REQUEST_TIMEOUT_SECONDS)
-    elapsed = max(time.perf_counter() - started, 0.001)
-    output = str(data.get("response") or "")
-    eval_count = int(data.get("eval_count") or max(len(output.split()), 1))
-    return {
-        "model": model,
-        "elapsed_seconds": round(elapsed, 2),
-        "tokens": eval_count,
-        "tokens_per_second": round(eval_count / elapsed, 2),
-        "response": output,
-    }
 
 
 def count_tests() -> int:
@@ -129,23 +76,11 @@ def render_ollama_panel() -> None:
         st.info("Ollama responded, but no models were listed.")
         return
 
-    model_names = [str(item.get("name") or item.get("model")) for item in models if item.get("name") or item.get("model")]
+    model_names = [model_name(item) for item in models if model_name(item)]
     selected = st.selectbox("Detected models", model_names)
 
     with st.expander("Detected model details", expanded=False):
-        st.dataframe(
-            [
-                {
-                    "model": item.get("name") or item.get("model"),
-                    "family": (item.get("details") or {}).get("family", ""),
-                    "parameters": (item.get("details") or {}).get("parameter_size", ""),
-                    "quantization": (item.get("details") or {}).get("quantization_level", ""),
-                    "size_mb": round(int(item.get("size") or 0) / 1024 / 1024, 1),
-                }
-                for item in models
-            ],
-            use_container_width=True,
-        )
+        st.dataframe(format_model_details(models), use_container_width=True)
 
     prompt = st.text_area(
         "Benchmark prompt",
