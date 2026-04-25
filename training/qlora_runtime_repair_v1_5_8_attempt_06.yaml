@@ -1,5 +1,5 @@
-﻿stage: sft_only
-repo_wsl_path: /mnt/c/Users/kasom/projects/Lv7
+stage: sft_only
+repo_wsl_path: <aibenchie-root>
 wsl_distro: Ubuntu-24.04
 venv_path: ~/.venvs/lv7-sft
 hf_home: ~/.cache/huggingface

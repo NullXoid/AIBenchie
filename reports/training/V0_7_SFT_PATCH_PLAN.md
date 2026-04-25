@@ -16,7 +16,7 @@
 - Host Python: `3.12.3`
 - WSL distro: `Ubuntu-24.04`
 - WSL available: `True`
-- Repo path expected in WSL: `/mnt/c/Users/kasom/projects/Lv7`
+- Repo path expected in WSL: `<aibenchie-root>`
 - Repo reachable in WSL: `True`
 - Venv path: `~/.venvs/lv7-sft`
 - HF cache: `~/.cache/huggingface`

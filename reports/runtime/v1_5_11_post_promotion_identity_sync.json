@@ -24,9 +24,9 @@
   "source_artifact_paths": {
     "v1_5_10_decision_report": "reports/runtime/V1_5_10_NEXT_STEP_DECISION.md",
     "v1_5_10_json_report": "reports/runtime/v1_5_10_accepted_runtime_repair_promotion.json",
-    "handoff_report": "C:\\Users\\kasom\\projects\\AiAssistant\\reports\\runtime\\LV7_RUNTIME_OUTPUT_PACKAGE_HANDOFF.md",
-    "backend_alias_provider": "C:\\Users\\kasom\\projects\\Felnx\\NullXoid\\.NullXoid\\backend\\providers\\lv7_alias.py",
-    "backend_model_registry": "C:\\Users\\kasom\\projects\\Felnx\\NullXoid\\.NullXoid\\system\\model_registry.json"
+    "handoff_report": "<aiassistant-root>/reports/runtime/LV7_RUNTIME_OUTPUT_PACKAGE_HANDOFF.md",
+    "backend_alias_provider": "<wrapper-root>/backend/providers/lv7_alias.py",
+    "backend_model_registry": "<wrapper-root>/system/model_registry.json"
   },
   "audit_rows": [
     [

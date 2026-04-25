@@ -31,9 +31,9 @@
     "v1_5_4_json_report": "reports/runtime/v1_5_4_candidate_runtime_results_ingestion.json",
     "runtime_outputs": "reports/runtime/v1_5_runtime_outputs.jsonl",
     "runtime_execution_manifest": "reports/runtime/v1_5_runtime_execution_manifest.json",
-    "handoff_report": "C:\\Users\\kasom\\projects\\AiAssistant\\reports\\runtime\\LV7_RUNTIME_OUTPUT_PACKAGE_HANDOFF.md",
-    "backend_alias_provider": "C:\\Users\\kasom\\projects\\Felnx\\NullXoid\\.NullXoid\\backend\\providers\\lv7_alias.py",
-    "backend_model_registry": "C:\\Users\\kasom\\projects\\Felnx\\NullXoid\\.NullXoid\\system\\model_registry.json"
+    "handoff_report": "<aiassistant-root>/reports/runtime/LV7_RUNTIME_OUTPUT_PACKAGE_HANDOFF.md",
+    "backend_alias_provider": "<wrapper-root>/backend/providers/lv7_alias.py",
+    "backend_model_registry": "<wrapper-root>/system/model_registry.json"
   },
   "readiness_rows": [
     [

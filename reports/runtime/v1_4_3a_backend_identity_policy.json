@@ -16,7 +16,7 @@
     "backend_commit_policy": "actual_execution_strictness",
     "backend_anchor_commit": "0da516f332fc9689798cdcba19053f3104c8199f"
   },
-  "source_m21_manifest": "C:/Users/kasom/projects/AiAssistant/reports/runtime/m21_lv7_model_alias_manifest.json",
-  "source_m22_decision": "C:/Users/kasom/projects/AiAssistant/reports/runtime/m22_backend_commit_identity_decision.json",
+  "source_m21_manifest": "<aiassistant-root>/reports/runtime/m21_lv7_model_alias_manifest.json",
+  "source_m22_decision": "<aiassistant-root>/reports/runtime/m22_backend_commit_identity_decision.json",
   "generated_at": "2026-04-22T11:22:12.746853+00:00"
 }

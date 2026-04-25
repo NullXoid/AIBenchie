@@ -278,7 +278,7 @@ def probe_windows_wsl(config: dict[str, Any]) -> dict[str, Any]:
     result["status"] = resolve_probe_status(result, min_vram_gb=config["min_vram_gb"])
     if not result["repo_reachable"]:
         result["notes"].append(
-            "The required `/mnt/c/Users/kasom/projects/Lv7` bridge is still missing in WSL, so the smoke run cannot bootstrap from the repo path yet."
+            "The required `<aibenchie-root>` bridge is still missing in WSL, so the smoke run cannot bootstrap from the repo path yet."
         )
     if not result["pip_available"]:
         result["notes"].append(
@@ -1220,7 +1220,7 @@ def ensure_wsl_training_runtime(status: str) -> None:
 def load_config(path: Path) -> dict[str, Any]:
     config = load_yaml(path)
     config.setdefault("wsl_distro", "Ubuntu-24.04")
-    config.setdefault("repo_wsl_path", "/mnt/c/Users/kasom/projects/Lv7")
+    config.setdefault("repo_wsl_path", "<aibenchie-root>")
     config.setdefault("venv_path", "~/.venvs/lv7-sft")
     config.setdefault("hf_home", "~/.cache/huggingface")
     config.setdefault("transformers_cache", "~/.cache/huggingface/transformers")

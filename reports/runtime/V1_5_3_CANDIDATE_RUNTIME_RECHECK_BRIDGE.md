@@ -17,9 +17,9 @@
 - current_exact_results_path: `reports/training/v1_5_1_exact_eval_results.jsonl`
 - baseline_exact_results_path: `reports/training/v1_0_5_exact_eval_results.jsonl`
 - v1_4_3_analyzer_path: `training/analyze_v1_4_3_runtime_scenario_results.py`
-- backend_alias_provider_path: `C:/Users/kasom/projects/Felnx/NullXoid/.NullXoid/backend/providers/lv7_alias.py`
-- backend_ollama_provider_path: `C:/Users/kasom/projects/Felnx/NullXoid/.NullXoid/backend/providers/ollama.py`
-- backend_alias_test_path: `C:/Users/kasom/projects/Felnx/NullXoid/.NullXoid/backend/tests/test_lv7_model_alias.py`
+- backend_alias_provider_path: `<wrapper-root>/backend/providers/lv7_alias.py`
+- backend_ollama_provider_path: `<wrapper-root>/backend/providers/ollama.py`
+- backend_alias_test_path: `<wrapper-root>/backend/tests/test_lv7_model_alias.py`
 
 ## Bridge Summary
 

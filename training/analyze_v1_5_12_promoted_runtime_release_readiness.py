@@ -68,6 +68,14 @@ PREVIOUS_ACCEPTED_RUNTIME_ALIAS_MODEL_ID = "lv7_sft_smoke_v1_0_5:qwen2.5-1.5b-in
 
 def display_path(path: Path) -> str:
     try:
+        return "<aiassistant-root>/" + str(path.relative_to(SIBLING_AIASSISTANT_ROOT)).replace("\\", "/")
+    except ValueError:
+        pass
+    try:
+        return "<wrapper-root>/" + str(path.relative_to(SIBLING_BACKEND_ROOT)).replace("\\", "/")
+    except ValueError:
+        pass
+    try:
         return str(path.relative_to(PROJECT_ROOT)).replace("\\", "/")
     except ValueError:
         return str(path)

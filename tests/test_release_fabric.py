@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import subprocess
 from datetime import datetime, timedelta, timezone
 
 from tests.conftest import ROOT
@@ -25,7 +27,7 @@ def valid_manifest(digest: str = "a" * 64) -> dict:
         "product": "NullXoid",
         "version": "1.4.2",
         "source_commit": "abc1234",
-        "forgejo_repo": "forgejo.internal/EchoLabs/NullXoid",
+        "forgejo_repo": "forgejo.example.invalid/YOUR_ORG/NullXoid",
         "aibenchie_report": "reports/aibenchie/1.4.2/summary.json",
         "aibenchie_verdict": "ship_candidate",
         "artifacts": [{"name": "nullxoid-wrapper.zip", "sha256": digest}],
@@ -55,7 +57,7 @@ def valid_breakglass_grant() -> dict:
     return {
         "grant_type": "break_glass",
         "grant_id": "bg_01HX",
-        "forgejo_repo": "EchoLabs/NullXoid",
+        "forgejo_repo": "YOUR_ORG/NullXoid",
         "source_commit": "abc1234",
         "requested_capability": "release.publish_candidate",
         "target": "forgejo_package_registry",
@@ -63,7 +65,7 @@ def valid_breakglass_grant() -> dict:
         "allowed_until": (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat(),
         "max_duration_minutes": 30,
         "network_profile": "throttled_quarantine",
-        "egress_allowlist": ["forgejo.internal", "nullbridge.internal", "aibenchie.internal"],
+        "egress_allowlist": ["forgejo.example.invalid", "nullbridge.example.invalid", "aibenchie.example.invalid"],
         "forbidden_actions": ["read_user_data", "export_secrets", "publish_unsigned_update"],
         "checkpoint_required": True,
         "aibenchie_event_ref": "reports/aibenchie/breakglass/bg_01HX/summary.json",
@@ -162,3 +164,31 @@ def test_breakglass_requires_hardware_key_scope_quarantine_checkpoint_and_expiry
     assert "checkpoint:required" in errors
     assert "encrypted_forgejo_record:not_encrypted" in errors
     assert "grant:expired" in errors
+
+
+def test_tracked_release_fabric_files_do_not_embed_private_local_settings():
+    tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
+    banned_patterns = [
+        re.compile(r"\b192\.168\.\d{1,3}\.\d{1,3}\b"),
+        re.compile(r"\b10\.0\.2\.2\b"),
+        re.compile("git\\." + "echolabs", re.IGNORECASE),
+        re.compile("echolabs" + "\\.diy", re.IGNORECASE),
+        re.compile(r"\b" + "Echo" + r"Labs\b"),
+        re.compile(r"\b" + "Xaso" + r"moru\b", re.IGNORECASE),
+        re.compile(r"\b" + "ka" + r"som\b", re.IGNORECASE),
+        re.compile("C:" + r"\\Users\\", re.IGNORECASE),
+        re.compile("C:" + r"\\\\Users\\\\", re.IGNORECASE),
+        re.compile("/home/" + "echolabs", re.IGNORECASE),
+    ]
+    scanned_suffixes = {".json", ".yaml", ".yml", ".md", ".py", ".txt", ".toml"}
+    offenders = []
+    for relative in tracked:
+        path = ROOT / relative
+        if path.suffix.lower() not in scanned_suffixes:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for pattern in banned_patterns:
+            if pattern.search(text):
+                offenders.append(relative)
+                break
+    assert offenders == []

@@ -7,7 +7,7 @@
   "sources": [
     {
       "source_label": "evals/holdout/paraphrase_v0",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\evals\\holdout\\paraphrase_v0",
+      "source_file": "<aibenchie-root>\\evals\\holdout\\paraphrase_v0",
       "prompt_count": 33,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -17,7 +17,7 @@
     },
     {
       "source_label": "evals/holdout/blind_v1_3",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\evals\\holdout\\blind_v1_3",
+      "source_file": "<aibenchie-root>\\evals\\holdout\\blind_v1_3",
       "prompt_count": 33,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -27,7 +27,7 @@
     },
     {
       "source_label": "evals/dpo_probes/blind_v1_3",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\evals\\dpo_probes\\blind_v1_3",
+      "source_file": "<aibenchie-root>\\evals\\dpo_probes\\blind_v1_3",
       "prompt_count": 14,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -37,7 +37,7 @@
     },
     {
       "source_label": "evals/dpo_probes/blind_v1_3_contractfix_v1_3_5",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\evals\\dpo_probes\\blind_v1_3_contractfix_v1_3_5",
+      "source_file": "<aibenchie-root>\\evals\\dpo_probes\\blind_v1_3_contractfix_v1_3_5",
       "prompt_count": 14,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -47,7 +47,7 @@
     },
     {
       "source_label": "data/pilot_v1_9/dpo_pairs.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\dpo_pairs.jsonl",
+      "source_file": "<aibenchie-root>\\data\\pilot_v1_9\\dpo_pairs.jsonl",
       "prompt_count": 55,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -57,7 +57,7 @@
     },
     {
       "source_label": "data/pilot_v1_9/sft_messages.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\sft_messages.jsonl",
+      "source_file": "<aibenchie-root>\\data\\pilot_v1_9\\sft_messages.jsonl",
       "prompt_count": 247,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -67,7 +67,7 @@
     },
     {
       "source_label": "data/pilot_v1_9/sft_train_ready.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\sft_train_ready.jsonl",
+      "source_file": "<aibenchie-root>\\data\\pilot_v1_9\\sft_train_ready.jsonl",
       "prompt_count": 247,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -77,7 +77,7 @@
     },
     {
       "source_label": "data/pilot_v1_9/source_traceable_records.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\pilot_v1_9\\source_traceable_records.jsonl",
+      "source_file": "<aibenchie-root>\\data\\pilot_v1_9\\source_traceable_records.jsonl",
       "prompt_count": 302,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -87,7 +87,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/batch_001R/all_records_001R.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_001R\\all_records_001R.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\batch_001R\\all_records_001R.jsonl",
       "prompt_count": 30,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -97,7 +97,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/batch_001R/dpo_pairs_001R.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_001R\\dpo_pairs_001R.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\batch_001R\\dpo_pairs_001R.jsonl",
       "prompt_count": 15,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -107,7 +107,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/batch_001R/sft_trajectories_001R.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_001R\\sft_trajectories_001R.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\batch_001R\\sft_trajectories_001R.jsonl",
       "prompt_count": 15,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -117,7 +117,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/batch_002/all_records_002.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_002\\all_records_002.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\batch_002\\all_records_002.jsonl",
       "prompt_count": 30,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -127,7 +127,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/batch_002/dpo_pairs_002.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_002\\dpo_pairs_002.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\batch_002\\dpo_pairs_002.jsonl",
       "prompt_count": 15,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -137,7 +137,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/batch_002/sft_trajectories_002.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\batch_002\\sft_trajectories_002.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\batch_002\\sft_trajectories_002.jsonl",
       "prompt_count": 15,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -147,7 +147,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_001R_002/combined/all_training_records_v1_1.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_001R_002\\combined\\all_training_records_v1_1.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_001R_002\\combined\\all_training_records_v1_1.jsonl",
       "prompt_count": 60,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -157,7 +157,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_003/batch_003/all_records_003.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_003\\batch_003\\all_records_003.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_003\\batch_003\\all_records_003.jsonl",
       "prompt_count": 50,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -167,7 +167,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_003/batch_003/dpo_pairs_003.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_003\\batch_003\\dpo_pairs_003.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_003\\batch_003\\dpo_pairs_003.jsonl",
       "prompt_count": 25,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -177,7 +177,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_003/batch_003/sft_trajectories_003.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_003\\batch_003\\sft_trajectories_003.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_003\\batch_003\\sft_trajectories_003.jsonl",
       "prompt_count": 25,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -187,7 +187,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_003/combined/all_training_records_v1_2.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_003\\combined\\all_training_records_v1_2.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_003\\combined\\all_training_records_v1_2.jsonl",
       "prompt_count": 110,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -197,7 +197,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_004/batch_004/all_records_004.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_004\\batch_004\\all_records_004.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_004\\batch_004\\all_records_004.jsonl",
       "prompt_count": 33,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -207,7 +207,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_004/batch_004/sft_trajectories_004.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_004\\batch_004\\sft_trajectories_004.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_004\\batch_004\\sft_trajectories_004.jsonl",
       "prompt_count": 33,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -217,7 +217,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_004/combined/all_training_records_v1_3.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_004\\combined\\all_training_records_v1_3.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_004\\combined\\all_training_records_v1_3.jsonl",
       "prompt_count": 143,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -227,7 +227,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_005/batch_005/all_records_005.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_005\\batch_005\\all_records_005.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_005\\batch_005\\all_records_005.jsonl",
       "prompt_count": 29,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -237,7 +237,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_005/batch_005/sft_trajectories_005.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_005\\batch_005\\sft_trajectories_005.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_005\\batch_005\\sft_trajectories_005.jsonl",
       "prompt_count": 29,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -247,7 +247,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_005/combined/all_training_records_v1_4.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_005\\combined\\all_training_records_v1_4.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_005\\combined\\all_training_records_v1_4.jsonl",
       "prompt_count": 172,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -257,7 +257,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_006/batch_006/all_records_006.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_006\\batch_006\\all_records_006.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_006\\batch_006\\all_records_006.jsonl",
       "prompt_count": 19,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -267,7 +267,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_006/batch_006/sft_trajectories_006.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_006\\batch_006\\sft_trajectories_006.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_006\\batch_006\\sft_trajectories_006.jsonl",
       "prompt_count": 19,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -277,7 +277,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_006/combined/all_training_records_v1_5.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_006\\combined\\all_training_records_v1_5.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_006\\combined\\all_training_records_v1_5.jsonl",
       "prompt_count": 191,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -287,7 +287,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_007/batch_007/all_records_007.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_007\\batch_007\\all_records_007.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_007\\batch_007\\all_records_007.jsonl",
       "prompt_count": 35,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -297,7 +297,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_007/batch_007/sft_trajectories_007.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_007\\batch_007\\sft_trajectories_007.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_007\\batch_007\\sft_trajectories_007.jsonl",
       "prompt_count": 35,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -307,7 +307,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_007/combined/all_training_records_v1_6.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_007\\combined\\all_training_records_v1_6.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_007\\combined\\all_training_records_v1_6.jsonl",
       "prompt_count": 226,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -317,7 +317,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_008/batch_008/all_records_008.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_008\\batch_008\\all_records_008.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_008\\batch_008\\all_records_008.jsonl",
       "prompt_count": 29,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -327,7 +327,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_008/batch_008/sft_trajectories_008.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_008\\batch_008\\sft_trajectories_008.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_008\\batch_008\\sft_trajectories_008.jsonl",
       "prompt_count": 29,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -337,7 +337,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_008/combined/all_training_records_v1_7.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_008\\combined\\all_training_records_v1_7.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_008\\combined\\all_training_records_v1_7.jsonl",
       "prompt_count": 255,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -347,7 +347,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_009/batch_009/all_records_009.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_009\\batch_009\\all_records_009.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_009\\batch_009\\all_records_009.jsonl",
       "prompt_count": 25,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -357,7 +357,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_009/batch_009/sft_trajectories_009.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_009\\batch_009\\sft_trajectories_009.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_009\\batch_009\\sft_trajectories_009.jsonl",
       "prompt_count": 25,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -367,7 +367,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_009/combined/all_training_records_v1_8.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_009\\combined\\all_training_records_v1_8.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_009\\combined\\all_training_records_v1_8.jsonl",
       "prompt_count": 280,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -377,7 +377,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_010/batch_010/all_records_010.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_010\\batch_010\\all_records_010.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_010\\batch_010\\all_records_010.jsonl",
       "prompt_count": 22,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -387,7 +387,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_010/batch_010/sft_trajectories_010.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_010\\batch_010\\sft_trajectories_010.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_010\\batch_010\\sft_trajectories_010.jsonl",
       "prompt_count": 22,
       "exact_match_count": 0,
       "near_duplicate_count": 0,
@@ -397,7 +397,7 @@
     },
     {
       "source_label": "data/lv7_traceable_batches_010/combined/all_training_records_v1_9.jsonl",
-      "source_file": "C:\\Users\\kasom\\projects\\Lv7\\data\\lv7_traceable_batches_010\\combined\\all_training_records_v1_9.jsonl",
+      "source_file": "<aibenchie-root>\\data\\lv7_traceable_batches_010\\combined\\all_training_records_v1_9.jsonl",
       "prompt_count": 302,
       "exact_match_count": 0,
       "near_duplicate_count": 0,

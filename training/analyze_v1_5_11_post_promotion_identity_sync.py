@@ -62,6 +62,14 @@ EXPECTED_BACKEND_ANCHOR_COMMIT = "0da516f332fc9689798cdcba19053f3104c8199f"
 
 def display_path(path: Path) -> str:
     try:
+        return "<aiassistant-root>/" + str(path.relative_to(SIBLING_AIASSISTANT_ROOT)).replace("\\", "/")
+    except ValueError:
+        pass
+    try:
+        return "<wrapper-root>/" + str(path.relative_to(SIBLING_BACKEND_ROOT)).replace("\\", "/")
+    except ValueError:
+        pass
+    try:
         return str(path.relative_to(PROJECT_ROOT)).replace("\\", "/")
     except ValueError:
         return str(path)

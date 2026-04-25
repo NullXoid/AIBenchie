@@ -12,7 +12,7 @@
 
 ## External Evidence Source
 
-- external JSON path used: `C:\Users\kasom\projects\AiAssistant\reports\runtime\m17_lv7_v1_4_external_m6_evidence.json`
+- external JSON path used: `<aiassistant-root>\reports\runtime\m17_lv7_v1_4_external_m6_evidence.json`
 - local runtime scenario directory: `evals/runtime/v1_4`
 - local runtime scenario count: `10`
 - local runtime suite sha256: `d02feafcde3e57e0b0495cf528ec1a26455368784ef73cd1b1ceb3bdd02da919`
@@ -28,10 +28,10 @@
 
 ## Optional Markdown Cross-Checks
 
-- surface_report: `checked` at `C:\Users\kasom\projects\AiAssistant\docs\M17_RC2_LV7_RUNTIME_SURFACE_VERIFICATION_REPORT.md`
-- contract_report: `checked` at `C:\Users\kasom\projects\AiAssistant\docs\M17_LV7_V1_4_CONTRACT_TEST_REPORT.md`
-- runner_readiness_report: `checked` at `C:\Users\kasom\projects\AiAssistant\docs\M17_LV7_V1_4_SCENARIO_RUNNER_READINESS.md`
-- wrapper_decision_report: `checked` at `C:\Users\kasom\projects\AiAssistant\docs\M17_NEXT_STEP_DECISION.md`
+- surface_report: `checked` at `<aiassistant-root>\docs\M17_RC2_LV7_RUNTIME_SURFACE_VERIFICATION_REPORT.md`
+- contract_report: `checked` at `<aiassistant-root>\docs\M17_LV7_V1_4_CONTRACT_TEST_REPORT.md`
+- runner_readiness_report: `checked` at `<aiassistant-root>\docs\M17_LV7_V1_4_SCENARIO_RUNNER_READINESS.md`
+- wrapper_decision_report: `checked` at `<aiassistant-root>\docs\M17_NEXT_STEP_DECISION.md`
 
 ## Evidence Status
 

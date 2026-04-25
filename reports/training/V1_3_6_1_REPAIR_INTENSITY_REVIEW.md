@@ -13,7 +13,7 @@
 
 | signal | frozen value | why it matters |
 | --- | --- | --- |
-| starting checkpoint | `/mnt/c/Users/kasom/projects/Lv7/models/adapters/lv7_sft_smoke_v1_0_5` | Resumed training perturbed an already accepted adapter rather than fine-tuning from scratch. |
+| starting checkpoint | `<aibenchie-root>/models/adapters/lv7_sft_smoke_v1_0_5` | Resumed training perturbed an already accepted adapter rather than fine-tuning from scratch. |
 | dataset size | `12` records | A tiny dataset makes every optimizer step relatively high leverage. |
 | repair-to-retention ratio | `6 / 6` | Repair pressure was not buffered by materially broader retention coverage. |
 | max_steps | `24` | With 12 records and the logged epoch count, this drove the patch through roughly eight passes over the tiny dataset. |

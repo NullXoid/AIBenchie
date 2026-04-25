@@ -13,7 +13,7 @@ exact_scenarios_dir: evals/scenarios
 development_holdout_dir: evals/holdout/paraphrase_v0
 probe_scenarios_dir: evals/dpo_probes/v1_2
 wsl_distro: Ubuntu-24.04
-repo_wsl_path: /mnt/c/Users/kasom/projects/Lv7
+repo_wsl_path: <aibenchie-root>
 venv_path: ~/.venvs/lv7-sft
 hf_home: ~/.cache/huggingface
 transformers_cache: ~/.cache/huggingface/transformers

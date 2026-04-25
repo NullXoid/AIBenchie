@@ -12,7 +12,7 @@
   ],
   "internal_action_mirror": {
     "enabled": true,
-    "forgejo_owner": "EchoLabs",
+    "forgejo_owner": "YOUR_ORG",
     "update_flow": "aibenchie_action_updater_pr"
   }
 }

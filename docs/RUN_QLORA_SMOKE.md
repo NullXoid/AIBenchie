@@ -17,7 +17,7 @@ The current active run is **v1.0.5 tiny lexical-retention SFT patch**. It stays 
 
 ## WSL-First Layout
 
-- Repo path: `/mnt/c/Users/kasom/projects/Lv7`
+- Repo path: `<aibenchie-root>`
 - Venv path: `~/.venvs/lv7-sft`
 - HF cache:
   - `HF_HOME=~/.cache/huggingface`
@@ -46,7 +46,7 @@ After v1.0, v1.0.2, v1.0.3, and v1.0.5, `evals/holdout/paraphrase_v0` is treated
 
 ## Bootstrap
 
-If `/mnt/c/Users/kasom/projects/Lv7` is missing inside WSL, repair the bridge first:
+If `<aibenchie-root>` is missing inside WSL, repair the bridge first:
 
 ```bash
 sudo mkdir -p /mnt/c
@@ -72,7 +72,7 @@ python -m pip install transformers datasets peft accelerate bitsandbytes sentenc
 Activate the WSL environment:
 
 ```bash
-cd /mnt/c/Users/kasom/projects/Lv7
+cd <aibenchie-root>
 source ~/.venvs/lv7-sft/bin/activate
 export HF_HOME=~/.cache/huggingface
 export TRANSFORMERS_CACHE=~/.cache/huggingface/transformers

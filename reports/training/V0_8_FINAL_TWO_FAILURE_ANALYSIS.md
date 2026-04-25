@@ -1,6 +1,6 @@
 # V0.8 Final Two Failure Analysis
 
-- Source results: `C:\Users\kasom\projects\Lv7\reports\training\v0_7_sft_eval_results.jsonl`
+- Source results: `<aibenchie-root>\reports\training\v0_7_sft_eval_results.jsonl`
 - Eval suite: `lv7_smoke_v1_2`
 - Total targeted failures: `2`
 

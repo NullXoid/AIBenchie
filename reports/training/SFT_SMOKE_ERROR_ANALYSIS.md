@@ -1,6 +1,6 @@
 # SFT Smoke Error Analysis
 
-- Source results: `C:\Users\kasom\projects\Lv7\reports\training\sft_smoke_eval_results.jsonl`
+- Source results: `<aibenchie-root>\reports\training\sft_smoke_eval_results.jsonl`
 - Eval suite: `lv7_smoke_v1_2`
 - Total scenarios: `11`
 

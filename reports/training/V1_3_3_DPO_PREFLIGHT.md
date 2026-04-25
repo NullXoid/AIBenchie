@@ -37,7 +37,7 @@
 
 ## Dependency Versions
 
-- Frozen selected prefix path: `/mnt/c/Users/kasom/projects/Lv7/data/dpo_smoke_v1_1/dpo_pairs_selected.jsonl`
+- Frozen selected prefix path: `<aibenchie-root>/data/dpo_smoke_v1_1/dpo_pairs_selected.jsonl`
 - Frozen selected prefix matches current combined dataset: `True`
 - Frozen selected prefix count: `28`
 - Expansion tail count: `12`

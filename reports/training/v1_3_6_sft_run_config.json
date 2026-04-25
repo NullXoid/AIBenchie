@@ -1,6 +1,6 @@
 {
   "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
-  "starting_adapter": "/mnt/c/Users/kasom/projects/Lv7/models/adapters/lv7_sft_smoke_v1_0_5",
+  "starting_adapter": "<aibenchie-root>/models/adapters/lv7_sft_smoke_v1_0_5",
   "dataset": "data/sft_shared_contract_v1_3_6/sft_messages.jsonl",
   "prepared_dataset": "data/sft_shared_contract_v1_3_6/sft_train_ready.jsonl",
   "output_dir": "models/adapters/lv7_sft_shared_contract_v1_3_6/",

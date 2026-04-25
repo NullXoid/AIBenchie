@@ -13,8 +13,8 @@
 ## Environment
 
 - Active WSL venv: `~/.venvs/lv7-sft`
-- Resolved venv location: `/home/echolabs/.venvs/lv7-sft`
-- Repo path: `/mnt/c/Users/kasom/projects/Lv7`
+- Resolved venv location: `<local-venv-root>/.venvs/lv7-sft`
+- Repo path: `<aibenchie-root>`
 - Python: `3.12.3`
 - CUDA available: `True`
 - GPU: `NVIDIA GeForce RTX 3090`

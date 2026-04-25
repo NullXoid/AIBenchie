@@ -15,7 +15,7 @@ development_holdout_dir: evals/holdout/paraphrase_v0
 blind_holdout_dir: evals/holdout/blind_v1_3
 blind_probe_dir: evals/dpo_probes/blind_v1_3
 wsl_distro: Ubuntu-24.04
-repo_wsl_path: /mnt/c/Users/kasom/projects/Lv7
+repo_wsl_path: .
 venv_path: ~/.venvs/lv7-sft
 hf_home: ~/.cache/huggingface
 transformers_cache: ~/.cache/huggingface/transformers

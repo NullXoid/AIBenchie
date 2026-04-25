@@ -21,7 +21,7 @@
       "max_requests_per_minute": 20,
       "max_bytes_per_minute": 5242880,
       "max_parallel_jobs": 1,
-      "egress_allowlist": ["forgejo.internal", "aibenchie.internal", "nullbridge.internal"],
+      "egress_allowlist": ["forgejo.example.invalid", "aibenchie.example.invalid", "nullbridge.example.invalid"],
       "deny_external_network": true,
       "deny_secret_access": true,
       "deny_user_data_access": true

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "description": "Copy to .suite/local/forgejo.local.json and replace placeholders. The local copy is ignored by git.",
+  "forgejo": {
+    "base_url": "https://forgejo.example.invalid",
+    "owner": "YOUR_ORG",
+    "repository": "YOUR_REPO",
+    "package_registry": "https://forgejo.example.invalid/api/packages/YOUR_ORG"
+  },
+  "release": {
+    "signing_identity": "release_hardware_key",
+    "aibenchie_report_path": "reports/aibenchie/VERSION/summary.json"
+  },
+  "network": {
+    "egress_allowlist": [
+      "forgejo.example.invalid",
+      "aibenchie.example.invalid",
+      "nullbridge.example.invalid"
+    ]
+  }
+}

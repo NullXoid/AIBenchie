@@ -23,5 +23,5 @@
 
 ## Current Step
 
-- external JSON path: `C:\Users\kasom\projects\AiAssistant\reports\runtime\m17_lv7_v1_4_external_m6_evidence.json`
+- external JSON path: `<aiassistant-root>\reports\runtime\m17_lv7_v1_4_external_m6_evidence.json`
 - valid M17 evidence has been ingested; LV7 may advance the runtime gate without replaying wrapper/runtime flows in this repo

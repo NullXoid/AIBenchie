@@ -143,7 +143,7 @@ def load_config(path: Path) -> dict[str, Any]:
     config.setdefault("decision_profile", DECISION_PROFILE_LEGACY)
     config.setdefault("base_model", "Qwen/Qwen2.5-1.5B-Instruct")
     config.setdefault("wsl_distro", "Ubuntu-24.04")
-    config.setdefault("repo_wsl_path", "/mnt/c/Users/kasom/projects/Lv7")
+    config.setdefault("repo_wsl_path", "<aibenchie-root>")
     config.setdefault("venv_path", "~/.venvs/lv7-sft")
     config.setdefault("hf_home", "~/.cache/huggingface")
     config.setdefault("transformers_cache", "~/.cache/huggingface/transformers")
