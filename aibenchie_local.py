@@ -7,6 +7,7 @@ import sys
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
 from aibenchie.local_nullbridge_runner import run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
+from aibenchie.release_report import write_release_report
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -27,6 +28,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--privacy-proof",
         action="store_true",
         help="Run a local E2EE storage proof with temporary generated keys.",
+    )
+    parser.add_argument(
+        "--release-report",
+        action="store_true",
+        help="Write AIBenchie release verdict summary and encrypted full report.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -57,6 +63,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Tamper rejected: {result['tamper_rejected']}")
             print(f"Plaintext visible in blob: {result['plaintext_visible_in_blob']}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.release_report:
+        from pathlib import Path
+
+        result = write_release_report(Path(__file__).resolve().parent, run_trust_smoke=True)
+        print(json.dumps(result, indent=2) if args.json else f"Verdict: {result['verdict']}\nSummary: {result['summary']}")
         return 0 if result["ok"] else 1
 
     models = list_ollama_models(args.ollama_url)
