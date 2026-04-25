@@ -8,6 +8,7 @@ from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, l
 from aibenchie.local_nullbridge_runner import run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
 from aibenchie.release_report import write_release_report
+from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -33,6 +34,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--release-report",
         action="store_true",
         help="Write AIBenchie release verdict summary and encrypted full report.",
+    )
+    parser.add_argument(
+        "--hosted-nullxoid-auth",
+        action="store_true",
+        help="Run the hosted NullXoid login check using AIBENCHIE_NULLXOID_* environment variables.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -70,6 +76,21 @@ def main(argv: list[str] | None = None) -> int:
 
         result = write_release_report(Path(__file__).resolve().parent, run_trust_smoke=True)
         print(json.dumps(result, indent=2) if args.json else f"Verdict: {result['verdict']}\nSummary: {result['summary']}")
+        return 0 if result["ok"] else 1
+
+    if args.hosted_nullxoid_auth:
+        result = run_hosted_nullxoid_auth_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("Hosted NullXoid Auth Check")
+            print(f"Origin: {result['origin']}")
+            print(f"Base path: {result['base_path']}")
+            print(f"Anonymous auth state: HTTP {result['anonymous_status']}")
+            print(f"Login: HTTP {result['login_status']}")
+            print(f"Post-login auth state: HTTP {result['authenticated_status']}")
+            print(f"Cookies: {', '.join(result['cookie_names']) or '(none)'}")
+            print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
         return 0 if result["ok"] else 1
 
     models = list_ollama_models(args.ollama_url)
