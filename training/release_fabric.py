@@ -190,6 +190,124 @@ def validate_resource_policy(policy: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_nullbridge_registry(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    required = set(policy.get("required_backend_identities", []))
+    for identity in [
+        "website_backend",
+        "wrapper_backend",
+        "windows_backend",
+        "android_backend",
+        "ios_backend",
+        "aibenchie_service",
+        "codex_service",
+        "ollama_service",
+    ]:
+        if identity not in required:
+            errors.append(f"identity:missing:{identity}")
+    for key in [
+        "requires_service_auth",
+        "deny_unknown_backends",
+        "deny_unknown_targets",
+        "deny_unknown_capabilities",
+        "audit_required",
+    ]:
+        if policy.get(key) is not True:
+            errors.append(f"{key}:not_enforced")
+    return errors
+
+
+def validate_nullbridge_capabilities(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if policy.get("deny_by_default") is not True:
+        errors.append("deny_by_default:not_enforced")
+    seen: set[str] = set()
+    for rule in policy.get("capabilities", []):
+        capability = rule.get("capability")
+        if not capability:
+            errors.append("capability:missing_name")
+            continue
+        if capability in seen:
+            errors.append(f"capability:duplicate:{capability}")
+        seen.add(capability)
+        for key in ["allowed_callers", "allowed_platforms", "allowed_targets"]:
+            if not rule.get(key):
+                errors.append(f"{capability}:{key}:missing")
+        if rule.get("requires_user_auth") is not True:
+            errors.append(f"{capability}:requires_user_auth:not_enforced")
+    for required in ["chat.stream", "artifacts.send_to_codex", "repo.audit"]:
+        if required not in seen:
+            errors.append(f"capability:missing:{required}")
+    return errors
+
+
+def authorize_nullbridge_route(
+    request: dict[str, Any],
+    registry: dict[str, Any] | None = None,
+    capabilities: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    registry = registry or load_json(POLICIES_ROOT / "nullbridge-registry.json")
+    capabilities = capabilities or load_json(POLICIES_ROOT / "nullbridge-capabilities.json")
+    caller = request.get("caller_backend_id")
+    capability = request.get("capability")
+    target = request.get("target")
+    platform = request.get("platform") or (request.get("acting_user") or {}).get("platform")
+    user_id = (request.get("acting_user") or {}).get("user_id")
+
+    required_identities = set(registry.get("required_backend_identities", []))
+    if caller not in required_identities:
+        return deny_route(request, "unknown_backend")
+    if registry.get("requires_service_auth") is True and request.get("service_auth_valid") is not True:
+        return deny_route(request, "invalid_service_auth")
+
+    rule = next((item for item in capabilities.get("capabilities", []) if item.get("capability") == capability), None)
+    if not rule:
+        return deny_route(request, "unknown_capability")
+    if caller not in rule.get("allowed_callers", []):
+        return deny_route(request, "caller_not_allowed")
+    if platform not in rule.get("allowed_platforms", []):
+        return deny_route(request, "platform_not_allowed")
+    if target not in rule.get("allowed_targets", []):
+        return deny_route(request, "target_not_allowed")
+    if rule.get("requires_user_auth") is True and not user_id:
+        return deny_route(request, "missing_user_context")
+    return route_decision(request, "allow", "allowed")
+
+
+def deny_route(request: dict[str, Any], reason: str) -> dict[str, Any]:
+    return route_decision(request, "deny", reason)
+
+
+def route_decision(request: dict[str, Any], decision: str, reason: str) -> dict[str, Any]:
+    acting_user = request.get("acting_user") or {}
+    user_id = str(acting_user.get("user_id") or "")
+    return {
+        "event": "nullbridge.route_decision",
+        "trace_id": request.get("trace_id", ""),
+        "caller_backend_id": request.get("caller_backend_id", ""),
+        "acting_user_id_hash": hashlib.sha256(user_id.encode("utf-8")).hexdigest() if user_id else "",
+        "platform": request.get("platform") or acting_user.get("platform", ""),
+        "capability": request.get("capability", ""),
+        "target": request.get("target", ""),
+        "decision": decision,
+        "reason": reason,
+    }
+
+
+def validate_nullbridge_audit_log(entry: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for key in ["event", "trace_id", "caller_backend_id", "platform", "capability", "target", "decision", "reason"]:
+        if not entry.get(key):
+            errors.append(f"audit:{key}:missing")
+    if entry.get("event") != "nullbridge.route_decision":
+        errors.append("audit:event:wrong_type")
+    text = json.dumps(entry, sort_keys=True).lower()
+    for forbidden in ["authorization", "bearer ", "cookie", "service_token", "nullbridge_service_token", "jwt", "eyj"]:
+        if forbidden in text:
+            errors.append(f"audit:secret_leak:{forbidden.strip()}")
+    return errors
+
+
 def validate_release_manifest(manifest: dict[str, Any], schema_path: Path | None = None) -> list[str]:
     errors: list[str] = []
     schema = load_json(schema_path or MANIFESTS_ROOT / "release-manifest.schema.json")

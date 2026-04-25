@@ -13,6 +13,9 @@ from training.release_fabric import (
     validate_aibenchie_gates,
     validate_aibenchie_summary,
     validate_breakglass_grant,
+    validate_nullbridge_audit_log,
+    validate_nullbridge_capabilities,
+    validate_nullbridge_registry,
     validate_policy_tree,
     validate_publisher_inputs,
     validate_release_manifest,
@@ -20,6 +23,7 @@ from training.release_fabric import (
     validate_resource_policy,
     validate_runner_policy,
     validate_workflow_text,
+    authorize_nullbridge_route,
 )
 
 
@@ -86,6 +90,90 @@ def test_core_policies_fail_closed():
     assert validate_actions_policy(load_json(POLICIES_ROOT / "actions-policy.json")) == []
     assert validate_aibenchie_gates(load_json(POLICIES_ROOT / "aibenchie-gates.json")) == []
     assert validate_resource_policy(load_json(POLICIES_ROOT / "resource-policy.json")) == []
+    assert validate_nullbridge_registry(load_json(POLICIES_ROOT / "nullbridge-registry.json")) == []
+    assert validate_nullbridge_capabilities(load_json(POLICIES_ROOT / "nullbridge-capabilities.json")) == []
+
+
+def valid_bridge_request(**overrides) -> dict:
+    request = {
+        "trace_id": "trc_release_gate",
+        "caller_backend_id": "android_backend",
+        "service_auth_valid": True,
+        "acting_user": {
+            "user_id": "usr_release_gate",
+            "roles": ["user"],
+            "workspace_id": "ws_release_gate",
+            "platform": "android",
+        },
+        "capability": "chat.stream",
+        "target": "ollama_service",
+        "platform": "android",
+    }
+    request.update(overrides)
+    return request
+
+
+def test_nullbridge_policy_validators_fail_closed():
+    broken_registry = {
+        "required_backend_identities": ["website_backend"],
+        "requires_service_auth": False,
+        "deny_unknown_backends": False,
+        "deny_unknown_targets": False,
+        "deny_unknown_capabilities": False,
+        "audit_required": False,
+    }
+    registry_errors = validate_nullbridge_registry(broken_registry)
+    assert "identity:missing:android_backend" in registry_errors
+    assert "requires_service_auth:not_enforced" in registry_errors
+    assert "deny_unknown_capabilities:not_enforced" in registry_errors
+
+    broken_capabilities = {
+        "deny_by_default": False,
+        "capabilities": [{"capability": "chat.stream", "allowed_callers": [], "allowed_platforms": [], "allowed_targets": []}],
+    }
+    capability_errors = validate_nullbridge_capabilities(broken_capabilities)
+    assert "deny_by_default:not_enforced" in capability_errors
+    assert "chat.stream:allowed_callers:missing" in capability_errors
+    assert "chat.stream:requires_user_auth:not_enforced" in capability_errors
+    assert "capability:missing:artifacts.send_to_codex" in capability_errors
+
+
+def test_nullbridge_route_gate_allows_only_registered_authorized_requests():
+    allowed = authorize_nullbridge_route(valid_bridge_request())
+    assert allowed["decision"] == "allow"
+    assert validate_nullbridge_audit_log(allowed) == []
+
+    cases = [
+        (valid_bridge_request(caller_backend_id="unknown_backend"), "unknown_backend"),
+        (valid_bridge_request(service_auth_valid=False), "invalid_service_auth"),
+        (valid_bridge_request(capability="unknown.capability"), "unknown_capability"),
+        (valid_bridge_request(target="codex_service"), "target_not_allowed"),
+        (valid_bridge_request(acting_user={"platform": "android", "roles": ["user"]}), "missing_user_context"),
+        (
+            valid_bridge_request(
+                capability="artifacts.send_to_codex",
+                target="codex_service",
+                platform="android",
+                acting_user={"user_id": "usr_release_gate", "roles": ["user"], "platform": "android"},
+            ),
+            "caller_not_allowed",
+        ),
+    ]
+    for request, reason in cases:
+        decision = authorize_nullbridge_route(request)
+        assert decision["decision"] == "deny"
+        assert decision["reason"] == reason
+        assert validate_nullbridge_audit_log(decision) == []
+
+
+def test_nullbridge_audit_log_rejects_secret_bearing_entries():
+    entry = authorize_nullbridge_route(valid_bridge_request())
+    entry["authorization"] = "Bearer eyJhbGciOi..."
+    entry["cookie"] = "session=secret"
+    errors = validate_nullbridge_audit_log(entry)
+    assert "audit:secret_leak:authorization" in errors
+    assert "audit:secret_leak:bearer" in errors
+    assert "audit:secret_leak:cookie" in errors
 
 
 def test_resource_policy_requires_bounded_leases_and_mobile_limits():
