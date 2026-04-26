@@ -9,6 +9,7 @@ from aibenchie.local_nullbridge_runner import run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
 from aibenchie.release_report import write_release_report
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
+from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -39,6 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--hosted-nullxoid-auth",
         action="store_true",
         help="Run the hosted NullXoid login check using AIBENCHIE_NULLXOID_* environment variables.",
+    )
+    parser.add_argument(
+        "--hosted-nullxoid-stack",
+        action="store_true",
+        help="Run hosted NullXoid wrapper route checks using AIBENCHIE_NULLXOID_* environment variables.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -91,6 +97,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Post-login auth state: HTTP {result['authenticated_status']}")
             print(f"Cookies: {', '.join(result['cookie_names']) or '(none)'}")
             print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
+        return 0 if result["ok"] else 1
+
+    if args.hosted_nullxoid_stack:
+        result = run_hosted_nullxoid_stack_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("Hosted NullXoid Stack Check")
+            print(f"Origin: {result['origin']}")
+            print(f"Base path: {result['base_path']}")
+            for route in result["routes"]:
+                status = "PASS" if route["ok"] else f"FAIL ({route['failure']})"
+                print(f"{route['name']}: HTTP {route['status']} {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
     models = list_ollama_models(args.ollama_url)

@@ -111,6 +111,17 @@ Run a local model smoke check:
 python aibenchie_local.py --model <model-name> --json
 ```
 
+Run hosted NullXoid wrapper route checks without saving secrets:
+
+```powershell
+$env:AIBENCHIE_NULLXOID_ORIGIN="http://127.0.0.1"
+$env:AIBENCHIE_NULLXOID_HOST_HEADER="www.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
+python aibenchie_local.py --hosted-nullxoid-stack --json
+```
+
+This check catches public-site fallback pages, blocked wrapper manifests, dead backend health routes, and API endpoints that return HTML instead of JSON.
+
 ## Release Verdict Rule
 
 A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.
