@@ -208,6 +208,10 @@ def main(argv: list[str] | None = None) -> int:
                 print("Forbidden generated files:")
                 for item in result["forbidden_files"]:
                     print(f"- {item['path']} ({item['failure']})")
+            if result["dirty_tracked_files"]:
+                print("Dirty tracked generated outputs:")
+                for item in result["dirty_tracked_files"]:
+                    print(f"- {item['path']} ({item['status']})")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

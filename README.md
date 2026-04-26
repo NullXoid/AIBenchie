@@ -166,7 +166,7 @@ data/local/
 data/private/
 ```
 
-The gate fails when tracked report/data paths contain oversized files, oversized totals, raw logs, temp files, archives, databases, images, or HTML dumps. Override budgets only at runtime:
+The gate fails when tracked report/data paths contain oversized files, oversized totals, raw logs, temp files, archives, databases, images, HTML dumps, or dirty generated-output fixtures. Tracked release evidence under `reports/runtime` and selected `dpo_train_ready` fixtures must stay clean unless the change is intentional and reviewed. Override budgets only at runtime:
 
 ```powershell
 $env:AIBENCHIE_GENERATED_RUNTIME_MAX_MB="50"

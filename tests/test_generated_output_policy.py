@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+
+import pytest
+
 from aibenchie import generated_output_policy
 
 
@@ -98,3 +103,38 @@ def test_generated_output_policy_ignores_local_private_output_dirs(tmp_path):
     assert result.ok is True
     assert result.forbidden_files == []
     assert all(budget.file_count == 0 for budget in result.budgets)
+
+
+def test_generated_output_policy_rejects_dirty_tracked_generated_outputs(tmp_path):
+    if not shutil.which("git"):
+        pytest.skip("git is required for tracked generated-output drift checks")
+
+    write_bytes(tmp_path / "reports" / "runtime" / "summary.md", 128)
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "aibenchie@example.invalid"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "AIBenchie Test"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "add", "reports/runtime/summary.md"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "seed"], cwd=tmp_path, check=True, capture_output=True)
+    (tmp_path / "reports" / "runtime" / "summary.md").write_text("changed\n", encoding="utf-8")
+    env = {
+        "AIBENCHIE_GENERATED_ROOT": str(tmp_path),
+        "AIBENCHIE_GENERATED_RUNTIME_MAX_MB": "1",
+        "AIBENCHIE_GENERATED_RUNTIME_FILE_MAX_MB": "1",
+        "AIBENCHIE_GENERATED_DATA_MAX_MB": "1",
+        "AIBENCHIE_GENERATED_DATA_FILE_MAX_MB": "1",
+    }
+
+    result = generated_output_policy.run_generated_output_policy_check(env)
+
+    assert result.ok is False
+    assert [(item.path, item.status) for item in result.dirty_tracked_files] == [("reports/runtime/summary.md", "M")]

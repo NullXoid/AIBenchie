@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,12 @@ FORBIDDEN_GENERATED_SUFFIXES = (
     ".sqlite",
     ".sqlite3",
     ".db",
+)
+
+TRACKED_GENERATED_GUARD_PATHS = (
+    "reports/runtime",
+    "data/dpo_expansion_v1_3_2/dpo_train_ready.jsonl",
+    "data/dpo_smoke_v1_1/dpo_train_ready.jsonl",
 )
 
 
@@ -93,11 +100,26 @@ class GeneratedOutputForbiddenFile:
 
 
 @dataclass
+class GeneratedOutputDirtyFile:
+    path: str
+    status: str
+    failure: str = "tracked_generated_output_dirty"
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "path": self.path,
+            "status": self.status,
+            "failure": self.failure,
+        }
+
+
+@dataclass
 class GeneratedOutputPolicyResult:
     ok: bool
     root: str
     budgets: list[GeneratedOutputBudgetResult]
     forbidden_files: list[GeneratedOutputForbiddenFile]
+    dirty_tracked_files: list[GeneratedOutputDirtyFile]
     ignored_local_dirs: list[str]
 
     def as_dict(self) -> dict[str, Any]:
@@ -106,6 +128,7 @@ class GeneratedOutputPolicyResult:
             "root": self.root,
             "budgets": [budget.as_dict() for budget in self.budgets],
             "forbidden_files": [item.as_dict() for item in self.forbidden_files],
+            "dirty_tracked_files": [item.as_dict() for item in self.dirty_tracked_files],
             "ignored_local_dirs": self.ignored_local_dirs,
         }
 
@@ -241,14 +264,54 @@ def find_forbidden_generated_files(root: Path) -> list[GeneratedOutputForbiddenF
     return sorted(forbidden, key=lambda item: item.path)
 
 
+def _parse_git_status_path(line: str) -> str:
+    path = line[3:] if len(line) > 3 else ""
+    if " -> " in path:
+        path = path.split(" -> ", 1)[1]
+    return path.strip().strip('"')
+
+
+def find_dirty_tracked_generated_files(root: Path) -> list[GeneratedOutputDirtyFile]:
+    if not (root / ".git").exists():
+        return []
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(root), "status", "--porcelain", "--", *TRACKED_GENERATED_GUARD_PATHS],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if completed.returncode != 0:
+        return []
+
+    dirty: list[GeneratedOutputDirtyFile] = []
+    for line in completed.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        status = line[:2].strip() or line[:2]
+        path = _parse_git_status_path(line)
+        if not path:
+            continue
+        relative = Path(path)
+        if _is_ignored_local_path(relative):
+            continue
+        dirty.append(GeneratedOutputDirtyFile(path=relative.as_posix(), status=status))
+    return sorted(dirty, key=lambda item: item.path)
+
+
 def run_generated_output_policy_check(env: dict[str, str] | None = None) -> GeneratedOutputPolicyResult:
     root = _repo_root_from_env(env)
     budgets = [check_generated_output_budget(root, budget) for budget in _default_budgets(env)]
     forbidden_files = find_forbidden_generated_files(root)
+    dirty_tracked_files = find_dirty_tracked_generated_files(root)
     return GeneratedOutputPolicyResult(
-        ok=all(budget.ok for budget in budgets) and not forbidden_files,
+        ok=all(budget.ok for budget in budgets) and not forbidden_files and not dirty_tracked_files,
         root=str(root),
         budgets=budgets,
         forbidden_files=forbidden_files,
+        dirty_tracked_files=dirty_tracked_files,
         ignored_local_dirs=list(IGNORED_LOCAL_DIRS),
     )
