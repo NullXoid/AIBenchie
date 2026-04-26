@@ -1,0 +1,116 @@
+# AIBenchie
+
+AIBenchie is the NullXoid suite release-verdict and regression system.
+
+It benchmarks model behavior, validates platform health, checks security and privacy gates, and produces release evidence before any suite artifact is trusted.
+
+```text
+Source repo or build artifact
+  -> AIBenchie gates
+  -> signed verdict
+  -> release manifest / report
+  -> publish decision
+```
+
+## Suite Role
+
+AIBenchie is not the chat UI, not the LV7 training repo, and not a place to store personal infrastructure settings.
+
+Its job is to answer:
+
+- Did this version improve or regress?
+- Are every required platform and backend route healthy?
+- Did NullBridge deny unsupported callers, targets, and capabilities?
+- Did Prompt Editor redact restricted output?
+- Did privacy, E2EE, artifact, and release-provenance checks pass?
+- Is the release safe enough to ship?
+
+## Public And Private Boundary
+
+This repository is intended to be usable by other people.
+
+Do not commit:
+
+- Forgejo, GitHub, Streamlit, or provider tokens
+- local server IPs, private hostnames, or personal repo URLs
+- production NullBridge credentials
+- private model provider keys
+- personal benchmark secrets
+- raw user data, private memory, or private artifacts
+
+Private setup belongs in runtime input, environment variables, `.suite/local/`, `.suite/addons/local/`, or a private add-on that is ignored by git.
+
+## Source Providers
+
+AIBenchie should support user choice instead of forcing one source host.
+
+Supported provider directions:
+
+- GitHub
+- Forgejo / Gitea
+- local checkout
+- future self-hosted providers through add-ons
+
+Provider credentials must be entered at runtime or supplied by a local secret manager. Tests may require sensitive values interactively, but they must not save those values.
+
+## Relationship To Lv-7
+
+Lv-7 is the intelligence, training, eval, and agent-behavior layer.
+
+AIBenchie can consume sanitized Lv-7 benchmark fixtures and release reports, but Lv-7 remains its own source of truth. Historical AIBenchie tests still reference some Lv-7-style fixture paths; those are compatibility fixtures until the remaining test data is split into a dedicated benchmark fixture package.
+
+## Main Tracks
+
+- model quality
+- runtime performance
+- platform health
+- streaming stability
+- NullBridge authorization enforcement
+- website auth leakage checks
+- Prompt Editor redaction checks
+- NullPrivacy and E2EE checks
+- artifact sandboxing
+- CCC scoping
+- resource budget checks
+- Forgejo / GitHub workflow policy
+- runner isolation
+- release manifest validation
+- SBOM and artifact digest validation
+- hardware-signature and break-glass checks
+
+## Local Use
+
+Install dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
+```
+
+Run the local UI:
+
+```powershell
+streamlit run streamlit_app.py
+```
+
+Run tests:
+
+```powershell
+python -m pytest
+```
+
+List local Ollama models when Ollama is running:
+
+```powershell
+python aibenchie_local.py --list-models
+```
+
+Run a local model smoke check:
+
+```powershell
+python aibenchie_local.py --model <model-name> --json
+```
+
+## Release Verdict Rule
+
+A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.
