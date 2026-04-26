@@ -7,7 +7,6 @@ import sys
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
 from aibenchie.local_nullbridge_runner import run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
-from aibenchie.release_report import write_release_report
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
@@ -91,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.release_report:
         from pathlib import Path
+
+        from aibenchie.release_report import write_release_report
 
         result = write_release_report(Path(__file__).resolve().parent, run_trust_smoke=True)
         print(json.dumps(result, indent=2) if args.json else f"Verdict: {result['verdict']}\nSummary: {result['summary']}")
