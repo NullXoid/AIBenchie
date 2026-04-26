@@ -58,6 +58,7 @@ def test_hosted_stack_check_fails_on_public_site_wrapper_fallback(monkeypatch):
     assert result.ok is False
     assert result.routes[0].name == "wrapper_page"
     assert result.routes[0].ok is False
+    assert result.routes[0].failure == "wrapper_fallback_page"
 
 
 def test_hosted_stack_check_fails_when_api_error_is_html(monkeypatch):
@@ -77,6 +78,23 @@ def test_hosted_stack_check_fails_when_api_error_is_html(monkeypatch):
     assert result.ok is False
     assert result.routes[3].name == "mounted_auth_errors_are_json"
     assert result.routes[3].ok is False
+
+
+def test_hosted_stack_check_fails_when_manifest_is_challenged(monkeypatch):
+    def fake_request_raw(origin, path, *, host_header="", method="GET", payload=None, timeout=15):
+        if path == "/nullxoid/":
+            return 200, "text/html", "<html>NullXoid Gallery</html>"
+        if path == "/nullxoid/manifest.webmanifest":
+            return 403, "text/html", '<script src="https://challenges.cloudflare.com/challenge"></script>'
+        return 200, "application/json", '{"status":"ok"}'
+
+    monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
+
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+
+    assert result.ok is False
+    assert result.routes[1].name == "wrapper_manifest"
+    assert result.routes[1].failure == "manifest_challenged"
 
 
 def test_hosted_stack_check_fails_when_root_api_is_challenged(monkeypatch):

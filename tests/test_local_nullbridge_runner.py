@@ -92,3 +92,32 @@ def test_cli_privacy_proof_uses_ephemeral_keys(monkeypatch, capsys):
     assert "NullPrivacy E2EE Storage Proof" in output
     assert "Wrong key rejected: True" in output
     assert "Result: PASS" in output
+
+
+def test_cli_ephemeral_hosted_chat_prints_without_credentials(monkeypatch, capsys):
+    class Hosted:
+        def as_dict(self):
+            return {
+                "ok": True,
+                "origin": "https://www.echolabs.diy",
+                "base_path": "/nullxoid",
+                "helper_origin": "http://127.0.0.1:8090",
+                "create_status": 200,
+                "cleanup_status": 200,
+                "chat": {
+                    "stream_status": 200,
+                    "workspace_id": "ws-1",
+                    "project_id": "proj-1",
+                    "model": "llama.cpp:qwen",
+                },
+                "failure": "",
+            }
+
+    monkeypatch.setattr(aibenchie_local, "run_hosted_nullxoid_ephemeral_chat_from_env", lambda: Hosted())
+
+    assert aibenchie_local.main(["--hosted-nullxoid-ephemeral-chat"]) == 0
+    output = capsys.readouterr().out
+    assert "Hosted NullXoid Ephemeral Chat Check" in output
+    assert "Model runtime: llama.cpp:qwen" in output
+    assert "password" not in output.lower()
+    assert "Result: PASS" in output

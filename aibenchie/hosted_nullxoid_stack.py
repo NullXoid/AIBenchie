@@ -109,6 +109,34 @@ def public_html_route_ok(status: int, content_type: str, body: str) -> bool:
     )
 
 
+def wrapper_page_failure(status: int, content_type: str, body: str) -> str:
+    lowered = body.lower()
+    if looks_like_cloudflare_challenge(body):
+        return "wrapper_page_challenged"
+    if status != 200:
+        return "wrapper_page_not_200"
+    if "fallback page appears" in lowered or "mounted nullxoid wrapper build has not been deployed" in lowered:
+        return "wrapper_fallback_page"
+    if "text/html" not in content_type.lower():
+        return "wrapper_page_not_html"
+    return ""
+
+
+def manifest_failure(status: int, content_type: str, body: str) -> str:
+    lowered_type = content_type.lower()
+    if looks_like_cloudflare_challenge(body):
+        return "manifest_challenged"
+    if status != 200:
+        return "manifest_not_200"
+    if body.lstrip().startswith("<"):
+        return "manifest_returned_html"
+    if "json" not in lowered_type and "manifest" not in lowered_type:
+        return "manifest_not_json"
+    if not looks_like_json(body):
+        return "manifest_not_json"
+    return ""
+
+
 def model_route_ok(status: int, content_type: str, body: str) -> bool:
     if not json_route_ok(status, content_type, body, allowed_statuses={200, 401, 403}):
         return False
@@ -139,26 +167,28 @@ def run_hosted_nullxoid_stack_check(
     status, content_type, body = request_raw(
         resolved_origin, f"{resolved_base_path}/", host_header=host_header, timeout=timeout
     )
+    failure = wrapper_page_failure(status, content_type, body)
     routes.append(
         RouteResult(
             name="wrapper_page",
             status=status,
             content_type=content_type,
-            ok=status == 200 and "text/html" in content_type and "fallback page appears" not in body.lower(),
-            failure="" if status == 200 else "wrapper_page_not_200",
+            ok=not failure,
+            failure=failure,
         )
     )
 
     status, content_type, body = request_raw(
         resolved_origin, f"{resolved_base_path}/manifest.webmanifest", host_header=host_header, timeout=timeout
     )
+    failure = manifest_failure(status, content_type, body)
     routes.append(
         RouteResult(
             name="wrapper_manifest",
             status=status,
             content_type=content_type,
-            ok=status == 200 and looks_like_json(body),
-            failure="" if status == 200 else "manifest_not_200",
+            ok=not failure,
+            failure=failure,
         )
     )
 

@@ -10,6 +10,7 @@ from aibenchie.nullprivacy import run_e2ee_storage_proof
 from aibenchie.release_report import write_release_report
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
+from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 
 
@@ -51,6 +52,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--hosted-nullxoid-chat",
         action="store_true",
         help="Run a credentialed hosted NullXoid chat stream check using AIBENCHIE_NULLXOID_* environment variables.",
+    )
+    parser.add_argument(
+        "--hosted-nullxoid-ephemeral-chat",
+        action="store_true",
+        help="Run hosted NullXoid chat E2E with a loopback-created short-lived test user.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -132,6 +138,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Workspace: {result['workspace_id'] or '(none)'}")
             print(f"Project: {result['project_id'] or '(none)'}")
             print(f"Model: {result['model'] or '(none)'}")
+            print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
+        return 0 if result["ok"] else 1
+
+    if args.hosted_nullxoid_ephemeral_chat:
+        result = run_hosted_nullxoid_ephemeral_chat_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            chat = result.get("chat") or {}
+            print("Hosted NullXoid Ephemeral Chat Check")
+            print(f"Origin: {result['origin']}")
+            print(f"Base path: {result['base_path']}")
+            print(f"Helper origin: {result['helper_origin']}")
+            print(f"Create test user: HTTP {result['create_status']}")
+            print(f"Chat stream: HTTP {chat.get('stream_status', 0)}")
+            print(f"Workspace: {chat.get('workspace_id') or '(none)'}")
+            print(f"Project: {chat.get('project_id') or '(none)'}")
+            print(f"Model runtime: {chat.get('model') or '(none)'}")
+            print(f"Cleanup test user: HTTP {result['cleanup_status']}")
             print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
         return 0 if result["ok"] else 1
 
