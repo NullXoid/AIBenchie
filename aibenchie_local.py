@@ -202,7 +202,7 @@ def main(argv: list[str] | None = None) -> int:
                 status = "PASS" if budget["ok"] else f"FAIL ({budget['failure']})"
                 print(
                     f"{budget['name']}: {budget['mb_used']} MiB / {budget['max_mb']} MiB, "
-                    f"{budget['file_count']} files: {status}"
+                    f"{budget['file_count']} / {budget['max_files']} files: {status}"
                 )
             if result["forbidden_files"]:
                 print("Forbidden generated files:")

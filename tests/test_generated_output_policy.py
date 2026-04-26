@@ -67,6 +67,26 @@ def test_generated_output_policy_fails_when_single_data_file_exceeds_budget(tmp_
     assert failures == {"public_data_fixtures": "file_budget_exceeded"}
 
 
+def test_generated_output_policy_fails_when_runtime_report_count_exceeds_limit(tmp_path):
+    write_bytes(tmp_path / "reports" / "runtime" / "a.json", 128)
+    write_bytes(tmp_path / "reports" / "runtime" / "b.json", 128)
+    write_bytes(tmp_path / "reports" / "runtime" / "c.json", 128)
+    env = {
+        "AIBENCHIE_GENERATED_ROOT": str(tmp_path),
+        "AIBENCHIE_GENERATED_RUNTIME_MAX_MB": "1",
+        "AIBENCHIE_GENERATED_RUNTIME_FILE_MAX_MB": "1",
+        "AIBENCHIE_GENERATED_RUNTIME_MAX_FILES": "2",
+        "AIBENCHIE_GENERATED_DATA_MAX_MB": "1",
+        "AIBENCHIE_GENERATED_DATA_FILE_MAX_MB": "1",
+    }
+
+    result = generated_output_policy.run_generated_output_policy_check(env)
+
+    assert result.ok is False
+    failures = {budget.name: budget.failure for budget in result.budgets if not budget.ok}
+    assert failures == {"runtime_reports": "file_count_exceeded"}
+
+
 def test_generated_output_policy_rejects_forbidden_generated_artifacts(tmp_path):
     write_bytes(tmp_path / "reports" / "runtime" / "raw.log", 10)
     write_bytes(tmp_path / "data" / "private_dump.sqlite", 10)

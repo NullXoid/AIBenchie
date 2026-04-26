@@ -13,6 +13,8 @@ DEFAULT_RUNTIME_MAX_MB = 50
 DEFAULT_DATA_MAX_MB = 250
 DEFAULT_RUNTIME_FILE_MAX_MB = 5
 DEFAULT_DATA_FILE_MAX_MB = 50
+DEFAULT_RUNTIME_MAX_FILES = 150
+DEFAULT_DATA_MAX_FILES = 300
 
 IGNORED_LOCAL_DIRS = (
     ".suite/local",
@@ -52,6 +54,7 @@ class GeneratedOutputBudget:
     relative_path: str
     max_bytes: int
     max_file_bytes: int
+    max_files: int
     required: bool = False
 
 
@@ -62,6 +65,7 @@ class GeneratedOutputBudgetResult:
     bytes_used: int
     max_bytes: int
     max_file_bytes: int
+    max_files: int
     file_count: int
     ok: bool
     largest_files: list[dict[str, Any]] = field(default_factory=list)
@@ -77,6 +81,7 @@ class GeneratedOutputBudgetResult:
             "max_mb": round(self.max_bytes / MIB, 2),
             "max_file_bytes": self.max_file_bytes,
             "max_file_mb": round(self.max_file_bytes / MIB, 2),
+            "max_files": self.max_files,
             "file_count": self.file_count,
             "largest_files": self.largest_files,
             "ok": self.ok,
@@ -155,12 +160,14 @@ def _default_budgets(env: dict[str, str] | None = None) -> list[GeneratedOutputB
             max_file_bytes=_mb_to_bytes(
                 source.get("AIBENCHIE_GENERATED_RUNTIME_FILE_MAX_MB", DEFAULT_RUNTIME_FILE_MAX_MB)
             ),
+            max_files=int(source.get("AIBENCHIE_GENERATED_RUNTIME_MAX_FILES", DEFAULT_RUNTIME_MAX_FILES)),
         ),
         GeneratedOutputBudget(
             name="public_data_fixtures",
             relative_path="data",
             max_bytes=_mb_to_bytes(source.get("AIBENCHIE_GENERATED_DATA_MAX_MB", DEFAULT_DATA_MAX_MB)),
             max_file_bytes=_mb_to_bytes(source.get("AIBENCHIE_GENERATED_DATA_FILE_MAX_MB", DEFAULT_DATA_FILE_MAX_MB)),
+            max_files=int(source.get("AIBENCHIE_GENERATED_DATA_MAX_FILES", DEFAULT_DATA_MAX_FILES)),
         ),
     ]
 
@@ -202,6 +209,7 @@ def check_generated_output_budget(root: Path, budget: GeneratedOutputBudget) -> 
             bytes_used=0,
             max_bytes=budget.max_bytes,
             max_file_bytes=budget.max_file_bytes,
+            max_files=budget.max_files,
             file_count=0,
             ok=ok,
             failure="" if ok else "required_path_missing",
@@ -226,6 +234,8 @@ def check_generated_output_budget(root: Path, budget: GeneratedOutputBudget) -> 
         failure = "budget_exceeded"
     elif oversized:
         failure = "file_budget_exceeded"
+    elif len(files) > budget.max_files:
+        failure = "file_count_exceeded"
 
     return GeneratedOutputBudgetResult(
         name=budget.name,
@@ -233,6 +243,7 @@ def check_generated_output_budget(root: Path, budget: GeneratedOutputBudget) -> 
         bytes_used=bytes_used,
         max_bytes=budget.max_bytes,
         max_file_bytes=budget.max_file_bytes,
+        max_files=budget.max_files,
         file_count=len(files),
         largest_files=largest_files,
         ok=not failure,

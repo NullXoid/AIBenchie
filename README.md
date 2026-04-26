@@ -170,7 +170,9 @@ The gate fails when tracked report/data paths contain oversized files, oversized
 
 ```powershell
 $env:AIBENCHIE_GENERATED_RUNTIME_MAX_MB="50"
+$env:AIBENCHIE_GENERATED_RUNTIME_MAX_FILES="150"
 $env:AIBENCHIE_GENERATED_DATA_MAX_MB="250"
+$env:AIBENCHIE_GENERATED_DATA_MAX_FILES="300"
 python aibenchie_local.py --generated-output-policy --json
 ```
 
