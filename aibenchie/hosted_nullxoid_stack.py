@@ -78,6 +78,53 @@ def looks_like_json(text: str) -> bool:
         return False
 
 
+def json_payload(text: str) -> Any:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return None
+
+
+def looks_like_cloudflare_challenge(text: str) -> bool:
+    lowered = text.lower()
+    return "cf-mitigated" in lowered or "challenges.cloudflare.com" in lowered or "just a moment" in lowered
+
+
+def json_route_ok(status: int, content_type: str, body: str, *, allowed_statuses: set[int]) -> bool:
+    return (
+        status in allowed_statuses
+        and "json" in content_type.lower()
+        and looks_like_json(body)
+        and not body.lstrip().startswith("<")
+        and not looks_like_cloudflare_challenge(body)
+    )
+
+
+def public_html_route_ok(status: int, content_type: str, body: str) -> bool:
+    return (
+        status == 200
+        and "text/html" in content_type.lower()
+        and not looks_like_cloudflare_challenge(body)
+        and not body.lstrip().startswith("<!doctype html><html><head><title>just a moment")
+    )
+
+
+def model_route_ok(status: int, content_type: str, body: str) -> bool:
+    if not json_route_ok(status, content_type, body, allowed_statuses={200, 401, 403}):
+        return False
+    payload = json_payload(body)
+    if status == 200:
+        return isinstance(payload, dict) and isinstance(payload.get("models"), list)
+    return isinstance(payload, dict) and bool(payload.get("detail") or payload.get("error"))
+
+
+def health_route_ok(status: int, content_type: str, body: str) -> bool:
+    if not json_route_ok(status, content_type, body, allowed_statuses={200}):
+        return False
+    payload = json_payload(body)
+    return isinstance(payload, dict) and payload.get("status") == "ok"
+
+
 def run_hosted_nullxoid_stack_check(
     *,
     origin: str,
@@ -123,8 +170,8 @@ def run_hosted_nullxoid_stack_check(
             name="backend_health",
             status=status,
             content_type=content_type,
-            ok=status == 200 and looks_like_json(body),
-            failure="" if status == 200 else "health_not_200",
+            ok=health_route_ok(status, content_type, body),
+            failure="" if health_route_ok(status, content_type, body) else "health_not_backend_json",
         )
     )
 
@@ -138,11 +185,51 @@ def run_hosted_nullxoid_stack_check(
     )
     routes.append(
         RouteResult(
-            name="api_errors_are_json",
+            name="mounted_auth_errors_are_json",
             status=status,
             content_type=content_type,
-            ok=status in {400, 401, 403} and looks_like_json(body) and not body.lstrip().startswith("<"),
+            ok=json_route_ok(status, content_type, body, allowed_statuses={400, 401, 403}),
             failure="" if status in {400, 401, 403} else "unexpected_auth_error_status",
+        )
+    )
+
+    status, content_type, body = request_raw(resolved_origin, "/health", host_header=host_header, timeout=timeout)
+    routes.append(
+        RouteResult(
+            name="root_health_route_not_challenged",
+            status=status,
+            content_type=content_type,
+            ok=health_route_ok(status, content_type, body),
+            failure="" if health_route_ok(status, content_type, body) else "root_health_not_backend_json",
+        )
+    )
+
+    status, content_type, body = request_raw(
+        resolved_origin,
+        "/auth/login",
+        host_header=host_header,
+        method="POST",
+        payload={"username": "aibenchie-invalid", "password": "aibenchie-invalid"},
+        timeout=timeout,
+    )
+    routes.append(
+        RouteResult(
+            name="root_auth_errors_are_json",
+            status=status,
+            content_type=content_type,
+            ok=json_route_ok(status, content_type, body, allowed_statuses={400, 401, 403}),
+            failure="" if status in {400, 401, 403} else "unexpected_root_auth_error_status",
+        )
+    )
+
+    status, content_type, body = request_raw(resolved_origin, "/api/models", host_header=host_header, timeout=timeout)
+    routes.append(
+        RouteResult(
+            name="root_model_route_contract",
+            status=status,
+            content_type=content_type,
+            ok=model_route_ok(status, content_type, body),
+            failure="" if status in {200, 401, 403} else "root_models_unexpected_status",
         )
     )
 
