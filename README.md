@@ -135,6 +135,20 @@ python aibenchie_local.py --hosted-nullxoid-chat --json
 
 This check logs in, reads the authenticated user/workspace/project/model contract, and verifies `/chat/stream` returns a real response instead of HTML, a Cloudflare challenge, or an HTTP 500. Credentials are read from environment variables and are not written to reports.
 
+Run the deployment resource budget gate:
+
+```powershell
+python aibenchie_local.py --resource-budget --json
+```
+
+The default `ct400-wrapper` profile checks that the live backend venv stays lightweight, disposable npm/pip caches are gone, old heavy venv backups are absent, runtime logs stay bounded, and AIBenchie reports do not grow without limit. Custom deployments can provide their own runtime-only budget without committing private paths:
+
+```powershell
+$env:AIBENCHIE_RESOURCE_PROFILE="custom"
+$env:AIBENCHIE_RESOURCE_BUDGETS_JSON='[{"name":"cache","pattern":"/srv/app/.cache","max_mb":100}]'
+python aibenchie_local.py --resource-budget --json
+```
+
 ## Release Verdict Rule
 
 A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.

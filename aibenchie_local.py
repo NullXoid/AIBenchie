@@ -11,6 +11,7 @@ from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_a
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
+from aibenchie.resource_budget import run_resource_budget_check
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -56,6 +57,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--hosted-nullxoid-ephemeral-chat",
         action="store_true",
         help="Run hosted NullXoid chat E2E with a loopback-created short-lived test user.",
+    )
+    parser.add_argument(
+        "--resource-budget",
+        action="store_true",
+        help="Run local storage/cache/log budget checks. Override with AIBENCHIE_RESOURCE_* environment variables.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -159,6 +165,24 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Model runtime: {chat.get('model') or '(none)'}")
             print(f"Cleanup test user: HTTP {result['cleanup_status']}")
             print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
+        return 0 if result["ok"] else 1
+
+    if args.resource_budget:
+        result = run_resource_budget_check().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Resource Budget Check")
+            disk = result["disk"]
+            disk_status = "PASS" if disk["ok"] else f"FAIL ({disk['failure']})"
+            print(
+                f"Disk {disk['root']}: {disk['used_gb']} GiB used, "
+                f"{disk['free_gb']} GiB free, {disk['used_percent']}% used: {disk_status}"
+            )
+            for item in result["items"]:
+                status = "PASS" if item["ok"] else f"FAIL ({item['failure']})"
+                print(f"{item['name']}: {item['mb_used']} MiB / {item['max_mb']} MiB: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
     models = list_ollama_models(args.ollama_url)
