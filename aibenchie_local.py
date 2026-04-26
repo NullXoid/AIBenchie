@@ -11,6 +11,7 @@ from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_a
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
+from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.resource_budget import run_resource_budget_check
 
 
@@ -62,6 +63,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--resource-budget",
         action="store_true",
         help="Run local storage/cache/log budget checks. Override with AIBENCHIE_RESOURCE_* environment variables.",
+    )
+    parser.add_argument(
+        "--generated-output-policy",
+        action="store_true",
+        help="Run repo generated-output hygiene checks for reports/data paths.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -182,6 +188,26 @@ def main(argv: list[str] | None = None) -> int:
             for item in result["items"]:
                 status = "PASS" if item["ok"] else f"FAIL ({item['failure']})"
                 print(f"{item['name']}: {item['mb_used']} MiB / {item['max_mb']} MiB: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.generated_output_policy:
+        result = run_generated_output_policy_check().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Generated Output Policy Check")
+            print(f"Root: {result['root']}")
+            for budget in result["budgets"]:
+                status = "PASS" if budget["ok"] else f"FAIL ({budget['failure']})"
+                print(
+                    f"{budget['name']}: {budget['mb_used']} MiB / {budget['max_mb']} MiB, "
+                    f"{budget['file_count']} files: {status}"
+                )
+            if result["forbidden_files"]:
+                print("Forbidden generated files:")
+                for item in result["forbidden_files"]:
+                    print(f"- {item['path']} ({item['failure']})")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

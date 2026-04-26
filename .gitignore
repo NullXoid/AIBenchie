@@ -30,3 +30,29 @@ reports/aibenchie/latest/
 # Machine- or organization-specific release fabric configuration.
 .suite/local/
 .suite/addons/local/
+
+# Local/private generated outputs. Public fixtures and signed summaries may be
+# committed intentionally, but raw run output belongs in ignored local paths.
+reports/local/
+reports/runtime/.local/
+reports/runtime/*.tmp
+reports/runtime/*.log
+reports/runtime/*.html
+reports/runtime/*.png
+reports/runtime/*.jpg
+reports/runtime/*.jpeg
+reports/runtime/*.webp
+reports/runtime/*.zip
+reports/runtime/*.tar
+reports/runtime/*.tar.gz
+reports/runtime/*.sqlite*
+reports/runtime/*.db
+data/local/
+data/private/
+data/**/*.tmp
+data/**/*.log
+data/**/*.zip
+data/**/*.tar
+data/**/*.tar.gz
+data/**/*.sqlite*
+data/**/*.db

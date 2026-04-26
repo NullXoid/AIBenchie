@@ -149,6 +149,31 @@ $env:AIBENCHIE_RESOURCE_BUDGETS_JSON='[{"name":"cache","pattern":"/srv/app/.cach
 python aibenchie_local.py --resource-budget --json
 ```
 
+Run the generated-output policy gate:
+
+```powershell
+python aibenchie_local.py --generated-output-policy --json
+```
+
+This keeps the repository from becoming a dumping ground for raw generated output. Committed data should be intentional benchmark fixtures, sanitized reports, signed summaries, or release evidence. Local/private runs should write to ignored paths instead:
+
+```text
+.suite/local/
+.suite/addons/local/
+reports/local/
+reports/runtime/.local/
+data/local/
+data/private/
+```
+
+The gate fails when tracked report/data paths contain oversized files, oversized totals, raw logs, temp files, archives, databases, images, or HTML dumps. Override budgets only at runtime:
+
+```powershell
+$env:AIBENCHIE_GENERATED_RUNTIME_MAX_MB="50"
+$env:AIBENCHIE_GENERATED_DATA_MAX_MB="250"
+python aibenchie_local.py --generated-output-policy --json
+```
+
 ## Release Verdict Rule
 
 A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.
