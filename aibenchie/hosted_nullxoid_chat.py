@@ -62,10 +62,12 @@ class HostedChatResult:
     base_path: str
     login_status: int
     stream_status: int
+    operations_status: int = 0
     user_id: str = ""
     workspace_id: str = ""
     project_id: str = ""
     model: str = ""
+    operations_summary: dict[str, Any] = field(default_factory=dict)
     stream_preview: str = ""
     steps: list[str] = field(default_factory=list)
     failure: str = ""
@@ -77,10 +79,12 @@ class HostedChatResult:
             "base_path": self.base_path,
             "login_status": self.login_status,
             "stream_status": self.stream_status,
+            "operations_status": self.operations_status,
             "user_id": self.user_id,
             "workspace_id": self.workspace_id,
             "project_id": self.project_id,
             "model": self.model,
+            "operations_summary": self.operations_summary,
             "stream_preview": self.stream_preview,
             "steps": self.steps,
             "failure": self.failure,
@@ -179,6 +183,90 @@ def _pick_model(models_body: Any) -> str:
             if value:
                 return str(value).strip()
     return ""
+
+
+def _iter_string_values(value: Any):
+    if isinstance(value, str):
+        yield value
+        return
+    if isinstance(value, dict):
+        for child in value.values():
+            yield from _iter_string_values(child)
+        return
+    if isinstance(value, list):
+        for child in value:
+            yield from _iter_string_values(child)
+
+
+def _operations_status_failure(status: int, body: Any) -> str:
+    failure = _non_json_failure("operations_status", status, body)
+    if failure:
+        return failure
+    if not isinstance(body, dict):
+        return "operations_status_not_object"
+    if body.get("ok") is not True:
+        return "operations_status_not_ok"
+
+    backend = body.get("backend")
+    if not isinstance(backend, dict):
+        return "operations_backend_missing"
+    if backend.get("service") != "wrapper_backend":
+        return "operations_backend_wrong_service"
+    if backend.get("status") != "ok":
+        return "operations_backend_not_ok"
+
+    deploy = body.get("deploy")
+    if isinstance(deploy, dict):
+        mount = str(deploy.get("mount") or "")
+        if mount and mount != "/nullxoid/":
+            return "operations_wrong_mount"
+
+    nullbridge = body.get("nullbridge")
+    if not isinstance(nullbridge, dict):
+        return "operations_nullbridge_status_missing"
+    if nullbridge.get("credentials_exposed") is not False:
+        return "operations_nullbridge_credentials_exposed"
+
+    path_needles = ("/home/", "/root/", "C:\\", "\\Users\\", ".ssh", ".env")
+    secret_needles = (
+        "bearer ",
+        "authorization:",
+        "nx_session=",
+        "nx_csrf=",
+        "private key",
+        "begin openssh private key",
+        "begin rsa private key",
+    )
+    for text in _iter_string_values(body):
+        lowered = text.lower()
+        for needle in path_needles:
+            if needle.lower() in lowered:
+                return f"operations_status_path_leak:{needle}"
+        for needle in secret_needles:
+            if needle in lowered:
+                return f"operations_status_secret_leak:{needle}"
+    return ""
+
+
+def _operations_status_summary(body: Any) -> dict[str, Any]:
+    if not isinstance(body, dict):
+        return {}
+    backend = body.get("backend") if isinstance(body.get("backend"), dict) else {}
+    deploy = body.get("deploy") if isinstance(body.get("deploy"), dict) else {}
+    runtime = body.get("runtime") if isinstance(body.get("runtime"), dict) else {}
+    resource = body.get("resource") if isinstance(body.get("resource"), dict) else {}
+    nullbridge = body.get("nullbridge") if isinstance(body.get("nullbridge"), dict) else {}
+    return {
+        "backend_service": backend.get("service", ""),
+        "backend_status": backend.get("status", ""),
+        "deploy_mount": deploy.get("mount", ""),
+        "canonical_origin": deploy.get("canonical_origin", ""),
+        "runtime_provider": runtime.get("provider", ""),
+        "runtime_status": runtime.get("status", ""),
+        "resource_free_gb": resource.get("free_gb", 0),
+        "resource_used_percent": resource.get("used_percent", 0),
+        "nullbridge_credentials_exposed": nullbridge.get("credentials_exposed", None),
+    }
 
 
 def _stream_has_response(content_type: str, body: str) -> bool:
@@ -371,6 +459,33 @@ def run_hosted_nullxoid_chat_check(
             failure="missing_model",
         )
 
+    operations_status, operations_body = request_json(
+        opener,
+        resolved_origin,
+        resolved_base_path,
+        "/api/operations/status",
+        timeout=timeout,
+    )
+    steps.append(f"operations_status:{operations_status}")
+    operations_failure = _operations_status_failure(operations_status, operations_body)
+    operations_summary = _operations_status_summary(operations_body)
+    if operations_failure:
+        return HostedChatResult(
+            ok=False,
+            origin=resolved_origin,
+            base_path=resolved_base_path,
+            login_status=login_status,
+            stream_status=0,
+            operations_status=operations_status,
+            user_id=user_id,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            model=selected_model,
+            operations_summary=operations_summary,
+            steps=steps,
+            failure=operations_failure,
+        )
+
     stream_status, content_type, stream_body = request_stream(
         opener,
         resolved_origin,
@@ -397,10 +512,12 @@ def run_hosted_nullxoid_chat_check(
         base_path=resolved_base_path,
         login_status=login_status,
         stream_status=stream_status,
+        operations_status=operations_status,
         user_id=user_id,
         workspace_id=workspace_id,
         project_id=project_id,
         model=selected_model,
+        operations_summary=operations_summary,
         stream_preview=stream_body[:240],
         steps=steps,
         failure=failure,

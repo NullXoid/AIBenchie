@@ -153,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Origin: {result['origin']}")
             print(f"Base path: {result['base_path']}")
             print(f"Login: HTTP {result['login_status']}")
+            print(f"Operations status: HTTP {result['operations_status']}")
             print(f"Chat stream: HTTP {result['stream_status']}")
             print(f"Workspace: {result['workspace_id'] or '(none)'}")
             print(f"Project: {result['project_id'] or '(none)'}")

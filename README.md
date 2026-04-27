@@ -124,7 +124,7 @@ $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --hosted-nullxoid-stack --json
 ```
 
-This check catches public-site fallback pages, blocked wrapper manifests, dead backend health routes, root API routes blocked by edge security, missing model inventory on open routes, and API endpoints that return HTML instead of JSON. Auth-required JSON responses are treated as healthy plumbing for unauthenticated route checks; credentialed browser/chat checks should run as a separate gate with secrets supplied only at runtime.
+This check catches public-site fallback pages, blocked wrapper manifests, dead backend health routes, operations-status routes exposed without JSON auth errors, root API routes blocked by edge security, missing model inventory on open routes, and API endpoints that return HTML instead of JSON. Auth-required JSON responses are treated as healthy plumbing for unauthenticated route checks; credentialed browser/chat checks should run as a separate gate with secrets supplied only at runtime.
 
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
@@ -137,7 +137,7 @@ $env:AIBENCHIE_NULLXOID_MODEL="<optional model id>"
 python aibenchie_local.py --hosted-nullxoid-chat --json
 ```
 
-This check logs in, reads the authenticated user/workspace/project/model contract, and verifies `/chat/stream` returns a real response instead of HTML, a Cloudflare challenge, or an HTTP 500. Credentials are read from environment variables and are not written to reports.
+This check logs in, reads the authenticated user/workspace/project/model contract, verifies authenticated operations status is JSON and does not expose service credentials or local paths, and verifies `/chat/stream` returns a real response instead of HTML, a Cloudflare challenge, or an HTTP 500. Credentials are read from environment variables and are not written to reports.
 
 Run the deployment resource budget gate:
 

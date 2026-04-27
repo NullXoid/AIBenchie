@@ -14,6 +14,14 @@ VALID_MANIFEST = json.dumps(
     }
 )
 
+OPERATIONS_AUTH_PATHS = {"/nullxoid/api/operations/status", "/api/operations/status"}
+
+
+def operations_auth_response(path: str):
+    if path in OPERATIONS_AUTH_PATHS:
+        return 401, "application/json", '{"detail":"Authentication required"}'
+    return None
+
 
 def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch):
     calls = []
@@ -36,6 +44,9 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
             return 401, "application/json", '{"detail":"Invalid username or password"}'
         if path == "/api/models":
             return 200, "application/json", '{"models":[{"id":"llama.cpp:qwen3"}]}'
+        operations_response = operations_auth_response(path)
+        if operations_response:
+            return operations_response
         raise AssertionError(path)
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
@@ -53,9 +64,11 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
         "backend_health",
         "mounted_auth_errors_are_json",
         "mounted_model_route_contract",
+        "mounted_operations_status_requires_auth",
         "root_health_route_not_challenged",
         "root_auth_errors_are_json",
         "root_model_route_contract",
+        "root_operations_status_requires_auth",
     ]
     assert calls[0][2] == "app.example.test"
 
@@ -130,6 +143,9 @@ def test_hosted_stack_check_fails_when_root_api_is_challenged(monkeypatch):
             return 403, "text/html", '<script src="https://challenges.cloudflare.com/challenge"></script>'
         if path == "/api/models":
             return 403, "text/html", '<script src="https://challenges.cloudflare.com/challenge"></script>'
+        operations_response = operations_auth_response(path)
+        if operations_response:
+            return operations_response
         raise AssertionError(path)
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
@@ -160,6 +176,9 @@ def test_hosted_stack_check_accepts_auth_required_model_route(monkeypatch):
             return 401, "application/json", '{"detail":"Invalid username or password"}'
         if path == "/api/models":
             return 401, "application/json", '{"detail":"Authentication required"}'
+        operations_response = operations_auth_response(path)
+        if operations_response:
+            return operations_response
         raise AssertionError(path)
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
@@ -187,6 +206,9 @@ def test_hosted_stack_check_fails_when_root_health_is_public_html(monkeypatch):
             return 401, "application/json", '{"detail":"Invalid username or password"}'
         if path == "/api/models":
             return 401, "application/json", '{"detail":"Authentication required"}'
+        operations_response = operations_auth_response(path)
+        if operations_response:
+            return operations_response
         raise AssertionError(path)
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
@@ -216,6 +238,9 @@ def test_hosted_stack_check_fails_when_mounted_model_route_is_html(monkeypatch):
             return 401, "application/json", '{"detail":"Invalid username or password"}'
         if path == "/api/models":
             return 401, "application/json", '{"detail":"Authentication required"}'
+        operations_response = operations_auth_response(path)
+        if operations_response:
+            return operations_response
         raise AssertionError(path)
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)

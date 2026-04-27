@@ -193,6 +193,16 @@ def model_route_failure(status: int, content_type: str, body: str, *, route_name
     return ""
 
 
+def auth_required_json_route_failure(status: int, content_type: str, body: str, *, route_name: str) -> str:
+    failure = json_route_failure(status, content_type, body, route_name=route_name, allowed_statuses={401, 403})
+    if failure:
+        return failure
+    payload = json_payload(body)
+    if not isinstance(payload, dict) or not bool(payload.get("detail") or payload.get("error")):
+        return f"{route_name}_missing_auth_error"
+    return ""
+
+
 def health_route_ok(status: int, content_type: str, body: str) -> bool:
     if not json_route_ok(status, content_type, body, allowed_statuses={200}):
         return False
@@ -291,6 +301,20 @@ def run_hosted_nullxoid_stack_check(
         )
     )
 
+    status, content_type, body = request_raw(
+        resolved_origin, f"{resolved_base_path}/api/operations/status", host_header=host_header, timeout=timeout
+    )
+    failure = auth_required_json_route_failure(status, content_type, body, route_name="mounted_operations_status")
+    routes.append(
+        RouteResult(
+            name="mounted_operations_status_requires_auth",
+            status=status,
+            content_type=content_type,
+            ok=not failure,
+            failure=failure,
+        )
+    )
+
     status, content_type, body = request_raw(resolved_origin, "/health", host_header=host_header, timeout=timeout)
     routes.append(
         RouteResult(
@@ -332,6 +356,20 @@ def run_hosted_nullxoid_stack_check(
     routes.append(
         RouteResult(
             name="root_model_route_contract",
+            status=status,
+            content_type=content_type,
+            ok=not failure,
+            failure=failure,
+        )
+    )
+
+    status, content_type, body = request_raw(
+        resolved_origin, "/api/operations/status", host_header=host_header, timeout=timeout
+    )
+    failure = auth_required_json_route_failure(status, content_type, body, route_name="root_operations_status")
+    routes.append(
+        RouteResult(
+            name="root_operations_status_requires_auth",
             status=status,
             content_type=content_type,
             ok=not failure,

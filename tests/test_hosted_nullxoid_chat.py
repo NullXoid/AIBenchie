@@ -3,6 +3,19 @@ from __future__ import annotations
 from aibenchie import hosted_nullxoid_chat
 
 
+def operations_status_payload(**overrides):
+    payload = {
+        "ok": True,
+        "backend": {"service": "wrapper_backend", "status": "ok"},
+        "deploy": {"mount": "/nullxoid/", "canonical_origin": "https://www.echolabs.diy"},
+        "runtime": {"provider": "local_runtime", "status": "ok"},
+        "resource": {"free_gb": 18.0, "used_percent": 22.0},
+        "nullbridge": {"credentials_exposed": False},
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_hosted_chat_check_streams_after_login(monkeypatch):
     calls = []
 
@@ -18,6 +31,8 @@ def test_hosted_chat_check_streams_after_login(monkeypatch):
             return 200, {"projects": [{"project_id": "proj-1", "slug": "general"}]}
         if path == "/api/models":
             return 200, {"models": [{"id": "llama.cpp:qwen"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload()
         raise AssertionError(path)
 
     def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
@@ -42,7 +57,10 @@ def test_hosted_chat_check_streams_after_login(monkeypatch):
 
     assert result.ok is True
     assert result.stream_status == 200
+    assert result.operations_status == 200
+    assert result.operations_summary["backend_service"] == "wrapper_backend"
     assert ("GET", "/api/models") in calls
+    assert ("GET", "/api/operations/status") in calls
 
 
 def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
@@ -55,6 +73,8 @@ def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
             return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
         if path == "/api/projects?workspace_id=ws-1":
             return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload()
         raise AssertionError(path)
 
     def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
@@ -86,6 +106,8 @@ def test_hosted_chat_check_fails_on_stream_challenge_html(monkeypatch):
             return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
         if path == "/api/projects?workspace_id=ws-1":
             return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload()
         raise AssertionError(path)
 
     def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
@@ -152,3 +174,90 @@ def test_hosted_chat_check_fails_when_login_is_challenged(monkeypatch):
 
     assert result.ok is False
     assert result.failure == "login_challenged"
+
+
+def test_hosted_chat_check_fails_when_operations_status_returns_html(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 403, "<html>Forbidden</html>"
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure == "operations_status_returned_html"
+
+
+def test_hosted_chat_check_fails_when_operations_status_leaks_local_path(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload(debug="/home/deploy/NullXoid/.env")
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure.startswith("operations_status_path_leak")
+
+
+def test_hosted_chat_check_fails_when_operations_status_exposes_nullbridge_credentials(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload(nullbridge={"credentials_exposed": True})
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure == "operations_nullbridge_credentials_exposed"
