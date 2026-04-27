@@ -2,6 +2,8 @@
 
 AIBenchie treats E2EE as complete only when the readiness gate passes. The local crypto proof is necessary, but it is not enough by itself. Product storage targets must also publish evidence that they encrypt data at rest, reject wrong keys and tampering, avoid plaintext persistence, and keep key material out of the repo.
 
+When this gate is green, dashboards and release notes should display it as complete for the current readiness boundary, not as "work in progress". The stricter zero-knowledge upgrade is a separate planned track: it requires user/device-held keys for supported private payloads so the backend cannot decrypt user content.
+
 Run the gate:
 
 ```powershell
@@ -90,3 +92,14 @@ AIBenchie reports E2EE complete only when:
 - each target points to concrete evidence
 
 Until then, `--e2ee-readiness` must fail. That failure is intentional: it prevents broad E2EE claims before product storage integration is proven.
+
+## Separate Zero-Knowledge Track
+
+Passing `--e2ee-readiness` does not automatically mean the full suite is zero-knowledge. The next privacy track should be labeled separately and should prove:
+
+- per-user or per-device key material for supported private payloads
+- no backend-side decryption path for zero-knowledge payload classes
+- device enrollment, recovery, and revocation behavior
+- metadata minimization for encrypted records
+- replay/tamper protection for sync envelopes
+- AIBenchie gates that distinguish readiness-complete from zero-knowledge-complete
