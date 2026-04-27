@@ -54,6 +54,47 @@ def generate_service_secrets() -> dict[str, str]:
     return {backend_id: secrets.token_urlsafe(32) for backend_id in BACKEND_IDS}
 
 
+def read_service_audit_entries(temp_backend_root: Path) -> list[dict[str, Any]]:
+    audit_path = temp_backend_root / "infra" / "nullbridge" / "state" / "service-audit.jsonl"
+    if not audit_path.exists():
+        return []
+    entries: list[dict[str, Any]] = []
+    for line in audit_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(item, dict):
+            entries.append(item)
+    return entries
+
+
+def audit_summary(entries: list[dict[str, Any]], secrets_map: dict[str, str]) -> dict[str, Any]:
+    serialized = json.dumps(entries, sort_keys=True)
+    secret_leaks = [backend_id for backend_id, value in secrets_map.items() if value and value in serialized]
+    secret_leaks.extend(marker for marker in ("Bearer ", "eyJ") if marker in serialized)
+    route_decisions = [
+        {
+            "event": item.get("event"),
+            "caller": item.get("caller_backend_id") or item.get("caller"),
+            "capability": item.get("capability"),
+            "targetRole": item.get("targetRole"),
+            "decision": item.get("decision"),
+            "reason": item.get("reason"),
+        }
+        for item in entries
+        if item.get("event") in {"nullbridge.route_decision", "nullbridge.service_claim_denied"}
+    ]
+    return {
+        "entry_count": len(entries),
+        "route_decisions": route_decisions,
+        "secret_leaks": secret_leaks,
+        "ok": bool(entries) and not secret_leaks,
+    }
+
+
 def copy_static_nullbridge_policy(nullbridge_repo: Path, temp_backend_root: Path) -> None:
     source = nullbridge_repo / "backend" / "infra" / "nullbridge"
     target = temp_backend_root / "infra" / "nullbridge"
@@ -159,6 +200,7 @@ class LocalNullBridgeRunner:
 
 def run_local_trust_path() -> dict[str, Any]:
     with LocalNullBridgeRunner() as bridge:
+        checks: dict[str, bool] = {}
         allow_status, allow_body = live_trust_path.route_check(
             base_url=bridge.base_url,
             caller="android_backend",
@@ -166,7 +208,9 @@ def run_local_trust_path() -> dict[str, Any]:
             target_role="primary_api",
             capability="chat.stream",
             platform="android",
+            request_id="aibenchie-local-allow",
         )
+        checks["signed_allow"] = allow_status == 202 and allow_body.get("accepted") is True
         deny_status, deny_body = live_trust_path.route_check(
             base_url=bridge.base_url,
             caller="android_backend",
@@ -174,13 +218,89 @@ def run_local_trust_path() -> dict[str, Any]:
             target_role="codex_tools",
             capability="codex.run",
             platform="android",
+            request_id="aibenchie-local-policy-deny",
         )
-        ok = allow_status == 202 and allow_body.get("accepted") is True and deny_status == 403
+        checks["route_policy_deny"] = deny_status == 403 and deny_body.get("errorCode") == "bridge.route_denied"
+        default_deny_status, default_deny_body = live_trust_path.route_check(
+            base_url=bridge.base_url,
+            caller="android_backend",
+            secret=bridge.service_secrets["android_backend"],
+            target_role="ghost_runtime",
+            capability="admin.audit",
+            platform="android",
+            request_id="aibenchie-local-default-deny",
+        )
+        checks["deny_by_default_before_target_lookup"] = (
+            default_deny_status == 403 and default_deny_body.get("errorCode") == "bridge.route_denied"
+        )
+        missing_user_status, missing_user_body = live_trust_path.route_check(
+            base_url=bridge.base_url,
+            caller="android_backend",
+            secret=bridge.service_secrets["android_backend"],
+            target_role="primary_api",
+            capability="chat.stream",
+            platform="android",
+            include_acting_user=False,
+            request_id="aibenchie-local-missing-user-context",
+        )
+        checks["user_context_required"] = (
+            missing_user_status == 403 and missing_user_body.get("errorCode") == "bridge.missing_user_context"
+        )
+        capability_claim_status, capability_claim_body = live_trust_path.route_check(
+            base_url=bridge.base_url,
+            caller="android_backend",
+            secret=bridge.service_secrets["android_backend"],
+            target_role="primary_api",
+            capability="chat.stream",
+            platform="android",
+            jwt_capability="models.list",
+            request_id="aibenchie-local-capability-claim-deny",
+        )
+        checks["jwt_capability_bound"] = (
+            capability_claim_status == 403
+            and capability_claim_body.get("errorCode") == "service.jwt_capability_mismatch"
+        )
+        target_claim_status, target_claim_body = live_trust_path.route_check(
+            base_url=bridge.base_url,
+            caller="android_backend",
+            secret=bridge.service_secrets["android_backend"],
+            target_role="primary_api",
+            capability="chat.stream",
+            platform="android",
+            jwt_target_role="artifact_store",
+            request_id="aibenchie-local-target-claim-deny",
+        )
+        checks["jwt_target_bound"] = (
+            target_claim_status == 403 and target_claim_body.get("errorCode") == "service.jwt_target_mismatch"
+        )
+        invalid_signature_status, invalid_signature_body = live_trust_path.route_check(
+            base_url=bridge.base_url,
+            caller="android_backend",
+            secret=f"{bridge.service_secrets['android_backend']}-wrong",
+            target_role="primary_api",
+            capability="chat.stream",
+            platform="android",
+            request_id="aibenchie-local-invalid-signature",
+        )
+        checks["invalid_signature_rejected"] = (
+            invalid_signature_status == 401
+            and invalid_signature_body.get("errorCode") == "service.jwt_invalid_signature"
+        )
+        audit = audit_summary(read_service_audit_entries(bridge.temp_root), bridge.service_secrets)
+        checks["audit_events_recorded"] = audit["ok"]
+        ok = all(checks.values())
         return {
             "ok": ok,
             "base_url": bridge.base_url,
             "allow": {"status": allow_status, "body": allow_body},
             "deny": {"status": deny_status, "body": deny_body},
+            "default_deny": {"status": default_deny_status, "body": default_deny_body},
+            "missing_user_context": {"status": missing_user_status, "body": missing_user_body},
+            "capability_claim_deny": {"status": capability_claim_status, "body": capability_claim_body},
+            "target_claim_deny": {"status": target_claim_status, "body": target_claim_body},
+            "invalid_signature": {"status": invalid_signature_status, "body": invalid_signature_body},
+            "checks": checks,
+            "audit": audit,
             "secrets_persisted": False,
         }
 

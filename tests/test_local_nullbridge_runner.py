@@ -40,6 +40,20 @@ def test_local_nullbridge_runner_proves_allow_and_deny_without_persisting_secret
     assert result["ok"] is True
     assert result["allow"]["status"] == 202
     assert result["deny"]["status"] == 403
+    assert result["default_deny"]["status"] == 403
+    assert result["missing_user_context"]["status"] == 403
+    assert result["capability_claim_deny"]["status"] == 403
+    assert result["target_claim_deny"]["status"] == 403
+    assert result["invalid_signature"]["status"] == 401
+    assert all(result["checks"].values())
+    assert result["audit"]["ok"] is True
+    assert result["audit"]["entry_count"] >= 4
+    assert result["audit"]["secret_leaks"] == []
+    reasons = {item["reason"] for item in result["audit"]["route_decisions"]}
+    assert "No route policy matched." in reasons
+    assert "missing_user_context" in reasons
+    assert "service.jwt_capability_mismatch" in reasons
+    assert "service.jwt_target_mismatch" in reasons
     assert result["secrets_persisted"] is False
 
 

@@ -117,9 +117,32 @@ def route_check(
     capability: str,
     platform: str,
     user_id: str = "aibenchie_live_user",
+    jwt_capability: str | None = None,
+    jwt_target_role: str | None = None,
+    include_acting_user: bool = True,
+    request_id: str | None = None,
+    payload: dict[str, Any] | None = None,
 ) -> tuple[int, dict[str, Any]]:
-    request_id = f"aibenchie-live-{caller}-{capability.replace('.', '-')}-{int(time.time())}"
-    token = service_jwt(secret=secret, caller=caller, capability=capability, target_role=target_role)
+    request_id = request_id or f"aibenchie-live-{caller}-{capability.replace('.', '-')}-{int(time.time())}"
+    token = service_jwt(
+        secret=secret,
+        caller=caller,
+        capability=jwt_capability if jwt_capability is not None else capability,
+        target_role=jwt_target_role if jwt_target_role is not None else target_role,
+    )
+    body: dict[str, Any] = {
+        "requestId": request_id,
+        "targetRole": target_role,
+        "capability": capability,
+        "payload": payload or {"source": "aibenchie_live_trust_path"},
+    }
+    if include_acting_user:
+        body["actingUser"] = {
+            "userId": user_id,
+            "roles": ["user"],
+            "workspaceId": "aibenchie_live_workspace",
+            "platform": platform,
+        }
     return request_json(
         "POST",
         f"{base_url.rstrip('/')}/bridge/requests",
@@ -127,18 +150,7 @@ def route_check(
             "X-NullBridge-Service": caller,
             "Authorization": f"Bearer {token}",
         },
-        body={
-            "requestId": request_id,
-            "targetRole": target_role,
-            "capability": capability,
-            "actingUser": {
-                "userId": user_id,
-                "roles": ["user"],
-                "workspaceId": "aibenchie_live_workspace",
-                "platform": platform,
-            },
-            "payload": {"source": "aibenchie_live_trust_path"},
-        },
+        body=body,
     )
 
 
