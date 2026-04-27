@@ -28,6 +28,8 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
             return 401, "application/json", '{"detail":"Invalid username or password"}'
+        if path == "/nullxoid/models":
+            return 401, "application/json", '{"detail":"Authentication required"}'
         if path == "/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/auth/login":
@@ -50,6 +52,7 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
         "wrapper_manifest",
         "backend_health",
         "mounted_auth_errors_are_json",
+        "mounted_model_route_contract",
         "root_health_route_not_challenged",
         "root_auth_errors_are_json",
         "root_model_route_contract",
@@ -119,6 +122,8 @@ def test_hosted_stack_check_fails_when_root_api_is_challenged(monkeypatch):
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
             return 401, "application/json", '{"detail":"Invalid username or password"}'
+        if path == "/nullxoid/models":
+            return 401, "application/json", '{"detail":"Authentication required"}'
         if path == "/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/auth/login":
@@ -147,6 +152,8 @@ def test_hosted_stack_check_accepts_auth_required_model_route(monkeypatch):
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
             return 401, "application/json", '{"detail":"Invalid username or password"}'
+        if path == "/nullxoid/models":
+            return 401, "application/json", '{"detail":"Authentication required"}'
         if path == "/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/auth/login":
@@ -172,6 +179,8 @@ def test_hosted_stack_check_fails_when_root_health_is_public_html(monkeypatch):
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
             return 401, "application/json", '{"detail":"Invalid username or password"}'
+        if path == "/nullxoid/models":
+            return 401, "application/json", '{"detail":"Authentication required"}'
         if path == "/health":
             return 200, "text/html; charset=utf-8", "<html>public site fallback</html>"
         if path == "/auth/login":
@@ -187,6 +196,35 @@ def test_hosted_stack_check_fails_when_root_health_is_public_html(monkeypatch):
     assert result.ok is False
     failures = {route.name: route.failure for route in result.routes if not route.ok}
     assert failures["root_health_route_not_challenged"] == "root_health_not_backend_json"
+
+
+def test_hosted_stack_check_fails_when_mounted_model_route_is_html(monkeypatch):
+    def fake_request_raw(origin, path, *, host_header="", method="GET", payload=None, timeout=15):
+        if path == "/nullxoid/":
+            return 200, "text/html", "<html>NullXoid Gallery</html>"
+        if path == "/nullxoid/manifest.webmanifest":
+            return 200, "application/manifest+json", VALID_MANIFEST
+        if path == "/nullxoid/health":
+            return 200, "application/json", '{"status":"ok"}'
+        if path == "/nullxoid/auth/login":
+            return 401, "application/json", '{"detail":"Invalid username or password"}'
+        if path == "/nullxoid/models":
+            return 403, "text/html", '<script src="https://challenges.cloudflare.com/challenge"></script>'
+        if path == "/health":
+            return 200, "application/json", '{"status":"ok"}'
+        if path == "/auth/login":
+            return 401, "application/json", '{"detail":"Invalid username or password"}'
+        if path == "/api/models":
+            return 401, "application/json", '{"detail":"Authentication required"}'
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
+
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
+
+    assert result.ok is False
+    failures = {route.name: route.failure for route in result.routes if not route.ok}
+    assert failures["mounted_model_route_contract"] == "mounted_model_challenged"
 
 
 def test_hosted_stack_check_fails_when_manifest_points_outside_mount(monkeypatch):

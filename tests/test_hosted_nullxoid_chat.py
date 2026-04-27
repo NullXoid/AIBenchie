@@ -74,3 +74,81 @@ def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
 
     assert result.ok is False
     assert result.failure == "chat_stream_http_500"
+
+
+def test_hosted_chat_check_fails_on_stream_challenge_html(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        raise AssertionError(path)
+
+    def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
+        return 403, "text/html", '<script src="https://challenges.cloudflare.com/challenge"></script>'
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_stream", fake_request_stream)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure == "chat_stream_challenged"
+
+
+def test_hosted_chat_check_fails_when_models_route_returns_html(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/models":
+            return 403, "<html>Forbidden</html>"
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+    )
+
+    assert result.ok is False
+    assert result.failure == "models_returned_html"
+
+
+def test_hosted_chat_check_fails_when_login_is_challenged(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 403, '<script src="https://challenges.cloudflare.com/challenge"></script>'
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+    )
+
+    assert result.ok is False
+    assert result.failure == "login_challenged"
