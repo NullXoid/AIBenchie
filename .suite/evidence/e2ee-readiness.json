@@ -77,6 +77,43 @@
       ]
     },
     {
+      "target": "sync_blobs",
+      "status": "implemented",
+      "encryption_boundary": "deployment_local_sync_blob_store",
+      "key_management": "deployment-local runtime key under session storage; no deploy, test, or source credential storage",
+      "plaintext_storage": "forbidden",
+      "tests": [
+        "roundtrip",
+        "wrong_key_rejected",
+        "tamper_rejected",
+        "plaintext_absent_at_rest",
+        "key_not_persisted_in_repo"
+      ],
+      "evidence": [
+        "EchoLabs/.NullXoid:backend/storage/sync_blobs.py",
+        "EchoLabs/.NullXoid:backend/tests/test_sync_blobs_e2ee_contract.py"
+      ]
+    },
+    {
+      "target": "private_aibenchie_reports",
+      "status": "implemented",
+      "encryption_boundary": "per_run_encrypted_full_report",
+      "key_management": "per-run local decrypt key sidecar outside public summary; no deploy, test, or source credential storage",
+      "plaintext_storage": "forbidden",
+      "tests": [
+        "roundtrip",
+        "wrong_key_rejected",
+        "tamper_rejected",
+        "plaintext_absent_at_rest",
+        "key_not_persisted_in_repo"
+      ],
+      "evidence": [
+        "EchoLabs/AIBenchie:aibenchie/release_report.py",
+        "EchoLabs/AIBenchie:tests/test_release_report.py",
+        "EchoLabs/AIBenchie:tests/test_public_scoreboard.py"
+      ]
+    },
+    {
       "target": "ccc_memory",
       "status": "implemented",
       "encryption_boundary": "deployment_local_ccc_memory_store",
