@@ -58,6 +58,25 @@
       ]
     },
     {
+      "target": "offline_cache",
+      "status": "implemented",
+      "encryption_boundary": "client_shell_cache_only_private_routes_excluded",
+      "key_management": "no private offline cache key; private payloads are excluded from CacheStorage and saved chats use device-local WebCrypto keys",
+      "plaintext_storage": "forbidden",
+      "tests": [
+        "roundtrip",
+        "wrong_key_rejected",
+        "tamper_rejected",
+        "plaintext_absent_at_rest",
+        "key_not_persisted_in_repo"
+      ],
+      "evidence": [
+        "EchoLabs/.NullXoid:frontend/public/sw.js",
+        "EchoLabs/.NullXoid:frontend/scripts/test-offline-cache-policy.mjs",
+        "EchoLabs/.NullXoid:frontend/scripts/test-chat-e2ee.mjs"
+      ]
+    },
+    {
       "target": "ccc_memory",
       "status": "implemented",
       "encryption_boundary": "deployment_local_ccc_memory_store",
