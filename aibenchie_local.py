@@ -13,6 +13,7 @@ from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.resource_budget import run_resource_budget_check
+from aibenchie.suite_security import run_suite_security_check
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -68,6 +69,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--generated-output-policy",
         action="store_true",
         help="Run repo generated-output hygiene checks for reports/data paths.",
+    )
+    parser.add_argument(
+        "--suite-security",
+        action="store_true",
+        help="Run the NullXoid suite security E2E gate against hosted API routes and repo hygiene checks.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -212,6 +218,25 @@ def main(argv: list[str] | None = None) -> int:
                 print("Dirty tracked generated outputs:")
                 for item in result["dirty_tracked_files"]:
                     print(f"- {item['path']} ({item['status']})")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.suite_security:
+        result = run_suite_security_check().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Suite Security E2E Gate")
+            print(f"Origin: {result['origin']}")
+            print(f"Base path: {result['base_path']}")
+            for check in result["checks"]:
+                if check["status"] == "skip":
+                    suffix = f" ({check['detail'].get('reason', 'optional check skipped')})"
+                elif check["failure"]:
+                    suffix = f" ({check['failure']})"
+                else:
+                    suffix = ""
+                print(f"{check['name']}: {check['status'].upper()} [{check['severity']}]{suffix}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

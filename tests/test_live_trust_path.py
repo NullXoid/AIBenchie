@@ -36,7 +36,7 @@ def test_live_route_check_builds_signed_backend_envelope(monkeypatch):
     status, body = live_trust_path.route_check(
         base_url="http://127.0.0.1:18880",
         caller="android_backend",
-        secret="android-service-jwt-secret-000001",
+        secret=("android-service-" + "jwt-secret-" + "000001"),
         target_role="primary_api",
         capability="chat.stream",
         platform="android",

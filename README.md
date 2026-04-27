@@ -180,6 +180,27 @@ $env:AIBENCHIE_GENERATED_DATA_MAX_FILES="300"
 python aibenchie_local.py --generated-output-policy --json
 ```
 
+Run the suite security E2E gate:
+
+```powershell
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
+python aibenchie_local.py --suite-security --json
+```
+
+This is AIBenchie's evidence gate for the deployed suite. It verifies that hosted NullXoid routes return the expected JSON/static contracts instead of public-site fallback HTML, Cloudflare challenge HTML, or HTTP 500s. It also scans public repo files for committed secrets and runs the generated-output policy so runtime reports, caches, and raw data do not grow into tracked bloat.
+
+Optional checks are enabled only with runtime environment variables:
+
+```powershell
+$env:AIBENCHIE_SUITE_SECURITY_EPHEMERAL="1"
+$env:AIBENCHIE_NULLXOID_EPHEMERAL_HELPER_ORIGIN="http://127.0.0.1:8090"
+$env:AIBENCHIE_SUITE_SECURITY_NULLBRIDGE="1"
+python aibenchie_local.py --suite-security --json
+```
+
+The ephemeral chat gate creates a short-lived restricted test user through a loopback helper, proves hosted chat works, then removes the user. Do not use personal admin credentials for this gate. The NullBridge option runs a local generated-secret trust smoke check; it verifies NullBridge behavior, but the runtime service identity and route policy still belong to NullBridge itself.
+
 ## Release Verdict Rule
 
 A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.
