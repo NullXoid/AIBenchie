@@ -43,14 +43,19 @@ def count_tests() -> int:
 
 def policy_status() -> list[tuple[str, str, str]]:
     gates = load_json(POLICIES / "aibenchie-gates.json")
+    auth_policy = load_json(POLICIES / "auth-policy.json")
     resource = load_json(POLICIES / "resource-policy.json")
     privacy = load_json(POLICIES / "privacy-levels.json")
     release = load_json(POLICIES / "release-policy.json")
+    setup = load_json(POLICIES / "setup-policy.json")
     source_hosts = load_json(POLICIES / "source-hosts.json")
     tracks = gates.get("required_tracks") or []
     providers = source_hosts.get("allowed_providers") or []
+    setup_steps = setup.get("steps") or []
     return [
         ("Release gates", f"{len(tracks)} tracked", "Quality, platform, privacy, security, and release checks."),
+        ("Guided setup", f"{len(setup_steps)} steps", "Standard setup must work from UI flows without a CLI requirement."),
+        ("User auth", str(auth_policy.get("primary_user_auth", "unknown")).replace("_", " "), "Passkeys first, OIDC PKCE optional, no frontend service credentials."),
         ("Resource policy", "bounded" if resource.get("deny_unbounded_resources") else "review", "Heavy work requires capped leases."),
         ("Privacy levels", f"{len(privacy.get('levels', {}))} levels", "Local, secure remote, relay, and sovereign modes."),
         ("Source providers", f"{len(providers)} options", f"Recommended: {release.get('recommended_source_provider', 'not configured')}."),
@@ -87,6 +92,43 @@ def render_source_provider_panel() -> None:
     st.caption(
         "Forgejo/Gitea are the recommended open-source self-hosted path. GitHub, GitLab, and custom Git remain supported so teams can adopt AIBenchie without changing hosts first."
     )
+
+
+def render_setup_panel() -> None:
+    setup = load_json(POLICIES / "setup-policy.json")
+    auth_policy = load_json(POLICIES / "auth-policy.json")
+
+    st.subheader("Guided Setup")
+    st.write(
+        "AIBenchie should guide normal users through source host, sign-in, backend, privacy, resources, "
+        "route checks, and release gates without requiring terminal commands. Personal settings stay session-only "
+        "or in ignored local add-ons."
+    )
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Setup mode", str(setup.get("setup_mode", "unknown")).replace("_", " "))
+    col2.metric("CLI required", "no" if setup.get("cli_required_for_standard_setup") is False else "review")
+    col3.metric("Primary sign-in", str(auth_policy.get("primary_user_auth", "unknown")).replace("_", " "))
+
+    methods = [method.replace("_", " ") for method in auth_policy.get("allowed_user_auth_methods", [])]
+    if methods:
+        st.caption("Allowed sign-in methods: " + ", ".join(methods))
+
+    steps = setup.get("steps") or []
+    if steps:
+        st.dataframe(
+            [
+                {
+                    "step": item.get("label", item.get("id", "unknown")),
+                    "cli": "no" if not item.get("requires_cli") else "required",
+                    "secret saved": "no" if not item.get("stores_secret") else "yes",
+                    "purpose": item.get("description", ""),
+                }
+                for item in steps
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
 
 
 def render_release_verdict_panel() -> None:
@@ -305,6 +347,9 @@ def main() -> None:
         "This Streamlit app does not require personal Forgejo settings, service tokens, or local backend credentials. "
         "Private configuration belongs in ignored local add-ons and should be entered only for the current session when needed."
     )
+
+    st.divider()
+    render_setup_panel()
 
     st.divider()
     render_source_provider_panel()

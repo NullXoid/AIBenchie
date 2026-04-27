@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "primary_user_auth": "passkey",
+  "allowed_user_auth_methods": [
+    "passkey",
+    "oidc_pkce",
+    "hardware_security_key",
+    "password_fallback_mfa"
+  ],
+  "frontend_token_storage": {
+    "website": "http_only_secure_samesite_cookie",
+    "website_wrapper": "http_only_secure_samesite_cookie_or_os_secure_storage",
+    "windows": "windows_credential_manager",
+    "android": "android_keystore",
+    "ios": "keychain"
+  },
+  "session_requirements": {
+    "short_lived": true,
+    "refresh_rotation": true,
+    "device_bound_where_supported": true,
+    "logout_revokes_server_session": true
+  },
+  "nullbridge_auth_boundary": "platform_backends_only",
+  "service_auth_boundary": "backend_to_nullbridge_only",
+  "forbidden_controls": [
+    "frontend_nullbridge_service_credentials",
+    "tokens_in_urls",
+    "browser_localstorage_auth_tokens",
+    "password_only_admin",
+    "android_direct_nullbridge_privileged_route",
+    "shared_default_admin_credentials"
+  ],
+  "admin_requirements": [
+    "hardware_key_for_admin",
+    "hardware_key_for_release",
+    "hardware_key_for_breakglass"
+  ]
+}

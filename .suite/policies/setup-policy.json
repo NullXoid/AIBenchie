@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "setup_mode": "guided_ui_first",
+  "cli_required_for_standard_setup": false,
+  "personal_config_storage": "ignored_local_addon",
+  "save_personal_credentials": false,
+  "validate_before_save": true,
+  "export_redacted_support_bundle": true,
+  "steps": [
+    {
+      "id": "choose_source_provider",
+      "label": "Choose source host",
+      "description": "Pick Forgejo, Gitea, GitHub, GitLab, or a custom Git host for this run.",
+      "requires_cli": false,
+      "stores_secret": false
+    },
+    {
+      "id": "choose_auth_method",
+      "label": "Choose sign-in method",
+      "description": "Prefer passkeys, with OIDC PKCE available for teams that already use an identity provider.",
+      "requires_cli": false,
+      "stores_secret": false
+    },
+    {
+      "id": "connect_backend",
+      "label": "Connect backend",
+      "description": "Enter a backend URL or select a local profile, then run health and greeting checks before saving.",
+      "requires_cli": false,
+      "stores_secret": false
+    },
+    {
+      "id": "choose_privacy_level",
+      "label": "Choose privacy level",
+      "description": "Select Fast Secure, Secure Remote, ISP Destination Hidden, Relay Shield, or Local Sovereign.",
+      "requires_cli": false,
+      "stores_secret": false
+    },
+    {
+      "id": "choose_resource_profile",
+      "label": "Choose resource profile",
+      "description": "Apply bounded CPU, memory, runtime, and concurrency limits before heavy work can start.",
+      "requires_cli": false,
+      "stores_secret": false
+    },
+    {
+      "id": "validate_routes",
+      "label": "Validate routes",
+      "description": "Check health, auth JSON, manifest, API, and chat routes for HTML fallback or challenge responses.",
+      "requires_cli": false,
+      "stores_secret": false
+    },
+    {
+      "id": "run_aibenchie_gates",
+      "label": "Run AIBenchie gates",
+      "description": "Run the selected quality, privacy, security, resource, and release gates before publish.",
+      "requires_cli": false,
+      "stores_secret": false
+    }
+  ]
+}

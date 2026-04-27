@@ -29,7 +29,7 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
     result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(
         origin="http://127.0.0.1",
         base_path="/nullxoid",
-        host_header="www.echolabs.diy",
+        host_header="app.example.test",
     )
 
     assert result.ok is True
@@ -42,7 +42,7 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
         "root_auth_errors_are_json",
         "root_model_route_contract",
     ]
-    assert calls[0][2] == "www.echolabs.diy"
+    assert calls[0][2] == "app.example.test"
 
 
 def test_hosted_stack_check_fails_on_public_site_wrapper_fallback(monkeypatch):
@@ -53,7 +53,7 @@ def test_hosted_stack_check_fails_on_public_site_wrapper_fallback(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
 
-    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
 
     assert result.ok is False
     assert result.routes[0].name == "wrapper_page"
@@ -73,7 +73,7 @@ def test_hosted_stack_check_fails_when_api_error_is_html(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
 
-    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
 
     assert result.ok is False
     assert result.routes[3].name == "mounted_auth_errors_are_json"
@@ -90,7 +90,7 @@ def test_hosted_stack_check_fails_when_manifest_is_challenged(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
 
-    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
 
     assert result.ok is False
     assert result.routes[1].name == "wrapper_manifest"
@@ -117,7 +117,7 @@ def test_hosted_stack_check_fails_when_root_api_is_challenged(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
 
-    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
 
     assert result.ok is False
     failures = {route.name for route in result.routes if not route.ok}
@@ -145,7 +145,7 @@ def test_hosted_stack_check_accepts_auth_required_model_route(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
 
-    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
 
     assert result.ok is True
 
@@ -170,7 +170,7 @@ def test_hosted_stack_check_fails_when_root_health_is_public_html(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
 
-    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://www.echolabs.diy")
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
 
     assert result.ok is False
     failures = {route.name: route.failure for route in result.routes if not route.ok}

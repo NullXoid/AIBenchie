@@ -4,6 +4,8 @@ AIBenchie is the NullXoid suite release-verdict and regression system.
 
 It benchmarks model behavior, validates platform health, checks security and privacy gates, and produces release evidence before any suite artifact is trusted.
 
+Standard setup is guided UI first. Users should be able to choose source host, sign-in method, backend connection, privacy level, resource profile, and validation gates without dropping into a CLI. See [docs/AUTH_AND_SETUP_POLICY.md](docs/AUTH_AND_SETUP_POLICY.md).
+
 ```text
 Source repo or build artifact
   -> AIBenchie gates
@@ -65,6 +67,8 @@ AIBenchie can consume sanitized Lv-7 benchmark fixtures and release reports, but
 - runtime performance
 - platform health
 - streaming stability
+- guided setup
+- auth posture
 - NullBridge authorization enforcement
 - website auth leakage checks
 - Prompt Editor redaction checks
@@ -115,7 +119,7 @@ Run hosted NullXoid wrapper route checks without saving secrets:
 
 ```powershell
 $env:AIBENCHIE_NULLXOID_ORIGIN="http://127.0.0.1"
-$env:AIBENCHIE_NULLXOID_HOST_HEADER="www.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_HOST_HEADER="app.example.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --hosted-nullxoid-stack --json
 ```
@@ -125,7 +129,7 @@ This check catches public-site fallback pages, blocked wrapper manifests, dead b
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://www.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://app.example.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 $env:AIBENCHIE_NULLXOID_USERNAME="<runtime username>"
 $env:AIBENCHIE_NULLXOID_PASSWORD="<runtime password>"

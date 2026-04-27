@@ -35,6 +35,7 @@ DIRECT_NULLBRIDGE_ROUTE_RE = re.compile(
 
 REQUIRED_POLICY_FILES = [
     "actions-policy.json",
+    "auth-policy.json",
     "aibenchie-gates.json",
     "breakglass-policy.json",
     "nullbridge-capabilities.json",
@@ -43,6 +44,7 @@ REQUIRED_POLICY_FILES = [
     "release-policy.json",
     "resource-policy.json",
     "runner-policy.json",
+    "setup-policy.json",
     "source-hosts.json",
 ]
 
@@ -153,6 +155,100 @@ def validate_source_hosts_policy(policy: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_setup_policy(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if policy.get("setup_mode") != "guided_ui_first":
+        errors.append("setup_mode:not_guided_ui_first")
+    if policy.get("cli_required_for_standard_setup") is not False:
+        errors.append("cli_required_for_standard_setup:not_false")
+    if policy.get("personal_config_storage") not in {"session_only", "ignored_local_addon"}:
+        errors.append("personal_config_storage:not_ephemeral")
+    if policy.get("save_personal_credentials") is not False:
+        errors.append("save_personal_credentials:not_false")
+    if policy.get("validate_before_save") is not True:
+        errors.append("validate_before_save:not_enforced")
+    if policy.get("export_redacted_support_bundle") is not True:
+        errors.append("export_redacted_support_bundle:not_enabled")
+
+    required_steps = {
+        "choose_source_provider",
+        "choose_auth_method",
+        "connect_backend",
+        "choose_privacy_level",
+        "choose_resource_profile",
+        "validate_routes",
+        "run_aibenchie_gates",
+    }
+    steps = {step.get("id") for step in policy.get("steps", [])}
+    for step in sorted(required_steps - steps):
+        errors.append(f"setup_step:missing:{step}")
+
+    for step in policy.get("steps", []):
+        step_id = step.get("id", "unknown")
+        if not step.get("label"):
+            errors.append(f"{step_id}:label:missing")
+        if step.get("requires_cli") is True:
+            errors.append(f"{step_id}:requires_cli")
+        if step.get("stores_secret") is True:
+            errors.append(f"{step_id}:stores_secret")
+    return errors
+
+
+def validate_auth_policy(policy: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if policy.get("primary_user_auth") != "passkey":
+        errors.append("primary_user_auth:not_passkey")
+    allowed = set(policy.get("allowed_user_auth_methods", []))
+    for method in ["passkey", "oidc_pkce"]:
+        if method not in allowed:
+            errors.append(f"allowed_user_auth_methods:missing:{method}")
+    if "password_only" in allowed:
+        errors.append("allowed_user_auth_methods:password_only_allowed")
+
+    storage = policy.get("frontend_token_storage", {})
+    expected_storage = {
+        "website": "http_only_secure_samesite_cookie",
+        "website_wrapper": "http_only_secure_samesite_cookie_or_os_secure_storage",
+        "windows": "windows_credential_manager",
+        "android": "android_keystore",
+        "ios": "keychain",
+    }
+    for platform, expected in expected_storage.items():
+        if storage.get(platform) != expected:
+            errors.append(f"frontend_token_storage:{platform}:invalid")
+    forbidden_storage = {str(value).lower() for value in storage.values()}
+    if "localstorage" in forbidden_storage or "browser_local_storage" in forbidden_storage:
+        errors.append("frontend_token_storage:browser_local_storage_allowed")
+
+    session = policy.get("session_requirements", {})
+    for key in ["short_lived", "refresh_rotation", "logout_revokes_server_session"]:
+        if session.get(key) is not True:
+            errors.append(f"session_requirements:{key}:not_enforced")
+
+    if policy.get("nullbridge_auth_boundary") != "platform_backends_only":
+        errors.append("nullbridge_auth_boundary:not_platform_backends_only")
+    if policy.get("service_auth_boundary") != "backend_to_nullbridge_only":
+        errors.append("service_auth_boundary:not_backend_to_nullbridge_only")
+
+    forbidden = set(policy.get("forbidden_controls", []))
+    for control in {
+        "frontend_nullbridge_service_credentials",
+        "tokens_in_urls",
+        "browser_localstorage_auth_tokens",
+        "password_only_admin",
+        "android_direct_nullbridge_privileged_route",
+        "shared_default_admin_credentials",
+    }:
+        if control not in forbidden:
+            errors.append(f"forbidden_control:missing:{control}")
+
+    admin_requirements = set(policy.get("admin_requirements", []))
+    for requirement in ["hardware_key_for_admin", "hardware_key_for_release", "hardware_key_for_breakglass"]:
+        if requirement not in admin_requirements:
+            errors.append(f"admin_requirement:missing:{requirement}")
+    return errors
+
+
 def validate_runner_policy(policy: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     for runner in policy.get("runners", []):
@@ -191,6 +287,8 @@ def validate_aibenchie_gates(policy: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     tracks = set(policy.get("required_tracks", []))
     for required in {
+        "auth_posture",
+        "guided_setup",
         "nullbridge_enforcement",
         "privacy",
         "prompt_editor_leakage",

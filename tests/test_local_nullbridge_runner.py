@@ -99,7 +99,7 @@ def test_cli_ephemeral_hosted_chat_prints_without_credentials(monkeypatch, capsy
         def as_dict(self):
             return {
                 "ok": True,
-                "origin": "https://www.echolabs.diy",
+                "origin": "https://app.example.test",
                 "base_path": "/nullxoid",
                 "helper_origin": "http://127.0.0.1:8090",
                 "create_status": 200,

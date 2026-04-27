@@ -10,6 +10,7 @@ from training.release_fabric import (
     load_json,
     sha256_file,
     validate_actions_policy,
+    validate_auth_policy,
     validate_aibenchie_gates,
     validate_aibenchie_summary,
     validate_breakglass_grant,
@@ -23,6 +24,7 @@ from training.release_fabric import (
     validate_release_policy,
     validate_resource_policy,
     validate_runner_policy,
+    validate_setup_policy,
     validate_source_hosts_policy,
     validate_suite_adapter_compliance,
     validate_workflow_text,
@@ -91,6 +93,8 @@ def test_policy_tree_and_workflows_are_valid():
 def test_core_policies_fail_closed():
     assert validate_release_policy(load_json(POLICIES_ROOT / "release-policy.json")) == []
     assert validate_source_hosts_policy(load_json(POLICIES_ROOT / "source-hosts.json")) == []
+    assert validate_setup_policy(load_json(POLICIES_ROOT / "setup-policy.json")) == []
+    assert validate_auth_policy(load_json(POLICIES_ROOT / "auth-policy.json")) == []
     assert validate_runner_policy(load_json(POLICIES_ROOT / "runner-policy.json")) == []
     assert validate_actions_policy(load_json(POLICIES_ROOT / "actions-policy.json")) == []
     assert validate_aibenchie_gates(load_json(POLICIES_ROOT / "aibenchie-gates.json")) == []
@@ -124,6 +128,74 @@ def test_source_host_policy_supports_user_choice_without_persisted_credentials()
     assert "credential_storage:not_session_only" in errors
     assert "forbid_persisted_credentials:not_enforced" in errors
     assert "forgejo:personal_config:not_ephemeral" in errors
+
+
+def test_setup_policy_requires_guided_ui_and_no_saved_personal_credentials():
+    valid = load_json(POLICIES_ROOT / "setup-policy.json")
+    assert validate_setup_policy(valid) == []
+
+    broken = {
+        "setup_mode": "cli_first",
+        "cli_required_for_standard_setup": True,
+        "personal_config_storage": "tracked_config",
+        "save_personal_credentials": True,
+        "validate_before_save": False,
+        "export_redacted_support_bundle": False,
+        "steps": [
+            {
+                "id": "choose_source_provider",
+                "label": "Source",
+                "requires_cli": True,
+                "stores_secret": True,
+            }
+        ],
+    }
+    errors = validate_setup_policy(broken)
+    assert "setup_mode:not_guided_ui_first" in errors
+    assert "cli_required_for_standard_setup:not_false" in errors
+    assert "personal_config_storage:not_ephemeral" in errors
+    assert "save_personal_credentials:not_false" in errors
+    assert "validate_before_save:not_enforced" in errors
+    assert "export_redacted_support_bundle:not_enabled" in errors
+    assert "setup_step:missing:choose_auth_method" in errors
+    assert "choose_source_provider:requires_cli" in errors
+    assert "choose_source_provider:stores_secret" in errors
+
+
+def test_auth_policy_requires_passkeys_secure_storage_and_backend_bridge_boundary():
+    valid = load_json(POLICIES_ROOT / "auth-policy.json")
+    assert validate_auth_policy(valid) == []
+
+    broken = {
+        "primary_user_auth": "password",
+        "allowed_user_auth_methods": ["password_only"],
+        "frontend_token_storage": {
+            "website": "localstorage",
+            "android": "shared_preferences"
+        },
+        "session_requirements": {
+            "short_lived": False,
+            "refresh_rotation": False,
+            "logout_revokes_server_session": False
+        },
+        "nullbridge_auth_boundary": "frontends_allowed",
+        "service_auth_boundary": "frontend_to_nullbridge",
+        "forbidden_controls": [],
+        "admin_requirements": [],
+    }
+    errors = validate_auth_policy(broken)
+    assert "primary_user_auth:not_passkey" in errors
+    assert "allowed_user_auth_methods:missing:passkey" in errors
+    assert "allowed_user_auth_methods:missing:oidc_pkce" in errors
+    assert "allowed_user_auth_methods:password_only_allowed" in errors
+    assert "frontend_token_storage:website:invalid" in errors
+    assert "frontend_token_storage:android:invalid" in errors
+    assert "frontend_token_storage:browser_local_storage_allowed" in errors
+    assert "session_requirements:short_lived:not_enforced" in errors
+    assert "nullbridge_auth_boundary:not_platform_backends_only" in errors
+    assert "service_auth_boundary:not_backend_to_nullbridge_only" in errors
+    assert "forbidden_control:missing:frontend_nullbridge_service_credentials" in errors
+    assert "admin_requirement:missing:hardware_key_for_admin" in errors
 
 
 def valid_bridge_request(**overrides) -> dict:

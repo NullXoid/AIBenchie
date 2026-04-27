@@ -39,7 +39,7 @@ def test_ephemeral_chat_creates_runs_and_cleans_without_leaking_password(monkeyp
     monkeypatch.setattr(hosted_nullxoid_ephemeral_chat, "run_hosted_nullxoid_chat_check", fake_chat_check)
 
     result = hosted_nullxoid_ephemeral_chat.run_ephemeral_hosted_nullxoid_chat_check(
-        origin="https://www.echolabs.diy",
+        origin="https://app.example.test",
         base_path="/nullxoid",
         helper_origin="http://127.0.0.1:8090",
     )
@@ -58,7 +58,7 @@ def test_ephemeral_chat_fails_when_create_route_is_unavailable(monkeypatch):
     monkeypatch.setattr(hosted_nullxoid_ephemeral_chat, "request_json", fake_request_json)
 
     result = hosted_nullxoid_ephemeral_chat.run_ephemeral_hosted_nullxoid_chat_check(
-        origin="https://www.echolabs.diy",
+        origin="https://app.example.test",
         base_path="/nullxoid",
         helper_origin="http://127.0.0.1:8090",
     )
@@ -97,7 +97,7 @@ def test_ephemeral_chat_cleans_up_when_chat_fails(monkeypatch):
     monkeypatch.setattr(hosted_nullxoid_ephemeral_chat, "run_hosted_nullxoid_chat_check", fake_chat_check)
 
     result = hosted_nullxoid_ephemeral_chat.run_ephemeral_hosted_nullxoid_chat_check(
-        origin="https://www.echolabs.diy",
+        origin="https://app.example.test",
         base_path="/nullxoid",
         helper_origin="http://127.0.0.1:8090",
     )

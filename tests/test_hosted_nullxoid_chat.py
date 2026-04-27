@@ -34,7 +34,7 @@ def test_hosted_chat_check_streams_after_login(monkeypatch):
     monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
 
     result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
-        origin="https://www.echolabs.diy",
+        origin="https://app.example.test",
         base_path="/nullxoid",
         username="admin",
         password="runtime-only",
@@ -65,7 +65,7 @@ def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
     monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
 
     result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
-        origin="https://www.echolabs.diy",
+        origin="https://app.example.test",
         base_path="/nullxoid",
         username="admin",
         password="runtime-only",
