@@ -13,6 +13,7 @@ from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
 from aibenchie.generated_output_policy import run_generated_output_policy_check
+from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.suite_security import run_suite_security_check
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
@@ -91,6 +92,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--generated-output-policy",
         action="store_true",
         help="Run repo generated-output hygiene checks for reports/data paths.",
+    )
+    parser.add_argument(
+        "--public-scoreboard",
+        action="store_true",
+        help="Write a public-safe scoreboard using the latest valid runtime report in each class.",
+    )
+    parser.add_argument(
+        "--public-scoreboard-output",
+        default="",
+        help="Optional output path for --public-scoreboard. Defaults to public_export/aibenchie-scoreboard.json.",
     )
     parser.add_argument(
         "--suite-security",
@@ -302,6 +313,24 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"- {item['path']} ({item['status']})")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
+
+    if args.public_scoreboard:
+        from pathlib import Path
+
+        result = write_public_scoreboard(output=Path(args.public_scoreboard_output) if args.public_scoreboard_output else None)
+        payload = result.as_dict()
+        if args.json:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            overall = payload["scoreboard"].get("overall", {}) if payload["scoreboard"] else {}
+            print("AIBenchie Public Scoreboard Export")
+            print(f"Output: {payload['output']}")
+            print(f"Included reports: {payload['included_reports']}")
+            print(f"Skipped reports: {payload['skipped_reports']}")
+            print(f"Overall score: {overall.get('score', 0)}")
+            print(f"Grade: {overall.get('grade', 'unknown')}")
+            print("Result: PASS" if payload["ok"] else f"Result: FAIL ({payload['failure']})")
+        return 0 if payload["ok"] else 1
 
     if args.suite_security:
         result = run_suite_security_check().as_dict()

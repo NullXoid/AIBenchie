@@ -1,0 +1,258 @@
+{
+  "classes": [
+    {
+      "key": "accepted_runtime_repair_promotion",
+      "milestone": "LV7 v1.5.10",
+      "result": "blocked",
+      "score": 0.0,
+      "source": "reports/runtime/v1_5_10_accepted_runtime_repair_promotion.json",
+      "status": "V1_5_10_PROMOTION_BLOCKED",
+      "summary": "V1_5_10_PROMOTION_BLOCKED. resolve blocked promotion evidence",
+      "title": "Accepted Runtime Repair Promotion",
+      "version": "v1_5_10"
+    },
+    {
+      "key": "candidate_runtime_repair_acceptance",
+      "milestone": "LV7 v1.5.9",
+      "pass_count": 0,
+      "record_count": 0,
+      "result": "blocked",
+      "score": 0.0,
+      "source": "reports/runtime/v1_5_9_candidate_runtime_repair_acceptance.json",
+      "status": "V1_5_9_ACCEPTANCE_BLOCKED",
+      "summary": "V1_5_9_ACCEPTANCE_BLOCKED",
+      "title": "Candidate Runtime Repair Acceptance",
+      "version": "v1_5_9"
+    },
+    {
+      "key": "post_promotion_identity_sync",
+      "milestone": "LV7 v1.5.11",
+      "result": "blocked",
+      "score": 0.0,
+      "source": "reports/runtime/v1_5_11_post_promotion_identity_sync.json",
+      "status": "V1_5_11_IDENTITY_SYNC_BLOCKED",
+      "summary": "V1_5_11_IDENTITY_SYNC_BLOCKED. Resolve blocked identity sync evidence.",
+      "title": "Post Promotion Identity Sync",
+      "version": "v1_5_11"
+    },
+    {
+      "key": "promoted_runtime_release_readiness",
+      "milestone": "LV7 v1.5.12",
+      "pass_count": 0,
+      "record_count": 0,
+      "result": "blocked",
+      "score": 0.0,
+      "source": "reports/runtime/v1_5_12_promoted_runtime_release_readiness.json",
+      "status": "V1_5_12_RELEASE_BASELINE_BLOCKED",
+      "summary": "V1_5_12_RELEASE_BASELINE_BLOCKED. Resolve blocked release-readiness evidence.",
+      "title": "Promoted Runtime Release Readiness",
+      "version": "v1_5_12"
+    },
+    {
+      "key": "android_cancel_timeout_fallback_contract",
+      "milestone": "LV7 v1.5.13",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_13_android_cancel_timeout_fallback_contract.json",
+      "status": "V1_5_13_ANDROID_CANCEL_TIMEOUT_FALLBACK_CONTRACT_READY",
+      "summary": "V1_5_13_ANDROID_CANCEL_TIMEOUT_FALLBACK_CONTRACT_READY. Implement the Android cancel/timeout fallback UI and telemetry path against this contract.",
+      "title": "Android Cancel Timeout Fallback Contract",
+      "version": "v1_5_13"
+    },
+    {
+      "key": "backend_identity_policy",
+      "milestone": "LV7 v1.4.3a",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_4_3a_backend_identity_policy.json",
+      "status": "RUNTIME_BACKEND_IDENTITY_POLICY_READY",
+      "summary": "RUNTIME_BACKEND_IDENTITY_POLICY_READY",
+      "title": "Backend Identity Policy",
+      "version": "v1_4_3a"
+    },
+    {
+      "key": "candidate_runtime_failure_diagnosis",
+      "milestone": "LV7 v1.5.5",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_5_5_candidate_runtime_failure_diagnosis.json",
+      "status": "V1_5_5_DIAGNOSIS_INSUFFICIENT",
+      "summary": "V1_5_5_DIAGNOSIS_INSUFFICIENT",
+      "title": "Candidate Runtime Failure Diagnosis",
+      "version": "v1_5_5"
+    },
+    {
+      "key": "candidate_runtime_recheck_bridge",
+      "milestone": "LV7 v1.5.3",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_3_candidate_runtime_recheck_bridge.json",
+      "status": "V1_5_3_RUNTIME_BRIDGE_READY",
+      "summary": "V1_5_3_RUNTIME_BRIDGE_READY",
+      "title": "Candidate Runtime Recheck Bridge",
+      "version": "v1_5_3"
+    },
+    {
+      "key": "candidate_runtime_repair_spec",
+      "milestone": "LV7 v1.5.6",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_5_6_candidate_runtime_repair_spec.json",
+      "status": "V1_5_6_REPAIR_SPEC_INSUFFICIENT",
+      "summary": "V1_5_6_REPAIR_SPEC_INSUFFICIENT",
+      "title": "Candidate Runtime Repair Spec",
+      "version": "v1_5_6"
+    },
+    {
+      "key": "candidate_runtime_results_ingestion",
+      "milestone": "LV7 v1.5.4",
+      "record_count": 0,
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_5_4_candidate_runtime_results_ingestion.json",
+      "status": "V1_5_4_CANDIDATE_RUNTIME_RESULTS_INVALID",
+      "summary": "V1_5_4_CANDIDATE_RUNTIME_RESULTS_INVALID",
+      "title": "Candidate Runtime Results Ingestion",
+      "version": "v1_5_4"
+    },
+    {
+      "key": "mode_selection_contract_implementation",
+      "milestone": "LV7 v1.4.8",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_4_8_mode_selection_contract_implementation.json",
+      "status": "V1_4_8_IMPLEMENTATION_READY",
+      "summary": "V1_4_8_IMPLEMENTATION_READY",
+      "title": "Mode Selection Contract Implementation",
+      "version": "v1_4_8"
+    },
+    {
+      "key": "mode_selection_fix_spec",
+      "milestone": "LV7 v1.4.7",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_4_7_mode_selection_fix_spec.json",
+      "status": "V1_4_7_FIX_SPEC_READY",
+      "summary": "V1_4_7_FIX_SPEC_READY",
+      "title": "Mode Selection Fix Spec",
+      "version": "v1_4_7"
+    },
+    {
+      "key": "narrow_runtime_model_repair_plan",
+      "milestone": "LV7 v1.5.0",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_5_0_narrow_runtime_model_repair_plan.json",
+      "status": "V1_5_0_REPAIR_PLAN_INSUFFICIENT",
+      "summary": "V1_5_0_REPAIR_PLAN_INSUFFICIENT",
+      "title": "Narrow Runtime Model Repair Plan",
+      "version": "v1_5_0"
+    },
+    {
+      "key": "narrow_runtime_sft_repair_implementation",
+      "milestone": "LV7 v1.5.1",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_5_1_narrow_runtime_sft_repair_implementation.json",
+      "status": "V1_5_1_IMPLEMENTATION_INSUFFICIENT",
+      "summary": "V1_5_1_IMPLEMENTATION_INSUFFICIENT",
+      "title": "Narrow Runtime SFT Repair Implementation",
+      "version": "v1_5_1"
+    },
+    {
+      "key": "narrow_runtime_sft_training_run",
+      "milestone": "LV7 v1.5.2",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_2_narrow_runtime_sft_training_run.json",
+      "status": "V1_5_2_CANDIDATE_READY_FOR_RUNTIME_BRIDGE",
+      "summary": "V1_5_2_CANDIDATE_READY_FOR_RUNTIME_BRIDGE",
+      "title": "Narrow Runtime SFT Training Run",
+      "version": "v1_5_2"
+    },
+    {
+      "key": "policy_rationale_contract_fix_implementation",
+      "milestone": "LV7 v1.4.6",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_4_6_policy_rationale_contract_fix_implementation.json",
+      "status": "V1_4_6_IMPLEMENTATION_READY",
+      "summary": "V1_4_6_IMPLEMENTATION_READY",
+      "title": "Policy Rationale Contract Fix Implementation",
+      "version": "v1_4_6"
+    },
+    {
+      "key": "policy_rationale_fix_spec",
+      "milestone": "LV7 v1.4.5",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_4_5_policy_rationale_fix_spec.json",
+      "status": "V1_4_5_FIX_SPEC_INSUFFICIENT",
+      "summary": "V1_4_5_FIX_SPEC_INSUFFICIENT",
+      "title": "Policy Rationale Fix Spec",
+      "version": "v1_4_5"
+    },
+    {
+      "key": "policy_rationale_repair_attempts",
+      "milestone": "LV7 v1.5.7",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_7_policy_rationale_repair_attempts.json",
+      "status": "V1_5_7_READY_FOR_TARGETED_SFT_REPAIR",
+      "summary": "V1_5_7_READY_FOR_TARGETED_SFT_REPAIR",
+      "title": "Policy Rationale Repair Attempts",
+      "version": "v1_5_7"
+    },
+    {
+      "key": "runtime_model_failure_diagnosis",
+      "milestone": "LV7 v1.4.4",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_4_4_runtime_model_failure_diagnosis.json",
+      "status": "V1_4_4_DIAGNOSIS_INSUFFICIENT",
+      "summary": "V1_4_4_DIAGNOSIS_INSUFFICIENT",
+      "title": "Runtime Model Failure Diagnosis",
+      "version": "v1_4_4"
+    },
+    {
+      "key": "runtime_model_repair_investigation",
+      "milestone": "LV7 v1.4.9",
+      "result": "review",
+      "score": 50.0,
+      "source": "reports/runtime/v1_4_9_runtime_model_repair_investigation.json",
+      "status": "V1_4_9_REPAIR_INVESTIGATION_INSUFFICIENT",
+      "summary": "V1_4_9_REPAIR_INVESTIGATION_INSUFFICIENT",
+      "title": "Runtime Model Repair Investigation",
+      "version": "v1_4_9"
+    },
+    {
+      "key": "targeted_repair_attempt_loop",
+      "milestone": "LV7 v1.5.8 targeted runtime repair attempt loop",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_8_targeted_repair_attempt_loop.json",
+      "status": "V1_5_8_TARGETED_REPAIR_COMPLETE",
+      "summary": "V1_5_8_TARGETED_REPAIR_COMPLETE",
+      "title": "Targeted Repair Attempt Loop",
+      "version": "v1_5_8"
+    }
+  ],
+  "generated_at": "2026-04-27T17:47:13.508571+00:00",
+  "overall": {
+    "blocked_count": 4,
+    "class_count": 21,
+    "grade": "review",
+    "pass_count": 9,
+    "review_count": 8,
+    "score": 61.9
+  },
+  "policy": {
+    "latest_per_class": true,
+    "raw_data_fixtures_published": false,
+    "raw_reports_published": false,
+    "source": "reports/runtime/*.json"
+  },
+  "schema_version": 1,
+  "summary": "Public-safe latest valid result per class. Raw runtime reports and benchmark fixtures stay in AIBenchie.",
+  "title": "AIBenchie Public Scoreboard"
+}

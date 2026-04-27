@@ -238,6 +238,14 @@ $env:AIBENCHIE_GENERATED_DATA_MAX_FILES="300"
 python aibenchie_local.py --generated-output-policy --json
 ```
 
+Write the public scoreboard export:
+
+```powershell
+python aibenchie_local.py --public-scoreboard --json
+```
+
+The scoreboard is the website-facing view of AIBenchie evidence. It scans valid JSON reports under `reports/runtime`, keeps only the latest report for each class or test, computes an overall score, and writes a compact public-safe export to `public_export/aibenchie-scoreboard.json`. Raw `data/` fixtures and full runtime reports stay in AIBenchie; the website consumes only the reduced scoreboard.
+
 Run the suite security E2E gate:
 
 ```powershell
