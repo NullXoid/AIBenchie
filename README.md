@@ -103,6 +103,41 @@ Run tests:
 python -m pytest
 ```
 
+Run AIBenchie as the master suite tester:
+
+```powershell
+python aibenchie_local.py --suite-tests --json
+```
+
+AIBenchie owns the release verdict and suite-wide test catalog. NullBridge, NullXoid Wrapper, Companion/Android, and other repos keep their repo-local contract tests, but AIBenchie is the runner that decides whether the suite passes.
+
+Configure repo locations at runtime when they are not next to this checkout:
+
+```powershell
+$env:AIBENCHIE_NULLBRIDGE_REPO="..\NullBridge"
+$env:AIBENCHIE_NULLXOID_WRAPPER_REPO="..\NullXoid-live"
+$env:AIBENCHIE_ANDROID_REPO="..\NullXoidAndroid"
+python aibenchie_local.py --suite-tests --suite-test-require-all --json
+```
+
+Run a focused target:
+
+```powershell
+python aibenchie_local.py --suite-tests --suite-test-target nullbridge_trust_fabric --json
+```
+
+Optional heavier targets, such as Android unit tests, are off by default:
+
+```powershell
+python aibenchie_local.py --suite-tests --suite-test-optional --suite-test-target android_companion_unit --json
+```
+
+AIBenchie auto-detects Android Studio's bundled JBR on Windows. If Java is installed somewhere else, set it explicitly:
+
+```powershell
+$env:AIBENCHIE_JAVA_HOME="C:\path\to\jdk"
+```
+
 List local Ollama models when Ollama is running:
 
 ```powershell

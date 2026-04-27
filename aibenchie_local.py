@@ -15,6 +15,7 @@ from aibenchie.companion_remote_backend import run_from_env as run_companion_rem
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.suite_security import run_suite_security_check
+from aibenchie.suite_test_catalog import run_suite_tests_from_env
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -75,6 +76,27 @@ def build_parser() -> argparse.ArgumentParser:
         "--suite-security",
         action="store_true",
         help="Run the NullXoid suite security E2E gate against hosted API routes and repo hygiene checks.",
+    )
+    parser.add_argument(
+        "--suite-tests",
+        action="store_true",
+        help="Run AIBenchie's master suite test catalog across configured suite repositories.",
+    )
+    parser.add_argument(
+        "--suite-test-target",
+        action="append",
+        default=[],
+        help="Run a named suite test target. Repeat for multiple targets, or use all.",
+    )
+    parser.add_argument(
+        "--suite-test-optional",
+        action="store_true",
+        help="Include optional suite test targets such as Android unit checks.",
+    )
+    parser.add_argument(
+        "--suite-test-require-all",
+        action="store_true",
+        help="Fail instead of skipping when a configured suite repository or required test file is missing.",
     )
     parser.add_argument(
         "--companion-remote-backend",
@@ -244,6 +266,25 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     suffix = ""
                 print(f"{check['name']}: {check['status'].upper()} [{check['severity']}]{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.suite_tests:
+        result = run_suite_tests_from_env(
+            selected_targets=args.suite_test_target or None,
+            include_optional=args.suite_test_optional,
+            require_all=args.suite_test_require_all,
+        ).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Master Suite Test Catalog")
+            print(f"Root: {result['root']}")
+            print(f"Targets: {', '.join(result['selected_targets'])}")
+            for item in result["results"]:
+                suffix = f" ({item['failure']})" if item["failure"] else ""
+                repo = f" [{item['repo']}]" if item["repo"] else ""
+                print(f"{item['name']}: {item['status'].upper()}{suffix}{repo}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
