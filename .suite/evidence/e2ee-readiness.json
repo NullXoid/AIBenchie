@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "status": "partial",
+  "targets": [
+    {
+      "target": "saved_chats",
+      "status": "implemented",
+      "encryption_boundary": "client_or_device",
+      "key_management": "device-local WebCrypto key in browser storage; no deploy, test, or source credential storage",
+      "plaintext_storage": "forbidden",
+      "tests": [
+        "roundtrip",
+        "wrong_key_rejected",
+        "tamper_rejected",
+        "plaintext_absent_at_rest",
+        "key_not_persisted_in_repo"
+      ],
+      "evidence": [
+        "EchoLabs/.NullXoid:frontend/src/lib/chatE2ee.js",
+        "EchoLabs/.NullXoid:frontend/scripts/test-chat-e2ee.mjs",
+        "EchoLabs/.NullXoid:backend/tests/test_chat_e2ee_contract.py"
+      ]
+    }
+  ]
+}
