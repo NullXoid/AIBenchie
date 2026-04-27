@@ -14,11 +14,18 @@ VALID_MANIFEST = json.dumps(
     }
 )
 
-OPERATIONS_AUTH_PATHS = {"/nullxoid/api/operations/status", "/api/operations/status"}
+AUTH_REQUIRED_JSON_PATHS = {
+    "/nullxoid/api/operations/status",
+    "/nullxoid/api/notifications",
+    "/nullxoid/api/notifications/events?once=1",
+    "/api/operations/status",
+    "/api/notifications",
+    "/api/notifications/events?once=1",
+}
 
 
 def operations_auth_response(path: str):
-    if path in OPERATIONS_AUTH_PATHS:
+    if path in AUTH_REQUIRED_JSON_PATHS:
         return 401, "application/json", '{"detail":"Authentication required"}'
     return None
 
@@ -65,10 +72,14 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
         "mounted_auth_errors_are_json",
         "mounted_model_route_contract",
         "mounted_operations_status_requires_auth",
+        "mounted_notifications_requires_auth",
+        "mounted_notification_events_requires_auth",
         "root_health_route_not_challenged",
         "root_auth_errors_are_json",
         "root_model_route_contract",
         "root_operations_status_requires_auth",
+        "root_notifications_requires_auth",
+        "root_notification_events_requires_auth",
     ]
     assert calls[0][2] == "app.example.test"
 

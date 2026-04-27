@@ -315,6 +315,37 @@ def run_hosted_nullxoid_stack_check(
         )
     )
 
+    status, content_type, body = request_raw(
+        resolved_origin, f"{resolved_base_path}/api/notifications", host_header=host_header, timeout=timeout
+    )
+    failure = auth_required_json_route_failure(status, content_type, body, route_name="mounted_notifications")
+    routes.append(
+        RouteResult(
+            name="mounted_notifications_requires_auth",
+            status=status,
+            content_type=content_type,
+            ok=not failure,
+            failure=failure,
+        )
+    )
+
+    status, content_type, body = request_raw(
+        resolved_origin,
+        f"{resolved_base_path}/api/notifications/events?once=1",
+        host_header=host_header,
+        timeout=timeout,
+    )
+    failure = auth_required_json_route_failure(status, content_type, body, route_name="mounted_notification_events")
+    routes.append(
+        RouteResult(
+            name="mounted_notification_events_requires_auth",
+            status=status,
+            content_type=content_type,
+            ok=not failure,
+            failure=failure,
+        )
+    )
+
     status, content_type, body = request_raw(resolved_origin, "/health", host_header=host_header, timeout=timeout)
     routes.append(
         RouteResult(
@@ -370,6 +401,34 @@ def run_hosted_nullxoid_stack_check(
     routes.append(
         RouteResult(
             name="root_operations_status_requires_auth",
+            status=status,
+            content_type=content_type,
+            ok=not failure,
+            failure=failure,
+        )
+    )
+
+    status, content_type, body = request_raw(
+        resolved_origin, "/api/notifications", host_header=host_header, timeout=timeout
+    )
+    failure = auth_required_json_route_failure(status, content_type, body, route_name="root_notifications")
+    routes.append(
+        RouteResult(
+            name="root_notifications_requires_auth",
+            status=status,
+            content_type=content_type,
+            ok=not failure,
+            failure=failure,
+        )
+    )
+
+    status, content_type, body = request_raw(
+        resolved_origin, "/api/notifications/events?once=1", host_header=host_header, timeout=timeout
+    )
+    failure = auth_required_json_route_failure(status, content_type, body, route_name="root_notification_events")
+    routes.append(
+        RouteResult(
+            name="root_notification_events_requires_auth",
             status=status,
             content_type=content_type,
             ok=not failure,

@@ -3,17 +3,35 @@ from __future__ import annotations
 from aibenchie import hosted_nullxoid_chat
 
 
+GOOD_NOTIFICATION_EVENTS = (
+    'event: notification_snapshot\ndata: {"notifications":[]}\n\n'
+    'event: resource_status\ndata: {"ok":true,"used_percent":12}\n\n'
+)
+
+
 def operations_status_payload(**overrides):
     payload = {
         "ok": True,
         "backend": {"service": "wrapper_backend", "status": "ok"},
         "deploy": {"mount": "/nullxoid/", "canonical_origin": "https://www.echolabs.diy"},
         "runtime": {"provider": "local_runtime", "status": "ok"},
-        "resource": {"free_gb": 18.0, "used_percent": 22.0},
+        "resources": {"free_gb": 18.0, "used_percent": 22.0},
+        "notifications": {"status": "ok", "connected": True},
         "nullbridge": {"credentials_exposed": False},
     }
     payload.update(overrides)
     return payload
+
+
+def notification_list_payload(**overrides):
+    payload = {"ok": True, "notifications": []}
+    payload.update(overrides)
+    return payload
+
+
+def good_notification_events(opener, origin, base_path, path, *, timeout=15):
+    assert path == "/api/notifications/events?once=1"
+    return 200, "text/event-stream", GOOD_NOTIFICATION_EVENTS
 
 
 def test_hosted_chat_check_streams_after_login(monkeypatch):
@@ -33,6 +51,8 @@ def test_hosted_chat_check_streams_after_login(monkeypatch):
             return 200, {"models": [{"id": "llama.cpp:qwen"}]}
         if path == "/api/operations/status":
             return 200, operations_status_payload()
+        if path == "/api/notifications?limit=10":
+            return 200, notification_list_payload()
         raise AssertionError(path)
 
     def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
@@ -46,6 +66,7 @@ def test_hosted_chat_check_streams_after_login(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
     monkeypatch.setattr(hosted_nullxoid_chat, "request_stream", fake_request_stream)
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_sse_once", good_notification_events)
     monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
 
     result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
@@ -58,9 +79,14 @@ def test_hosted_chat_check_streams_after_login(monkeypatch):
     assert result.ok is True
     assert result.stream_status == 200
     assert result.operations_status == 200
+    assert result.notification_status == 200
+    assert result.notification_stream_status == 200
     assert result.operations_summary["backend_service"] == "wrapper_backend"
+    assert result.operations_summary["resource_free_gb"] == 18.0
+    assert result.notification_summary["resource_status_seen"] is True
     assert ("GET", "/api/models") in calls
     assert ("GET", "/api/operations/status") in calls
+    assert ("GET", "/api/notifications?limit=10") in calls
 
 
 def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
@@ -75,6 +101,8 @@ def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
             return 200, {"projects": [{"project_id": "proj-1"}]}
         if path == "/api/operations/status":
             return 200, operations_status_payload()
+        if path == "/api/notifications?limit=10":
+            return 200, notification_list_payload()
         raise AssertionError(path)
 
     def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
@@ -82,6 +110,7 @@ def test_hosted_chat_check_fails_on_stream_http_500(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
     monkeypatch.setattr(hosted_nullxoid_chat, "request_stream", fake_request_stream)
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_sse_once", good_notification_events)
     monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
 
     result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
@@ -108,6 +137,8 @@ def test_hosted_chat_check_fails_on_stream_challenge_html(monkeypatch):
             return 200, {"projects": [{"project_id": "proj-1"}]}
         if path == "/api/operations/status":
             return 200, operations_status_payload()
+        if path == "/api/notifications?limit=10":
+            return 200, notification_list_payload()
         raise AssertionError(path)
 
     def fake_request_stream(opener, origin, base_path, path, *, csrf, payload, timeout=45):
@@ -115,6 +146,7 @@ def test_hosted_chat_check_fails_on_stream_challenge_html(monkeypatch):
 
     monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
     monkeypatch.setattr(hosted_nullxoid_chat, "request_stream", fake_request_stream)
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_sse_once", good_notification_events)
     monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
 
     result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
@@ -127,6 +159,107 @@ def test_hosted_chat_check_fails_on_stream_challenge_html(monkeypatch):
 
     assert result.ok is False
     assert result.failure == "chat_stream_challenged"
+
+
+def test_hosted_chat_check_fails_when_notifications_return_html(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload()
+        if path == "/api/notifications?limit=10":
+            return 403, "<html>Forbidden</html>"
+        raise AssertionError(path)
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure == "notifications_returned_html"
+
+
+def test_hosted_chat_check_fails_when_notification_events_are_challenged(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload()
+        if path == "/api/notifications?limit=10":
+            return 200, notification_list_payload()
+        raise AssertionError(path)
+
+    def fake_request_sse_once(opener, origin, base_path, path, *, timeout=15):
+        return 403, "text/html", '<script src="https://challenges.cloudflare.com/challenge"></script>'
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_sse_once", fake_request_sse_once)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure == "notification_events_challenged"
+
+
+def test_hosted_chat_check_fails_when_notification_events_miss_resource_status(monkeypatch):
+    def fake_request_json(opener, origin, base_path, path, *, method="GET", payload=None, timeout=15):
+        if path == "/auth/login":
+            return 200, {"ok": True}
+        if path == "/auth/me":
+            return 200, {"authenticated": True, "user": {"id": "user-1"}}
+        if path == "/api/workspaces":
+            return 200, {"workspaces": [{"workspace_id": "ws-1"}]}
+        if path == "/api/projects?workspace_id=ws-1":
+            return 200, {"projects": [{"project_id": "proj-1"}]}
+        if path == "/api/operations/status":
+            return 200, operations_status_payload()
+        if path == "/api/notifications?limit=10":
+            return 200, notification_list_payload()
+        raise AssertionError(path)
+
+    def fake_request_sse_once(opener, origin, base_path, path, *, timeout=15):
+        return 200, "text/event-stream", 'event: notification_snapshot\ndata: {"notifications":[]}\n\n'
+
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_json", fake_request_json)
+    monkeypatch.setattr(hosted_nullxoid_chat, "request_sse_once", fake_request_sse_once)
+    monkeypatch.setattr(hosted_nullxoid_chat, "csrf_token", lambda jar: "csrf-token")
+
+    result = hosted_nullxoid_chat.run_hosted_nullxoid_chat_check(
+        origin="https://app.example.test",
+        base_path="/nullxoid",
+        username="admin",
+        password="runtime-only",
+        model="llama.cpp:qwen",
+    )
+
+    assert result.ok is False
+    assert result.failure == "notification_events_missing_resource_status"
 
 
 def test_hosted_chat_check_fails_when_models_route_returns_html(monkeypatch):

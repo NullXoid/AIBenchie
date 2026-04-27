@@ -63,11 +63,14 @@ class HostedChatResult:
     login_status: int
     stream_status: int
     operations_status: int = 0
+    notification_status: int = 0
+    notification_stream_status: int = 0
     user_id: str = ""
     workspace_id: str = ""
     project_id: str = ""
     model: str = ""
     operations_summary: dict[str, Any] = field(default_factory=dict)
+    notification_summary: dict[str, Any] = field(default_factory=dict)
     stream_preview: str = ""
     steps: list[str] = field(default_factory=list)
     failure: str = ""
@@ -80,11 +83,14 @@ class HostedChatResult:
             "login_status": self.login_status,
             "stream_status": self.stream_status,
             "operations_status": self.operations_status,
+            "notification_status": self.notification_status,
+            "notification_stream_status": self.notification_stream_status,
             "user_id": self.user_id,
             "workspace_id": self.workspace_id,
             "project_id": self.project_id,
             "model": self.model,
             "operations_summary": self.operations_summary,
+            "notification_summary": self.notification_summary,
             "stream_preview": self.stream_preview,
             "steps": self.steps,
             "failure": self.failure,
@@ -118,6 +124,31 @@ def request_stream(
             "X-CSRF-Token": csrf,
         },
         method="POST",
+    )
+    try:
+        with opener.open(request, timeout=timeout) as response:
+            return int(response.status), str(response.headers.get("content-type", "")), response.read().decode(
+                "utf-8", errors="replace"
+            )
+    except urllib.error.HTTPError as exc:
+        return int(exc.code), str(exc.headers.get("content-type", "")), exc.read().decode("utf-8", errors="replace")
+
+
+def request_sse_once(
+    opener: urllib.request.OpenerDirector,
+    origin: str,
+    base_path: str,
+    path: str,
+    *,
+    timeout: int = 15,
+) -> tuple[int, str, str]:
+    request = urllib.request.Request(
+        f"{origin}{base_path}{path}",
+        headers={
+            "Accept": "text/event-stream,application/json;q=0.8,*/*;q=0.5",
+            "Origin": origin,
+        },
+        method="GET",
     )
     try:
         with opener.open(request, timeout=timeout) as response:
@@ -198,6 +229,29 @@ def _iter_string_values(value: Any):
             yield from _iter_string_values(child)
 
 
+def _leak_failure(prefix: str, value: Any) -> str:
+    path_needles = ("/home/", "/root/", "C:\\", "\\Users\\", ".ssh", ".env")
+    secret_needles = (
+        "bearer ",
+        "authorization:",
+        "nx_session=",
+        "nx_csrf=",
+        "private key",
+        "begin openssh private key",
+        "begin rsa private key",
+    )
+    strings = [value] if isinstance(value, str) else list(_iter_string_values(value))
+    for text in strings:
+        lowered = text.lower()
+        for needle in path_needles:
+            if needle.lower() in lowered:
+                return f"{prefix}_path_leak:{needle}"
+        for needle in secret_needles:
+            if needle in lowered:
+                return f"{prefix}_secret_leak:{needle}"
+    return ""
+
+
 def _operations_status_failure(status: int, body: Any) -> str:
     failure = _non_json_failure("operations_status", status, body)
     if failure:
@@ -227,25 +281,57 @@ def _operations_status_failure(status: int, body: Any) -> str:
     if nullbridge.get("credentials_exposed") is not False:
         return "operations_nullbridge_credentials_exposed"
 
-    path_needles = ("/home/", "/root/", "C:\\", "\\Users\\", ".ssh", ".env")
-    secret_needles = (
-        "bearer ",
-        "authorization:",
-        "nx_session=",
-        "nx_csrf=",
-        "private key",
-        "begin openssh private key",
-        "begin rsa private key",
-    )
-    for text in _iter_string_values(body):
-        lowered = text.lower()
-        for needle in path_needles:
-            if needle.lower() in lowered:
-                return f"operations_status_path_leak:{needle}"
-        for needle in secret_needles:
-            if needle in lowered:
-                return f"operations_status_secret_leak:{needle}"
-    return ""
+    notifications = body.get("notifications")
+    if notifications is not None and not isinstance(notifications, dict):
+        return "operations_notifications_status_invalid"
+
+    return _leak_failure("operations_status", body)
+
+
+def _notification_list_failure(status: int, body: Any) -> str:
+    failure = _non_json_failure("notifications", status, body)
+    if failure:
+        return failure
+    if not isinstance(body, dict):
+        return "notifications_not_object"
+    if body.get("ok") is not True:
+        return "notifications_not_ok"
+    if not isinstance(body.get("notifications"), list):
+        return "notifications_missing_list"
+    return _leak_failure("notifications", body)
+
+
+def _notification_events_failure(status: int, content_type: str, body: str) -> str:
+    stripped = body.lstrip()
+    if _looks_like_cloudflare_challenge(body):
+        return "notification_events_challenged"
+    if stripped.startswith("<"):
+        return "notification_events_returned_html"
+    if status != 200:
+        return f"notification_events_http_{status}"
+    if "event-stream" not in content_type.lower():
+        return "notification_events_not_sse"
+    if "event: notification_snapshot" not in body:
+        return "notification_events_missing_snapshot"
+    if "event: resource_status" not in body:
+        return "notification_events_missing_resource_status"
+    return _leak_failure("notification_events", body)
+
+
+def _notification_summary(list_body: Any, stream_body: str) -> dict[str, Any]:
+    notifications = list_body.get("notifications") if isinstance(list_body, dict) else []
+    if not isinstance(notifications, list):
+        notifications = []
+    events = []
+    for line in stream_body.splitlines():
+        if line.startswith("event: "):
+            events.append(line.removeprefix("event: ").strip())
+    return {
+        "visible_count": len(notifications),
+        "events": events[:8],
+        "snapshot_seen": "notification_snapshot" in events,
+        "resource_status_seen": "resource_status" in events,
+    }
 
 
 def _operations_status_summary(body: Any) -> dict[str, Any]:
@@ -254,7 +340,9 @@ def _operations_status_summary(body: Any) -> dict[str, Any]:
     backend = body.get("backend") if isinstance(body.get("backend"), dict) else {}
     deploy = body.get("deploy") if isinstance(body.get("deploy"), dict) else {}
     runtime = body.get("runtime") if isinstance(body.get("runtime"), dict) else {}
-    resource = body.get("resource") if isinstance(body.get("resource"), dict) else {}
+    resource = body.get("resources") if isinstance(body.get("resources"), dict) else {}
+    if not resource:
+        resource = body.get("resource") if isinstance(body.get("resource"), dict) else {}
     nullbridge = body.get("nullbridge") if isinstance(body.get("nullbridge"), dict) else {}
     return {
         "backend_service": backend.get("service", ""),
@@ -486,6 +574,67 @@ def run_hosted_nullxoid_chat_check(
             failure=operations_failure,
         )
 
+    notification_status, notification_body = request_json(
+        opener,
+        resolved_origin,
+        resolved_base_path,
+        "/api/notifications?limit=10",
+        timeout=timeout,
+    )
+    steps.append(f"notifications:{notification_status}")
+    notification_failure = _notification_list_failure(notification_status, notification_body)
+    if notification_failure:
+        return HostedChatResult(
+            ok=False,
+            origin=resolved_origin,
+            base_path=resolved_base_path,
+            login_status=login_status,
+            stream_status=0,
+            operations_status=operations_status,
+            notification_status=notification_status,
+            user_id=user_id,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            model=selected_model,
+            operations_summary=operations_summary,
+            steps=steps,
+            failure=notification_failure,
+        )
+
+    notification_stream_status, notification_content_type, notification_stream_body = request_sse_once(
+        opener,
+        resolved_origin,
+        resolved_base_path,
+        "/api/notifications/events?once=1",
+        timeout=timeout,
+    )
+    steps.append(f"notification_events:{notification_stream_status}")
+    notification_stream_failure = _notification_events_failure(
+        notification_stream_status,
+        notification_content_type,
+        notification_stream_body,
+    )
+    notification_summary = _notification_summary(notification_body, notification_stream_body)
+    if notification_stream_failure:
+        return HostedChatResult(
+            ok=False,
+            origin=resolved_origin,
+            base_path=resolved_base_path,
+            login_status=login_status,
+            stream_status=0,
+            operations_status=operations_status,
+            notification_status=notification_status,
+            notification_stream_status=notification_stream_status,
+            user_id=user_id,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            model=selected_model,
+            operations_summary=operations_summary,
+            notification_summary=notification_summary,
+            steps=steps,
+            failure=notification_stream_failure,
+        )
+
     stream_status, content_type, stream_body = request_stream(
         opener,
         resolved_origin,
@@ -513,11 +662,14 @@ def run_hosted_nullxoid_chat_check(
         login_status=login_status,
         stream_status=stream_status,
         operations_status=operations_status,
+        notification_status=notification_status,
+        notification_stream_status=notification_stream_status,
         user_id=user_id,
         workspace_id=workspace_id,
         project_id=project_id,
         model=selected_model,
         operations_summary=operations_summary,
+        notification_summary=notification_summary,
         stream_preview=stream_body[:240],
         steps=steps,
         failure=failure,
