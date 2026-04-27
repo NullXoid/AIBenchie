@@ -80,6 +80,7 @@ def test_suite_security_aggregates_required_checks(monkeypatch, tmp_path):
     assert statuses["generated_output_policy"] == "pass"
     assert statuses["ephemeral_hosted_chat"] == "skip"
     assert statuses["local_nullbridge_trust_path"] == "skip"
+    assert statuses["local_nullbridge_notification_path"] == "skip"
 
 
 def test_suite_security_fails_on_hosted_stack_failure(monkeypatch, tmp_path):

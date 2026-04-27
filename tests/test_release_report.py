@@ -18,6 +18,7 @@ def test_build_release_report_emits_public_safe_summary_and_encrypted_full_repor
     assert summary["tracks"]["privacy"] == "pass"
     assert summary["tracks"]["e2ee_storage"] == "pass"
     assert summary["trust_smoke"]["ok"] == "skipped"
+    assert summary["notification_smoke"]["ok"] == "skipped"
     assert "ciphertext" in encrypted
     assert "summary" not in encrypted
     assert_public_safe(summary)
@@ -48,3 +49,10 @@ def test_public_summary_rejects_secret_like_markers():
         assert "secret-like markers" in str(exc)
     else:
         raise AssertionError("expected secret marker rejection")
+
+    try:
+        assert_public_safe({"note": "private prompt text"})
+    except ValueError as exc:
+        assert "secret-like markers" in str(exc)
+    else:
+        raise AssertionError("expected prompt marker rejection")

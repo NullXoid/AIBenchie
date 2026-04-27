@@ -111,6 +111,8 @@ python aibenchie_local.py --suite-tests --json
 
 AIBenchie owns the release verdict and suite-wide test catalog. NullBridge, NullXoid Wrapper, Companion/Android, and other repos keep their repo-local contract tests, but AIBenchie is the runner that decides whether the suite passes.
 
+Wiring the NullBridge trust and notification gates into the broader suite verdict makes signed service identity, deny-by-default routing, and redacted audit behavior release-blocking. That benefits the project because a single verdict can catch cross-repo regressions before publish, prove implementation and policy together, and preserve repeatable evidence instead of relying on manual retesting.
+
 Configure repo locations at runtime when they are not next to this checkout:
 
 ```powershell
@@ -125,6 +127,15 @@ Run a focused target:
 ```powershell
 python aibenchie_local.py --suite-tests --suite-test-target nullbridge_trust_fabric --json
 ```
+
+Run focused local NullBridge trust checks with generated temporary secrets:
+
+```powershell
+python aibenchie_local.py --trust-smoke --json
+python aibenchie_local.py --notification-smoke --json
+```
+
+The notification smoke gate proves that only signed backends can publish operational events, frontend-originated publishes are rejected, source identity is bound to the signed service, subscribers only receive authorized user/platform events, and stored payloads/audit entries are redacted.
 
 Optional heavier targets, such as Android unit tests, are off by default:
 
@@ -251,3 +262,5 @@ The ephemeral chat gate creates a short-lived restricted test user through a loo
 ## Release Verdict Rule
 
 A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.
+
+Use [docs/RELEASE_DETAILS.md](docs/RELEASE_DETAILS.md) and [templates/release-details.md](templates/release-details.md) for proper release notes. Older releases can be documented retroactively, but they must be labeled reconstructed and tied to the evidence that still exists.

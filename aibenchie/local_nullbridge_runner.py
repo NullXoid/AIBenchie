@@ -22,6 +22,8 @@ BACKEND_IDS = [
     "windows_backend",
     "android_backend",
     "ios_backend",
+    "diagnostics_service",
+    "aibenchie_service",
 ]
 
 
@@ -85,7 +87,13 @@ def audit_summary(entries: list[dict[str, Any]], secrets_map: dict[str, str]) ->
             "reason": item.get("reason"),
         }
         for item in entries
-        if item.get("event") in {"nullbridge.route_decision", "nullbridge.service_claim_denied"}
+        if item.get("event")
+        in {
+            "nullbridge.route_decision",
+            "nullbridge.service_claim_denied",
+            "nullbridge.notification_published",
+            "nullbridge.notification_delivery",
+        }
     ]
     return {
         "entry_count": len(entries),
@@ -102,6 +110,25 @@ def copy_static_nullbridge_policy(nullbridge_repo: Path, temp_backend_root: Path
     for path in source.iterdir():
         if path.is_file() and path.suffix.lower() in {".json", ".md"} and path.name != "audit-log.jsonl":
             shutil.copy2(path, target / path.name)
+
+
+def service_headers(
+    *,
+    secrets_map: dict[str, str],
+    caller: str,
+    capability: str,
+    target_role: str,
+) -> dict[str, str]:
+    token = live_trust_path.service_jwt(
+        secret=secrets_map[caller],
+        caller=caller,
+        capability=capability,
+        target_role=target_role,
+    )
+    return {
+        "X-NullBridge-Service": caller,
+        "Authorization": f"Bearer {token}",
+    }
 
 
 @dataclass
@@ -299,6 +326,167 @@ def run_local_trust_path() -> dict[str, Any]:
             "capability_claim_deny": {"status": capability_claim_status, "body": capability_claim_body},
             "target_claim_deny": {"status": target_claim_status, "body": target_claim_body},
             "invalid_signature": {"status": invalid_signature_status, "body": invalid_signature_body},
+            "checks": checks,
+            "audit": audit,
+            "secrets_persisted": False,
+        }
+
+
+def run_local_notification_path() -> dict[str, Any]:
+    with LocalNullBridgeRunner() as bridge:
+        checks: dict[str, bool] = {}
+        publish_body = {
+            "requestId": "aibenchie-local-notification-publish",
+            "notification": {
+                "sourceBackendId": "diagnostics_service",
+                "platform": "website_wrapper",
+                "topic": "resource.warning",
+                "severity": "warning",
+                "audience": {
+                    "userIds": ["usr_aibenchie_notify"],
+                    "workspaceIds": ["ws_aibenchie_notify"],
+                    "platforms": ["website_wrapper"],
+                },
+                "payload": {
+                    "message": "Disk budget warning",
+                    "apiToken": "secret-token-value",
+                    "prompt": "private prompt text",
+                    "nested": {"authorization": "Bearer eyJsecret.payload.signature"},
+                },
+            },
+        }
+        publish_status, publish_response = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/notifications",
+            headers=service_headers(
+                secrets_map=bridge.service_secrets,
+                caller="diagnostics_service",
+                capability="notifications.publish",
+                target_role="notifications",
+            ),
+            body=publish_body,
+        )
+        event_id = str(publish_response.get("eventId") or "")
+        checks["signed_publish"] = publish_status == 202 and publish_response.get("accepted") is True and bool(event_id)
+
+        query_status, query_response = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/notifications/query",
+            headers=service_headers(
+                secrets_map=bridge.service_secrets,
+                caller="wrapper_backend",
+                capability="notifications.subscribe",
+                target_role="notifications",
+            ),
+            body={
+                "requestId": "aibenchie-local-notification-query",
+                "topic": "resource.warning",
+                "platform": "website_wrapper",
+                "actingUser": {
+                    "userId": "usr_aibenchie_notify",
+                    "roles": ["user"],
+                    "workspaceId": "ws_aibenchie_notify",
+                    "platform": "website_wrapper",
+                },
+            },
+        )
+        delivered = [
+            item for item in query_response.get("items", []) if isinstance(item, dict) and item.get("eventId") == event_id
+        ]
+        delivered_payload = delivered[0].get("payload", {}) if delivered else {}
+        checks["signed_delivery"] = query_status == 200 and len(delivered) == 1
+        checks["payload_redacted"] = (
+            delivered_payload.get("message") == "Disk budget warning"
+            and delivered_payload.get("apiToken") == "[REDACTED]"
+            and delivered_payload.get("prompt") == "[REDACTED]"
+            and delivered_payload.get("nested", {}).get("authorization") == "[REDACTED]"
+        )
+
+        direct_status, direct_response = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/notifications",
+            headers={"Origin": "http://localhost:5173"},
+            body={
+                "requestId": "aibenchie-local-notification-direct-deny",
+                "notification": {
+                    "sourceBackendId": "website_frontend",
+                    "platform": "website",
+                    "topic": "resource.warning",
+                    "severity": "warning",
+                    "payload": {"message": "direct frontend must not route"},
+                },
+            },
+        )
+        checks["direct_frontend_denied"] = direct_status == 401 and direct_response.get("errorCode") == "service.missing_identity"
+
+        website_status, website_response = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/notifications",
+            headers=service_headers(
+                secrets_map=bridge.service_secrets,
+                caller="website_backend",
+                capability="notifications.publish",
+                target_role="notifications",
+            ),
+            body={
+                "requestId": "aibenchie-local-notification-website-deny",
+                "notification": {
+                    "sourceBackendId": "website_backend",
+                    "platform": "website",
+                    "topic": "resource.warning",
+                    "severity": "warning",
+                    "payload": {"message": "website cannot publish"},
+                },
+                "actingUser": {
+                    "userId": "usr_aibenchie_notify",
+                    "roles": ["user"],
+                    "workspaceId": "ws_aibenchie_notify",
+                    "platform": "website",
+                },
+            },
+        )
+        checks["website_publish_denied"] = website_status == 403 and website_response.get("errorCode") == "bridge.route_denied"
+
+        mismatch_status, mismatch_response = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/notifications",
+            headers=service_headers(
+                secrets_map=bridge.service_secrets,
+                caller="diagnostics_service",
+                capability="notifications.publish",
+                target_role="notifications",
+            ),
+            body={
+                "requestId": "aibenchie-local-notification-source-mismatch",
+                "notification": {
+                    "sourceBackendId": "android_backend",
+                    "platform": "android",
+                    "topic": "resource.warning",
+                    "severity": "warning",
+                    "payload": {"message": "forged identity"},
+                },
+            },
+        )
+        checks["source_identity_bound"] = (
+            mismatch_status == 403 and mismatch_response.get("errorCode") == "bridge.notification_source_mismatch"
+        )
+
+        audit = audit_summary(read_service_audit_entries(bridge.temp_root), bridge.service_secrets)
+        audit_events = {item.get("event") for item in audit.get("route_decisions", [])}
+        checks["audit_events_recorded"] = {
+            "nullbridge.notification_published",
+            "nullbridge.notification_delivery",
+        }.issubset(audit_events)
+        checks["audit_redacted"] = audit["ok"]
+        ok = all(checks.values())
+        return {
+            "ok": ok,
+            "base_url": bridge.base_url,
+            "publish": {"status": publish_status, "body": publish_response},
+            "query": {"status": query_status, "body": query_response},
+            "direct_frontend_denied": {"status": direct_status, "body": direct_response},
+            "website_publish_denied": {"status": website_status, "body": website_response},
+            "source_identity_bound": {"status": mismatch_status, "body": mismatch_response},
             "checks": checks,
             "audit": audit,
             "secrets_persisted": False,

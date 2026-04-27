@@ -10,7 +10,7 @@ from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_ephemeral_hosted_nullxoid_chat_check
 from aibenchie.hosted_nullxoid_stack import run_hosted_nullxoid_stack_check
-from aibenchie.local_nullbridge_runner import run_local_trust_path
+from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 
 
 DEFAULT_PUBLIC_ORIGIN = "https://api.echolabs.diy"
@@ -338,6 +338,17 @@ def run_suite_security_check(env: dict[str, str] | None = None) -> SuiteSecurity
                     failure="local_nullbridge_trust_path_failed",
                 )
             )
+            notification_path = run_local_notification_path()
+            notification_ok = bool(notification_path.get("ok"))
+            checks.append(
+                _check_from_result(
+                    "local_nullbridge_notification_path",
+                    notification_ok,
+                    notification_path,
+                    severity="critical",
+                    failure="local_nullbridge_notification_path_failed",
+                )
+            )
         except Exception as exc:
             checks.append(
                 SuiteSecurityCheck(
@@ -349,8 +360,19 @@ def run_suite_security_check(env: dict[str, str] | None = None) -> SuiteSecurity
                     detail={"error": str(exc)},
                 )
             )
+            checks.append(
+                SuiteSecurityCheck(
+                    name="local_nullbridge_notification_path",
+                    ok=False,
+                    status="fail",
+                    severity="critical",
+                    failure="local_nullbridge_notification_path_error",
+                    detail={"error": str(exc)},
+                )
+            )
     else:
         checks.append(_skip_check("local_nullbridge_trust_path", "set AIBENCHIE_SUITE_SECURITY_NULLBRIDGE=1"))
+        checks.append(_skip_check("local_nullbridge_notification_path", "set AIBENCHIE_SUITE_SECURITY_NULLBRIDGE=1"))
 
     return SuiteSecurityResult(
         ok=all(check.ok for check in checks),

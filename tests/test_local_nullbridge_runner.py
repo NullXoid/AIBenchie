@@ -10,6 +10,7 @@ from aibenchie.local_nullbridge_runner import (
     LocalNullBridgeRunner,
     find_repo_root,
     generate_service_secrets,
+    run_local_notification_path,
     run_local_trust_path,
 )
 
@@ -54,6 +55,23 @@ def test_local_nullbridge_runner_proves_allow_and_deny_without_persisting_secret
     assert "missing_user_context" in reasons
     assert "service.jwt_capability_mismatch" in reasons
     assert "service.jwt_target_mismatch" in reasons
+    assert result["secrets_persisted"] is False
+
+
+def test_local_nullbridge_runner_proves_notification_path_without_persisting_secrets():
+    repo = find_repo_root()
+    if repo is None:
+        pytest.skip("NullBridge repo not available")
+    result = run_local_notification_path()
+    assert result["ok"] is True
+    assert result["publish"]["status"] == 202
+    assert result["query"]["status"] == 200
+    assert result["direct_frontend_denied"]["status"] == 401
+    assert result["website_publish_denied"]["status"] == 403
+    assert result["source_identity_bound"]["status"] == 403
+    assert all(result["checks"].values())
+    assert result["audit"]["ok"] is True
+    assert result["audit"]["secret_leaks"] == []
     assert result["secrets_persisted"] is False
 
 
@@ -105,6 +123,30 @@ def test_cli_privacy_proof_uses_ephemeral_keys(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "NullPrivacy E2EE Storage Proof" in output
     assert "Wrong key rejected: True" in output
+    assert "Result: PASS" in output
+
+
+def test_cli_notification_smoke_uses_local_runner_without_ollama(monkeypatch, capsys):
+    monkeypatch.setattr(
+        aibenchie_local,
+        "run_local_notification_path",
+        lambda: {
+            "ok": True,
+            "publish": {"status": 202},
+            "query": {"status": 200},
+            "direct_frontend_denied": {"status": 401},
+            "website_publish_denied": {"status": 403},
+            "source_identity_bound": {"status": 403},
+            "secrets_persisted": False,
+        },
+    )
+
+    assert aibenchie_local.main(["--notification-smoke"]) == 0
+    output = capsys.readouterr().out
+    assert "Notification Trust Smoke Test" in output
+    assert "Publish route: HTTP 202" in output
+    assert "Subscribe route: HTTP 200" in output
+    assert "Direct frontend denied: HTTP 401" in output
     assert "Result: PASS" in output
 
 

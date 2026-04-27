@@ -5,7 +5,7 @@ import json
 import sys
 
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
-from aibenchie.local_nullbridge_runner import run_local_trust_path
+from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
@@ -31,6 +31,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--trust-smoke",
         action="store_true",
         help="Run a local NullBridge trust-fabric smoke test with temporary generated secrets.",
+    )
+    parser.add_argument(
+        "--notification-smoke",
+        action="store_true",
+        help="Run a local NullBridge notification trust smoke test with temporary generated secrets.",
     )
     parser.add_argument(
         "--privacy-proof",
@@ -117,6 +122,21 @@ def main(argv: list[str] | None = None) -> int:
             print("Trust Fabric Smoke Test")
             print(f"Allow route: HTTP {result['allow']['status']}")
             print(f"Deny route: HTTP {result['deny']['status']}")
+            print(f"Secrets persisted: {result['secrets_persisted']}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.notification_smoke:
+        result = run_local_notification_path()
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            print("Notification Trust Smoke Test")
+            print(f"Publish route: HTTP {result['publish']['status']}")
+            print(f"Subscribe route: HTTP {result['query']['status']}")
+            print(f"Direct frontend denied: HTTP {result['direct_frontend_denied']['status']}")
+            print(f"Website publish denied: HTTP {result['website_publish_denied']['status']}")
+            print(f"Source identity bound: HTTP {result['source_identity_bound']['status']}")
             print(f"Secrets persisted: {result['secrets_persisted']}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1

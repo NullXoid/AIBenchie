@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from aibenchie.local_nullbridge_runner import run_local_trust_path
+from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullprivacy import decrypt_blob, encrypt_blob, generate_key, run_e2ee_storage_proof
 from training.release_fabric import (
     POLICIES_ROOT,
@@ -37,6 +37,7 @@ SECRET_MARKERS = [
     "jwt",
     "eyj",
     "private_key",
+    "prompt",
 ]
 
 
@@ -77,14 +78,27 @@ def build_release_report(root: Path, *, run_trust_smoke: bool = True) -> tuple[d
     tracks["ephemeral_secret_handling"] = "pass"
 
     trust_smoke: dict[str, Any] = {"ok": "skipped"}
+    notification_smoke: dict[str, Any] = {"ok": "skipped"}
     if run_trust_smoke:
         trust_result = run_local_trust_path()
-        tracks["nullbridge_enforcement"] = "pass" if trust_result.get("ok") else "critical_block"
+        notification_result = run_local_notification_path()
+        tracks["nullbridge_enforcement"] = (
+            "pass" if trust_result.get("ok") and notification_result.get("ok") else "critical_block"
+        )
         trust_smoke = {
             "ok": bool(trust_result.get("ok")),
             "allow_status": trust_result.get("allow", {}).get("status"),
             "deny_status": trust_result.get("deny", {}).get("status"),
             "secrets_persisted": bool(trust_result.get("secrets_persisted")),
+        }
+        notification_smoke = {
+            "ok": bool(notification_result.get("ok")),
+            "publish_status": notification_result.get("publish", {}).get("status"),
+            "query_status": notification_result.get("query", {}).get("status"),
+            "direct_denied_status": notification_result.get("direct_frontend_denied", {}).get("status"),
+            "website_denied_status": notification_result.get("website_publish_denied", {}).get("status"),
+            "source_identity_status": notification_result.get("source_identity_bound", {}).get("status"),
+            "secrets_persisted": bool(notification_result.get("secrets_persisted")),
         }
 
     critical_blocks = sorted(track for track, status in tracks.items() if status == "critical_block")
@@ -106,6 +120,7 @@ def build_release_report(root: Path, *, run_trust_smoke: bool = True) -> tuple[d
             "tamper_rejected": privacy_proof["tamper_rejected"],
             "plaintext_visible_in_blob": privacy_proof["plaintext_visible_in_blob"],
         },
+        "notification_smoke": notification_smoke,
     }
     assert_public_safe(summary)
 
@@ -113,6 +128,8 @@ def build_release_report(root: Path, *, run_trust_smoke: bool = True) -> tuple[d
         "summary": summary,
         "tracks": tracks,
         "privacy_proof": privacy_proof,
+        "trust_smoke_full": trust_result if run_trust_smoke else {"ok": "skipped"},
+        "notification_smoke_full": notification_result if run_trust_smoke else {"ok": "skipped"},
         "notes": [
             "Full report encrypted before storage.",
             "No service credentials are included in the generated report.",
