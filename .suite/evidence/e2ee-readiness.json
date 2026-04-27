@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "partial",
+  "status": "complete",
   "targets": [
     {
       "target": "saved_chats",
