@@ -321,6 +321,8 @@ A release should not ship only because it builds. It needs source, test evidence
 
 Use [docs/RELEASE_DETAILS.md](docs/RELEASE_DETAILS.md) and [templates/release-details.md](templates/release-details.md) for proper release notes. Older releases can be documented retroactively, but they must be labeled reconstructed and tied to the evidence that still exists.
 
+Architecture decisions that affect release trust and deploy boundaries are recorded in [docs/DECISION_LEDGER.md](docs/DECISION_LEDGER.md).
+
 ## Planned Deploy Add-On
 
 A future AIBenchie deploy add-on can publish verified packages to a repo hub such as Forgejo, Gitea, GitHub, or another open/closed source provider. That add-on should consume the suite verdict and release artifact manifest before deploy, keep provider credentials in runtime/local secret storage, and support guided setup so users do not need to drop into the CLI for normal releases. It is intentionally separate from the current package attestation gate: AIBenchie proves what is safe to ship first, then a deploy add-on can decide where to publish it.

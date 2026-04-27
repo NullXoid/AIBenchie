@@ -70,6 +70,8 @@ python aibenchie_local.py --verify-release-artifacts --release-artifacts path/to
 
 `--package-release-artifacts` is the preferred current flow for real builds. It packages the wrapper build, Android/Companion artifact, and public website build into stable release packages before attestation. That is what makes the public website part of the same release contract as the wrapper and mobile app instead of a separate unverified deploy.
 
+The packager and verifier are intentionally separate. Packaging creates release evidence; verification stays read-only and proves that evidence. The decision record is in [DECISION_LEDGER.md](DECISION_LEDGER.md).
+
 The suite security gate treats release artifact evidence as release-blocking. Set `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` to the manifest path when the manifest is not at the AIBenchie repo root. The gate fails if wrapper, Android/Companion, or public package evidence is missing, if artifact/SBOM/signature/manifest hashes do not match files on disk, if the signature lacks an algorithm or signing key id, or if the HMAC-SHA256 signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
 
 ## Why Suite Verdict Includes NullBridge
