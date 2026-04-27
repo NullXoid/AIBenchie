@@ -13,7 +13,7 @@ def operations_status_payload(**overrides):
     payload = {
         "ok": True,
         "backend": {"service": "wrapper_backend", "status": "ok"},
-        "deploy": {"mount": "/nullxoid/", "canonical_origin": "https://www.echolabs.diy"},
+        "deploy": {"mount": "/nullxoid/", "canonical_origin": "https://app.example.test"},
         "runtime": {"provider": "local_runtime", "status": "ok"},
         "resources": {"free_gb": 18.0, "used_percent": 22.0},
         "notifications": {"status": "ok", "connected": True},

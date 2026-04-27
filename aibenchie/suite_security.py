@@ -13,7 +13,7 @@ from aibenchie.hosted_nullxoid_stack import run_hosted_nullxoid_stack_check
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 
 
-DEFAULT_PUBLIC_ORIGIN = "https://api.echolabs.diy"
+DEFAULT_PUBLIC_ORIGIN = "https://api.example.test"
 DEFAULT_BASE_PATH = "/nullxoid"
 
 DEFAULT_SCAN_PATHS = (

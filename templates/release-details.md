@@ -38,11 +38,17 @@ Briefly describe the intended change set.
 | Android remote backend | not_run | |
 | Privacy/E2EE | not_run | |
 
+## Release Package Attestation
+
+- status:
+- artifact_count:
+- required_fields: digest.value, sbom.path, sbom.sha256, signature.reference, signature.algorithm, signature.key_id, manifest.path, manifest.sha256
+
 ## Artifacts
 
-| Artifact | Digest | SBOM | Manifest |
-| --- | --- | --- | --- |
-| | | | |
+| Artifact | Digest | SBOM | Signature | Manifest | Attestation |
+| --- | --- | --- | --- | --- | --- |
+| | | | | | |
 
 ## Security And Privacy Notes
 

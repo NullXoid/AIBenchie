@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +12,7 @@ from aibenchie.nullprivacy import decrypt_blob, encrypt_blob, generate_key, run_
 from training.release_fabric import (
     POLICIES_ROOT,
     load_json,
+    sha256_file,
     validate_aibenchie_gates,
     validate_nullbridge_capabilities,
     validate_nullbridge_registry,
@@ -38,6 +40,17 @@ SECRET_MARKERS = [
     "eyj",
     "private_key",
     "prompt",
+]
+SHA256_RE = re.compile(r"^[a-fA-F0-9]{64}$")
+ARTIFACT_ATTESTATION_REQUIRED_FIELDS = [
+    "digest.value",
+    "sbom.path",
+    "sbom.sha256",
+    "signature.reference",
+    "signature.algorithm",
+    "signature.key_id",
+    "manifest.path",
+    "manifest.sha256",
 ]
 
 
@@ -142,6 +155,201 @@ def _list_items(items: Iterable[str] | None) -> list[str]:
     return [str(item) for item in (items or []) if str(item).strip()]
 
 
+def _reference_path(value: dict[str, Any]) -> str:
+    return str(value.get("path") or value.get("name") or value.get("uri") or "").strip()
+
+
+def _reference_digest(value: dict[str, Any]) -> str:
+    raw = str(value.get("sha256") or value.get("digest") or value.get("value") or "").strip()
+    if raw.startswith("sha256:"):
+        return raw.split(":", 1)[1]
+    return raw
+
+
+def _normalize_digest(value: Any, fallback_sha256: str = "") -> dict[str, str]:
+    if isinstance(value, dict):
+        algorithm = str(value.get("algorithm") or value.get("algo") or "sha256").strip()
+        digest_value = str(value.get("value") or value.get("sha256") or value.get("digest") or fallback_sha256).strip()
+    else:
+        raw = str(value or fallback_sha256).strip()
+        if raw.startswith("sha256:"):
+            algorithm, digest_value = raw.split(":", 1)
+        else:
+            algorithm, digest_value = ("sha256" if raw else "", raw)
+    return {"algorithm": algorithm, "value": digest_value}
+
+
+def _normalize_evidence_reference(value: Any) -> dict[str, str]:
+    if isinstance(value, dict):
+        return {
+            "path": _reference_path(value),
+            "sha256": _reference_digest(value),
+            "uri": str(value.get("uri") or "").strip(),
+        }
+    raw = str(value or "").strip()
+    if SHA256_RE.match(raw):
+        return {"path": "", "sha256": raw, "uri": ""}
+    return {"path": raw, "sha256": "", "uri": raw if raw.startswith(("http://", "https://")) else ""}
+
+
+def _normalize_signature(value: Any) -> dict[str, str]:
+    if isinstance(value, dict):
+        return {
+            "path": _reference_path(value),
+            "sha256": _reference_digest(value),
+            "algorithm": str(value.get("algorithm") or value.get("scheme") or "").strip(),
+            "key_id": str(value.get("key_id") or value.get("signed_by") or value.get("signer") or "").strip(),
+            "value": str(value.get("value") or value.get("signature") or "").strip(),
+        }
+    raw = str(value or "").strip()
+    return {
+        "path": raw if raw and not raw.startswith(("ssh-", "sig_", "-----")) else "",
+        "sha256": "",
+        "algorithm": "",
+        "key_id": "",
+        "value": "" if raw and not raw.startswith(("ssh-", "sig_", "-----")) else raw,
+    }
+
+
+def _signature_has_reference(signature: dict[str, str]) -> bool:
+    return bool(signature.get("path") or signature.get("value"))
+
+
+def _attestation_missing_fields(artifact: dict[str, Any]) -> list[str]:
+    missing: list[str] = []
+    digest = artifact.get("digest") or {}
+    sbom = artifact.get("sbom") or {}
+    signature = artifact.get("signature") or {}
+    manifest = artifact.get("manifest") or {}
+    if not digest.get("value"):
+        missing.append("digest.value")
+    if digest.get("algorithm") == "sha256" and digest.get("value") and not SHA256_RE.match(str(digest.get("value"))):
+        missing.append("digest.value_sha256_hex")
+    if not sbom.get("path"):
+        missing.append("sbom.path")
+    if not sbom.get("sha256"):
+        missing.append("sbom.sha256")
+    elif not SHA256_RE.match(str(sbom.get("sha256"))):
+        missing.append("sbom.sha256_hex")
+    if not _signature_has_reference(signature):
+        missing.append("signature.reference")
+    if not signature.get("algorithm"):
+        missing.append("signature.algorithm")
+    if not signature.get("key_id"):
+        missing.append("signature.key_id")
+    if not manifest.get("path"):
+        missing.append("manifest.path")
+    if not manifest.get("sha256"):
+        missing.append("manifest.sha256")
+    elif not SHA256_RE.match(str(manifest.get("sha256"))):
+        missing.append("manifest.sha256_hex")
+    return missing
+
+
+def normalize_artifact_attestations(artifacts: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for artifact in artifacts or []:
+        item = {
+            "name": str(artifact.get("name") or artifact.get("path") or artifact.get("uri") or "unnamed_artifact"),
+            "path": str(artifact.get("path") or "").strip(),
+            "kind": str(artifact.get("kind") or artifact.get("type") or "release_artifact").strip(),
+            "digest": _normalize_digest(artifact.get("digest"), str(artifact.get("sha256") or "")),
+            "sbom": _normalize_evidence_reference(artifact.get("sbom")),
+            "signature": _normalize_signature(artifact.get("signature")),
+            "manifest": _normalize_evidence_reference(artifact.get("manifest")),
+            "provenance": str(artifact.get("provenance") or "").strip(),
+        }
+        missing = _attestation_missing_fields(item)
+        item["attestation_status"] = "fully_attestable" if not missing else "incomplete"
+        item["missing_attestation_fields"] = missing
+        normalized.append(item)
+    return normalized
+
+
+def build_release_package_attestation(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
+    missing_by_artifact = {
+        artifact.get("name", f"artifact_{index}"): artifact.get("missing_attestation_fields", [])
+        for index, artifact in enumerate(artifacts)
+        if artifact.get("missing_attestation_fields")
+    }
+    if not artifacts:
+        status = "not_recorded"
+    elif missing_by_artifact:
+        status = "incomplete"
+    else:
+        status = "fully_attestable"
+    return {
+        "status": status,
+        "artifact_count": len(artifacts),
+        "required_fields": ARTIFACT_ATTESTATION_REQUIRED_FIELDS,
+        "missing_by_artifact": missing_by_artifact,
+    }
+
+
+def _format_digest(digest: dict[str, str] | Any) -> str:
+    if not isinstance(digest, dict):
+        return str(digest or "")
+    if not digest.get("value"):
+        return ""
+    return f"{digest.get('algorithm') or 'digest'}:{digest.get('value')}"
+
+
+def _format_reference(reference: dict[str, str] | Any) -> str:
+    if not isinstance(reference, dict):
+        return str(reference or "")
+    label = reference.get("path") or reference.get("uri") or ""
+    digest = reference.get("sha256") or ""
+    if label and digest:
+        return f"{label} ({digest})"
+    return label or digest
+
+
+def _format_signature(signature: dict[str, str] | Any) -> str:
+    if not isinstance(signature, dict):
+        return str(signature or "")
+    reference = signature.get("path") or signature.get("value") or ""
+    bits = [reference]
+    if signature.get("algorithm"):
+        bits.append(f"algorithm={signature['algorithm']}")
+    if signature.get("key_id"):
+        bits.append(f"key_id={signature['key_id']}")
+    if signature.get("sha256"):
+        bits.append(f"sha256={signature['sha256']}")
+    return "; ".join(bit for bit in bits if bit)
+
+
+def default_report_artifacts(summary_path: Path, encrypted_path: Path) -> list[dict[str, Any]]:
+    artifacts: list[dict[str, Any]] = []
+    for path, kind in [(summary_path, "aibenchie_summary"), (encrypted_path, "encrypted_full_report")]:
+        if not path.exists():
+            continue
+        artifacts.append(
+            {
+                "name": path.name,
+                "path": path.name,
+                "kind": kind,
+                "sha256": sha256_file(path),
+            }
+        )
+    return artifacts
+
+
+def load_artifact_attestation_manifest(path: Path) -> list[dict[str, Any]]:
+    payload = load_json(path)
+    if isinstance(payload, list):
+        artifacts = payload
+    elif isinstance(payload, dict):
+        artifacts = payload.get("artifacts", [])
+    else:
+        artifacts = []
+    if not isinstance(artifacts, list):
+        raise ValueError(f"artifact attestation manifest must contain a list: {path}")
+    invalid = [index for index, artifact in enumerate(artifacts) if not isinstance(artifact, dict)]
+    if invalid:
+        raise ValueError(f"artifact attestation entries must be objects: {path} indexes={invalid}")
+    return artifacts
+
+
 def build_release_details(
     root: Path,
     summary: dict[str, Any],
@@ -162,6 +370,7 @@ def build_release_details(
     evidence: list[str] | None = None,
     unknowns: list[str] | None = None,
 ) -> dict[str, Any]:
+    normalized_artifacts = normalize_artifact_attestations(artifacts)
     details = {
         "schema_version": 1,
         "release_id": release_id or _release_id(summary),
@@ -185,7 +394,8 @@ def build_release_details(
             "command": "python aibenchie_local.py --release-report",
         },
         "gates": _default_gates(summary),
-        "artifacts": artifacts or [],
+        "release_package_attestation": build_release_package_attestation(normalized_artifacts),
+        "artifacts": normalized_artifacts,
         "security_and_privacy": {
             "public_summary_safe": True,
             "full_report_encrypted": True,
@@ -249,17 +459,39 @@ def render_release_details_markdown(details: dict[str, Any]) -> str:
     ]
     for gate in details.get("gates", []):
         lines.append(f"| {gate.get('name', '')} | {gate.get('result', '')} | {gate.get('evidence', '')} |")
-    lines.extend(["", "## Artifacts", "", "| Artifact | Digest | SBOM | Manifest |", "| --- | --- | --- | --- |"])
+    attestation = details.get("release_package_attestation", {})
+    missing_by_artifact = attestation.get("missing_by_artifact", {})
+    lines.extend(
+        [
+            "",
+            "## Release Package Attestation",
+            "",
+            f"- status: {attestation.get('status', '')}",
+            f"- artifact_count: {attestation.get('artifact_count', 0)}",
+            f"- required_fields: {', '.join(attestation.get('required_fields', []))}",
+            "",
+            "## Artifacts",
+            "",
+            "| Artifact | Digest | SBOM | Signature | Manifest | Attestation |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
     for artifact in details.get("artifacts", []):
         lines.append(
             "| "
             + f"{artifact.get('name', '')} | "
-            + f"{artifact.get('digest', '')} | "
-            + f"{artifact.get('sbom', '')} | "
-            + f"{artifact.get('manifest', '')} |"
+            + f"{_format_digest(artifact.get('digest'))} | "
+            + f"{_format_reference(artifact.get('sbom'))} | "
+            + f"{_format_signature(artifact.get('signature'))} | "
+            + f"{_format_reference(artifact.get('manifest'))} | "
+            + f"{artifact.get('attestation_status', '')} |"
         )
     if not details.get("artifacts"):
-        lines.append("| not_recorded |  |  |  |")
+        lines.append("| not_recorded |  |  |  |  | not_recorded |")
+    if missing_by_artifact:
+        lines.extend(["", "Missing attestation fields:"])
+        for artifact_name, missing_fields in missing_by_artifact.items():
+            lines.append(f"- {artifact_name}: {', '.join(missing_fields)}")
     lines.extend(
         [
             "",
@@ -379,6 +611,7 @@ def write_release_report(
     confidence: str = "high",
     operator: str = "",
     reviewer: str = "",
+    artifacts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     output = output_dir or (root / "reports" / "aibenchie" / "latest")
     output.mkdir(parents=True, exist_ok=True)
@@ -388,6 +621,8 @@ def write_release_report(
     key_hint_path = output / "full-report.key.local"
     details_path = output / "release-details.json"
     details_markdown_path = output / "release-details.md"
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+    encrypted_path.write_text(json.dumps(encrypted_full, indent=2, sort_keys=True), encoding="utf-8")
     details = build_release_details(
         root,
         summary,
@@ -400,10 +635,9 @@ def write_release_report(
         reviewer=reviewer,
         summary_path=summary_path.name,
         encrypted_full_report_path=encrypted_path.name,
+        artifacts=artifacts if artifacts is not None else default_report_artifacts(summary_path, encrypted_path),
         evidence=[summary_path.name, encrypted_path.name],
     )
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
-    encrypted_path.write_text(json.dumps(encrypted_full, indent=2, sort_keys=True), encoding="utf-8")
     details_path.write_text(json.dumps(details, indent=2, sort_keys=True), encoding="utf-8")
     details_markdown_path.write_text(render_release_details_markdown(details), encoding="utf-8")
     key_hint_path.write_text(

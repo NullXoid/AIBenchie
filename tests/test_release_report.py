@@ -7,6 +7,7 @@ from aibenchie.release_report import (
     build_release_details,
     build_release_report,
     decrypt_full_report,
+    load_artifact_attestation_manifest,
     render_release_details_markdown,
     write_release_report,
 )
@@ -45,8 +46,14 @@ def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path)
     assert details["aibenchie_verdict"]["suite_verdict"] == "ship_candidate"
     assert details["aibenchie_verdict"]["summary_path"] == "summary.json"
     assert details["aibenchie_verdict"]["full_report_path"] == "full-report.json.encrypted"
+    assert details["release_package_attestation"]["status"] == "incomplete"
+    assert details["release_package_attestation"]["artifact_count"] == 2
+    assert details["artifacts"][0]["digest"]["algorithm"] == "sha256"
+    assert len(details["artifacts"][0]["digest"]["value"]) == 64
     assert details["security_and_privacy"]["full_report_encrypted"] is True
     assert "## AIBenchie Verdict" in details_markdown
+    assert "## Release Package Attestation" in details_markdown
+    assert "| summary.json | sha256:" in details_markdown
     assert result["release_details"].endswith("release-details.json")
     assert result["release_details_markdown"].endswith("release-details.md")
     assert "Generated per-run report key" in key_text
@@ -78,6 +85,97 @@ def test_release_details_support_reconstructed_entries():
     assert details["unknowns"] == ["artifact digest was not recorded at the original publish time"]
     assert "release_type: reconstructed" in markdown
     assert "- artifact digest was not recorded at the original publish time" in markdown
+    assert_public_safe(details)
+
+
+def test_release_details_support_fully_attestable_artifacts():
+    summary, _, _ = build_release_report(ROOT, run_trust_smoke=False)
+    details = build_release_details(
+        ROOT,
+        summary,
+        artifacts=[
+            {
+                "name": "nullxoid-wrapper.zip",
+                "path": "dist/nullxoid-wrapper.zip",
+                "sha256": "a" * 64,
+                "sbom": {"path": "dist/nullxoid-wrapper.spdx.json", "sha256": "b" * 64},
+                "signature": {
+                    "path": "dist/nullxoid-wrapper.zip.sig",
+                    "sha256": "c" * 64,
+                    "algorithm": "ssh-signature",
+                    "key_id": "release_hardware_key",
+                },
+                "manifest": {"path": "dist/release-manifest.json", "sha256": "d" * 64},
+            }
+        ],
+    )
+    markdown = render_release_details_markdown(details)
+
+    assert details["release_package_attestation"]["status"] == "fully_attestable"
+    assert details["artifacts"][0]["attestation_status"] == "fully_attestable"
+    assert details["release_package_attestation"]["missing_by_artifact"] == {}
+    assert "fully_attestable" in markdown
+    assert "dist/nullxoid-wrapper.spdx.json" in markdown
+    assert "algorithm=ssh-signature" in markdown
+    assert_public_safe(details)
+
+
+def test_write_release_report_accepts_artifact_attestation_manifest(tmp_path):
+    artifacts = [
+        {
+            "name": "nullxoid-companion.apk",
+            "path": "dist/nullxoid-companion.apk",
+            "sha256": "1" * 64,
+            "sbom": {"path": "dist/nullxoid-companion.spdx.json", "sha256": "2" * 64},
+            "signature": {
+                "path": "dist/nullxoid-companion.apk.sig",
+                "sha256": "3" * 64,
+                "algorithm": "cosign",
+                "key_id": "android_release_key",
+            },
+            "manifest": {"path": "dist/release-manifest.json", "sha256": "4" * 64},
+        }
+    ]
+    manifest_path = tmp_path / "artifacts.json"
+    manifest_path.write_text(json.dumps({"artifacts": artifacts}), encoding="utf-8")
+
+    loaded_artifacts = load_artifact_attestation_manifest(manifest_path)
+    result = write_release_report(ROOT, tmp_path / "release", run_trust_smoke=False, artifacts=loaded_artifacts)
+    details = json.loads((tmp_path / "release" / "release-details.json").read_text(encoding="utf-8"))
+    details_markdown = (tmp_path / "release" / "release-details.md").read_text(encoding="utf-8")
+
+    assert result["ok"] is True
+    assert details["release_package_attestation"]["status"] == "fully_attestable"
+    assert details["release_package_attestation"]["artifact_count"] == 1
+    assert details["artifacts"][0]["name"] == "nullxoid-companion.apk"
+    assert details["artifacts"][0]["attestation_status"] == "fully_attestable"
+    assert "nullxoid-companion.apk.sig" in details_markdown
+    assert_public_safe(details)
+
+
+def test_release_details_normalize_legacy_artifact_fields_as_incomplete_attestation():
+    summary, _, _ = build_release_report(ROOT, run_trust_smoke=False)
+    details = build_release_details(
+        ROOT,
+        summary,
+        artifacts=[
+            {
+                "name": "legacy-package.zip",
+                "digest": "sha256:" + "a" * 64,
+                "sbom": "legacy-package.spdx.json",
+                "manifest": "release-manifest.json",
+            }
+        ],
+    )
+    artifact = details["artifacts"][0]
+
+    assert artifact["digest"]["value"] == "a" * 64
+    assert artifact["sbom"]["path"] == "legacy-package.spdx.json"
+    assert artifact["manifest"]["path"] == "release-manifest.json"
+    assert artifact["attestation_status"] == "incomplete"
+    assert details["release_package_attestation"]["status"] == "incomplete"
+    assert "signature.reference" in artifact["missing_attestation_fields"]
+    assert "sbom.sha256" in artifact["missing_attestation_fields"]
     assert_public_safe(details)
 
 

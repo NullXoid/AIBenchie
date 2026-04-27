@@ -9,8 +9,8 @@ from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_stack import HostedStackResult, run_hosted_nullxoid_stack_check
 
 
-DEFAULT_PUBLIC_API = "https://api.echolabs.diy/nullxoid"
-DEFAULT_ORIGIN = "https://api.echolabs.diy"
+DEFAULT_PUBLIC_API = "https://api.example.test/nullxoid"
+DEFAULT_ORIGIN = "https://api.example.test"
 DEFAULT_BASE_PATH = "/nullxoid"
 
 REQUIRED_ANDROID_FILES = (
@@ -223,7 +223,7 @@ def run_companion_remote_backend_check(
             [
                 resolved_public_api,
                 "/auth/login",
-                "api.echolabs.diy/nullxoid",
+                resolved_public_api.removeprefix("https://").removeprefix("http://"),
             ],
         )
     )

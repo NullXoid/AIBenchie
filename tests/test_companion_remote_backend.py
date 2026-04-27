@@ -8,7 +8,7 @@ from aibenchie import companion_remote_backend
 from aibenchie.hosted_nullxoid_stack import HostedStackResult, RouteResult
 
 
-PUBLIC_API = "https://api.echolabs.diy/nullxoid"
+PUBLIC_API = "https://api.example.test/nullxoid"
 
 
 def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
@@ -40,7 +40,7 @@ def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
         "app/src/test/java/com/nullxoid/android/data/api/BackendEndpointTest.kt": (
             "class BackendEndpointTest {\n"
             f'    val login = "{public_api}/auth/login"\n'
-            '    val normalized = "api.echolabs.diy/nullxoid"\n'
+            '    val normalized = "api.example.test/nullxoid"\n'
             "}\n"
         ),
     }
@@ -53,7 +53,7 @@ def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
 def hosted_stack(ok: bool = True) -> HostedStackResult:
     return HostedStackResult(
         ok=ok,
-        origin="https://api.echolabs.diy",
+        origin="https://api.example.test",
         base_path="/nullxoid",
         routes=[
             RouteResult(
@@ -112,7 +112,7 @@ def test_companion_remote_backend_cli_outputs_json(monkeypatch, capsys):
                 "ok": True,
                 "android_repo": "C:/repo",
                 "public_api": PUBLIC_API,
-                "origin": "https://api.echolabs.diy",
+                "origin": "https://api.example.test",
                 "base_path": "/nullxoid",
                 "checks": [],
                 "hosted_stack": {},

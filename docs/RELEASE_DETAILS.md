@@ -13,7 +13,8 @@ Every release detail entry should include:
 - scope summary
 - AIBenchie suite verdict path and result
 - required gates and pass/fail status
-- artifacts, manifest path, digests, and SBOM references when available
+- artifacts, manifest path, digests, SBOM references, and signature references when available
+- release package attestation status: `fully_attestable`, `incomplete`, or `not_recorded`
 - security, privacy, NullBridge, resource, and deploy notes
 - known risks and blocked items
 - rollback instructions
@@ -29,7 +30,20 @@ Use:
 - `unknowns`: details that cannot be proven after the fact
 - `confidence`: high, medium, or low
 
-Do not invent digests, test results, SBOMs, signatures, or dates. If a gate was not run at the time, record it as `not_run` and, if useful, add a later validation as `post_release_validation`.
+Do not invent digests, test results, SBOMs, signatures, manifests, or dates. If a gate was not run at the time, record it as `not_run` and, if useful, add a later validation as `post_release_validation`.
+
+## Artifact Attestation
+
+Release packages are fully attestable only when every artifact records:
+
+- artifact digest value
+- SBOM path and SHA-256 digest
+- signature reference, signature algorithm, and signing key id
+- release manifest path and SHA-256 digest
+
+If any field is missing, AIBenchie must keep the release details usable but mark the package as `incomplete`. Retroactive entries can stay useful as historical evidence, but they must not be upgraded to `fully_attestable` unless the missing digest, SBOM, signature, and manifest evidence exists.
+
+When generating release details from the CLI, provide package evidence with `--release-artifacts path/to/release-artifacts.json`. The file may be a JSON array or an object with an `artifacts` array. Generated AIBenchie summary files remain release evidence, but the release package attestation status is controlled by the artifact evidence supplied for the package being shipped.
 
 ## Why Suite Verdict Includes NullBridge
 

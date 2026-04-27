@@ -64,6 +64,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--release-operator", default="", help="Operator label for release details.")
     parser.add_argument("--release-reviewer", default="", help="Reviewer label for release details.")
     parser.add_argument(
+        "--release-artifacts",
+        default="",
+        help="Optional JSON file with release artifact digest, SBOM, signature, and manifest evidence.",
+    )
+    parser.add_argument(
         "--hosted-nullxoid-auth",
         action="store_true",
         help="Run the hosted NullXoid login check using AIBENCHIE_NULLXOID_* environment variables.",
@@ -183,7 +188,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.release_report:
         from pathlib import Path
 
-        from aibenchie.release_report import write_release_report
+        from aibenchie.release_report import load_artifact_attestation_manifest, write_release_report
+
+        artifacts = (
+            load_artifact_attestation_manifest(Path(args.release_artifacts))
+            if args.release_artifacts
+            else None
+        )
 
         result = write_release_report(
             Path(__file__).resolve().parent,
@@ -195,6 +206,7 @@ def main(argv: list[str] | None = None) -> int:
             confidence=args.release_confidence,
             operator=args.release_operator,
             reviewer=args.release_reviewer,
+            artifacts=artifacts,
         )
         print(
             json.dumps(result, indent=2)

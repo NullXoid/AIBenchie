@@ -80,6 +80,7 @@ AIBenchie can consume sanitized Lv-7 benchmark fixtures and release reports, but
 - runner isolation
 - release manifest validation
 - SBOM and artifact digest validation
+- release package attestation details
 - hardware-signature and break-glass checks
 
 ## Local Use
@@ -176,8 +177,8 @@ Run the Companion/Android remote backend gate:
 
 ```powershell
 $env:AIBENCHIE_COMPANION_ANDROID_REPO="..\NullXoidAndroid"
-$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.echolabs.diy/nullxoid"
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.example.test/nullxoid"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.example.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --companion-remote-backend --json
 ```
@@ -249,12 +250,22 @@ The scoreboard is the website-facing view of AIBenchie evidence. It scans valid 
 Run the suite security E2E gate:
 
 ```powershell
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.example.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --suite-security --json
 ```
 
 This is AIBenchie's evidence gate for the deployed suite. It verifies that hosted NullXoid routes return the expected JSON/static contracts instead of public-site fallback HTML, Cloudflare challenge HTML, or HTTP 500s. It also scans public repo files for committed secrets and runs the generated-output policy so runtime reports, caches, and raw data do not grow into tracked bloat.
+
+Release reports now include a release package attestation section. A package is only marked `fully_attestable` when every artifact has a digest, SBOM path and digest, signature reference and signing key id, and release manifest path and digest. Otherwise the release details remain usable but are labeled `incomplete`.
+
+To attach package evidence to a generated release report, pass an artifact manifest:
+
+```powershell
+python aibenchie_local.py --release-report --release-artifacts .\release-artifacts.json --json
+```
+
+The artifact manifest can be either a JSON array or an object with an `artifacts` array. Each artifact should include `name`, `path`, `sha256`, `sbom.path`, `sbom.sha256`, `signature.path` or `signature.value`, `signature.algorithm`, `signature.key_id`, `manifest.path`, and `manifest.sha256`.
 
 Optional checks are enabled only with runtime environment variables:
 
