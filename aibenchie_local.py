@@ -7,6 +7,7 @@ import sys
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullprivacy import run_e2ee_storage_proof
+from aibenchie.e2ee_readiness import run_e2ee_readiness_check
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
@@ -44,6 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--privacy-proof",
         action="store_true",
         help="Run a local E2EE storage proof with temporary generated keys.",
+    )
+    parser.add_argument(
+        "--e2ee-readiness",
+        action="store_true",
+        help="Run the release-blocking NullPrivacy E2EE readiness gate.",
     )
     parser.add_argument(
         "--release-report",
@@ -219,6 +225,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrong key rejected: {result['wrong_key_rejected']}")
             print(f"Tamper rejected: {result['tamper_rejected']}")
             print(f"Plaintext visible in blob: {result['plaintext_visible_in_blob']}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.e2ee_readiness:
+        result = run_e2ee_readiness_check().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("NullPrivacy E2EE Readiness Gate")
+            print(f"Policy: {result['policy_path']}")
+            print(f"Evidence: {result['evidence_path']}")
+            print(f"Crypto proof: {'PASS' if result['proof'].get('ok') else 'FAIL'}")
+            for target in result["targets"]:
+                suffix = f" ({'; '.join(target['failures'])})" if target["failures"] else ""
+                print(f"{target['target']}: {'PASS' if target['ok'] else 'FAIL'}{suffix}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

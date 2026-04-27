@@ -11,6 +11,7 @@ from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_ephemeral_hosted_nullxoid_chat_check
 from aibenchie.hosted_nullxoid_stack import run_hosted_nullxoid_stack_check
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
+from aibenchie.e2ee_readiness import run_e2ee_readiness_check
 from aibenchie.release_artifacts import REQUIRED_RELEASE_ARTIFACT_KINDS, verify_release_artifacts_manifest
 
 
@@ -355,6 +356,20 @@ def run_suite_security_check(env: dict[str, str] | None = None) -> SuiteSecurity
         )
     else:
         checks.append(_skip_check("ephemeral_hosted_chat", "set AIBENCHIE_SUITE_SECURITY_EPHEMERAL=1"))
+
+    if _env_bool(source, "AIBENCHIE_SUITE_SECURITY_E2EE"):
+        e2ee = run_e2ee_readiness_check(root=root, env=source)
+        checks.append(
+            _check_from_result(
+                "nullprivacy_e2ee_readiness",
+                e2ee.ok,
+                e2ee.as_dict(),
+                severity="critical",
+                failure=";".join(e2ee.failures) or "nullprivacy_e2ee_readiness_failed",
+            )
+        )
+    else:
+        checks.append(_skip_check("nullprivacy_e2ee_readiness", "set AIBENCHIE_SUITE_SECURITY_E2EE=1"))
 
     if _env_bool(source, "AIBENCHIE_SUITE_SECURITY_NULLBRIDGE"):
         try:

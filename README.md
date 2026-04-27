@@ -126,6 +126,14 @@ AIBenchie owns the release verdict and suite-wide test catalog. NullBridge, Null
 
 Wiring the NullBridge trust and notification gates into the broader suite verdict makes signed service identity, deny-by-default routing, and redacted audit behavior release-blocking. That benefits the project because a single verdict can catch cross-repo regressions before publish, prove implementation and policy together, and preserve repeatable evidence instead of relying on manual retesting.
 
+Run the release-blocking NullPrivacy E2EE readiness gate:
+
+```powershell
+python aibenchie_local.py --e2ee-readiness --json
+```
+
+This gate is documented in [docs/E2EE_READINESS.md](docs/E2EE_READINESS.md). It only passes when the crypto proof and product evidence for every E2EE storage target are present. To include it in the broader suite security verdict, set `AIBENCHIE_SUITE_SECURITY_E2EE=1`.
+
 Configure repo locations at runtime when they are not next to this checkout:
 
 ```powershell

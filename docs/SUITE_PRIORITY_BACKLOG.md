@@ -27,7 +27,7 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
 | 1 | NullPrivacy E2EE v1 foundation | 490 | Planned | Saved chats or private artifacts are encrypted before backend persistence, wrong-key/tamper tests pass, and AIBenchie proves backend stores ciphertext. |
-| 2 | Android/Companion remote profile | 455 | Planned | Production profile points to `https://api.echolabs.diy/nullxoid`, signs in securely, lists models, syncs saved chats, and passes AIBenchie remote Android gate. |
+| 2 | Android/Companion remote profile | 455 | Planned | Production profile points to the public HTTPS NullXoid API origin, signs in securely, lists models, syncs saved chats, and passes AIBenchie remote Android gate. |
 | 3 | Secure sign-in setup | 450 | Planned | UI-first setup for passkey/OIDC-capable sign-in; no normal user CLI setup. |
 | 4 | NullBridge trust fabric hardening | 440 | Partial | Signed backend identity, deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 5 | Resource Manager v1 runtime enforcement | 420 | Partial | Backend leases, cleanup jobs, retention caps, pressure alerts, and no unbounded heavy work. |
