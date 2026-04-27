@@ -38,6 +38,24 @@
         "EchoLabs/.NullXoid:backend/storage/artifacts.py",
         "EchoLabs/.NullXoid:backend/tests/test_artifact_e2ee_contract.py"
       ]
+    },
+    {
+      "target": "ccc_memory",
+      "status": "implemented",
+      "encryption_boundary": "deployment_local_ccc_memory_store",
+      "key_management": "deployment-local runtime key under session storage; no deploy, test, or source credential storage",
+      "plaintext_storage": "forbidden",
+      "tests": [
+        "roundtrip",
+        "wrong_key_rejected",
+        "tamper_rejected",
+        "plaintext_absent_at_rest",
+        "key_not_persisted_in_repo"
+      ],
+      "evidence": [
+        "EchoLabs/.NullXoid:backend/ccc_store.py",
+        "EchoLabs/.NullXoid:backend/tests/test_ccc_e2ee_contract.py"
+      ]
     }
   ]
 }
