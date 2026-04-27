@@ -33,6 +33,19 @@ def _generated_policy(ok: bool = True):
     )
 
 
+def _release_artifacts(ok: bool = True):
+    failures = [] if ok else ["required_artifact_missing:wrapper"]
+    return SimpleNamespace(
+        ok=ok,
+        failures=failures,
+        as_dict=lambda: {
+            "ok": ok,
+            "failures": failures,
+            "artifact_count": 3 if ok else 0,
+        },
+    )
+
+
 def test_secret_scan_rejects_private_key_without_emitting_secret(tmp_path):
     readme = tmp_path / "README.md"
     readme.write_text(
@@ -70,6 +83,7 @@ def test_suite_security_aggregates_required_checks(monkeypatch, tmp_path):
         lambda root: suite_security.SecretScanResult(ok=True, root=str(root), scanned_files=1),
     )
     monkeypatch.setattr(suite_security, "run_generated_output_policy_check", lambda env: _generated_policy(True))
+    monkeypatch.setattr(suite_security, "verify_release_artifacts_manifest", lambda *args, **kwargs: _release_artifacts(True))
 
     result = suite_security.run_suite_security_check(env={"AIBENCHIE_SUITE_SECURITY_ROOT": str(tmp_path)})
 
@@ -78,6 +92,7 @@ def test_suite_security_aggregates_required_checks(monkeypatch, tmp_path):
     assert statuses["hosted_nullxoid_stack"] == "pass"
     assert statuses["public_secret_exposure"] == "pass"
     assert statuses["generated_output_policy"] == "pass"
+    assert statuses["release_artifacts_attestation"] == "pass"
     assert statuses["ephemeral_hosted_chat"] == "skip"
     assert statuses["local_nullbridge_trust_path"] == "skip"
     assert statuses["local_nullbridge_notification_path"] == "skip"
@@ -91,12 +106,30 @@ def test_suite_security_fails_on_hosted_stack_failure(monkeypatch, tmp_path):
         lambda root: suite_security.SecretScanResult(ok=True, root=str(root), scanned_files=1),
     )
     monkeypatch.setattr(suite_security, "run_generated_output_policy_check", lambda env: _generated_policy(True))
+    monkeypatch.setattr(suite_security, "verify_release_artifacts_manifest", lambda *args, **kwargs: _release_artifacts(True))
 
     result = suite_security.run_suite_security_check(env={"AIBENCHIE_SUITE_SECURITY_ROOT": str(tmp_path)})
 
     assert result.ok is False
     hosted = next(check for check in result.checks if check.name == "hosted_nullxoid_stack")
     assert hosted.failure == "wrapper_fallback_page"
+
+
+def test_suite_security_fails_on_release_artifact_attestation_failure(monkeypatch, tmp_path):
+    monkeypatch.setattr(suite_security, "run_hosted_nullxoid_stack_check", lambda **kwargs: _hosted_stack(True))
+    monkeypatch.setattr(
+        suite_security,
+        "scan_public_files_for_secrets",
+        lambda root: suite_security.SecretScanResult(ok=True, root=str(root), scanned_files=1),
+    )
+    monkeypatch.setattr(suite_security, "run_generated_output_policy_check", lambda env: _generated_policy(True))
+    monkeypatch.setattr(suite_security, "verify_release_artifacts_manifest", lambda *args, **kwargs: _release_artifacts(False))
+
+    result = suite_security.run_suite_security_check(env={"AIBENCHIE_SUITE_SECURITY_ROOT": str(tmp_path)})
+
+    assert result.ok is False
+    release_check = next(check for check in result.checks if check.name == "release_artifacts_attestation")
+    assert release_check.failure == "required_artifact_missing:wrapper"
 
 
 def test_suite_security_runs_ephemeral_chat_when_enabled(monkeypatch, tmp_path):
@@ -113,6 +146,7 @@ def test_suite_security_runs_ephemeral_chat_when_enabled(monkeypatch, tmp_path):
         lambda root: suite_security.SecretScanResult(ok=True, root=str(root), scanned_files=1),
     )
     monkeypatch.setattr(suite_security, "run_generated_output_policy_check", lambda env: _generated_policy(True))
+    monkeypatch.setattr(suite_security, "verify_release_artifacts_manifest", lambda *args, **kwargs: _release_artifacts(True))
     monkeypatch.setattr(suite_security, "run_ephemeral_hosted_nullxoid_chat_check", fake_ephemeral)
 
     result = suite_security.run_suite_security_check(

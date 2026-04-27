@@ -45,6 +45,22 @@ If any field is missing, AIBenchie must keep the release details usable but mark
 
 When generating release details from the CLI, provide package evidence with `--release-artifacts path/to/release-artifacts.json`. The file may be a JSON array or an object with an `artifacts` array. Generated AIBenchie summary files remain release evidence, but the release package attestation status is controlled by the artifact evidence supplied for the package being shipped.
 
+Use AIBenchie to create and verify that package evidence:
+
+```powershell
+python aibenchie_local.py --emit-release-artifacts `
+  --wrapper-package path/to/nullxoid-wrapper.zip `
+  --android-package path/to/nullxoid-companion.apk `
+  --public-package path/to/echolabs-site.zip `
+  --release-artifacts-output path/to/release-artifacts.json `
+  --release-artifact-key-id release-attestation-key `
+  --json
+
+python aibenchie_local.py --verify-release-artifacts --release-artifacts path/to/release-artifacts.json --json
+```
+
+The suite security gate treats release artifact evidence as release-blocking. Set `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` to the manifest path when the manifest is not at the AIBenchie repo root. The gate fails if wrapper, Android/Companion, or public package evidence is missing, if artifact/SBOM/signature/manifest hashes do not match files on disk, or if the signature reference lacks an algorithm or signing key id.
+
 ## Why Suite Verdict Includes NullBridge
 
 NullBridge owns service identity, route policy, deny-by-default routing, and audit behavior. AIBenchie owns the release decision. Putting NullBridge trust and notification proofs into the AIBenchie verdict makes these controls release-blocking instead of optional.

@@ -11,6 +11,7 @@ from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_ephemeral_hosted_nullxoid_chat_check
 from aibenchie.hosted_nullxoid_stack import run_hosted_nullxoid_stack_check
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
+from aibenchie.release_artifacts import REQUIRED_RELEASE_ARTIFACT_KINDS, verify_release_artifacts_manifest
 
 
 DEFAULT_PUBLIC_ORIGIN = "https://api.example.test"
@@ -158,6 +159,21 @@ def _repo_root(source: dict[str, str]) -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def _release_artifacts_manifest_path(root: Path, source: dict[str, str]) -> Path:
+    configured = source.get("AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST", "").strip()
+    if configured:
+        path = Path(configured).expanduser()
+        return path if path.is_absolute() else (root / path).resolve()
+    return root / "release-artifacts.json"
+
+
+def _required_release_artifact_kinds(source: dict[str, str]) -> tuple[str, ...]:
+    configured = source.get("AIBENCHIE_RELEASE_ARTIFACT_KINDS", "").strip()
+    if not configured:
+        return REQUIRED_RELEASE_ARTIFACT_KINDS
+    return tuple(kind.strip() for kind in configured.split(",") if kind.strip())
+
+
 def _scan_paths(root: Path) -> list[Path]:
     files: list[Path] = []
     for item in DEFAULT_SCAN_PATHS:
@@ -301,6 +317,21 @@ def run_suite_security_check(env: dict[str, str] | None = None) -> SuiteSecurity
             generated_policy.as_dict(),
             severity="required",
             failure=";".join(sorted(set(generated_failures))) or "generated_output_policy_failed",
+        )
+    )
+
+    release_artifacts = verify_release_artifacts_manifest(
+        _release_artifacts_manifest_path(root, source),
+        root=root,
+        required_kinds=_required_release_artifact_kinds(source),
+    )
+    checks.append(
+        _check_from_result(
+            "release_artifacts_attestation",
+            release_artifacts.ok,
+            release_artifacts.as_dict(),
+            severity="critical",
+            failure=";".join(release_artifacts.failures) or "release_artifacts_attestation_failed",
         )
     )
 

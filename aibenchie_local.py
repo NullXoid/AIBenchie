@@ -14,6 +14,7 @@ from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
+from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.suite_security import run_suite_security_check
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
@@ -67,6 +68,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--release-artifacts",
         default="",
         help="Optional JSON file with release artifact digest, SBOM, signature, and manifest evidence.",
+    )
+    parser.add_argument(
+        "--emit-release-artifacts",
+        action="store_true",
+        help="Emit release-artifacts.json for wrapper, Android, and public packages.",
+    )
+    parser.add_argument(
+        "--verify-release-artifacts",
+        action="store_true",
+        help="Verify release-artifacts.json digests, SBOM hashes, signature hashes, and manifest hashes.",
+    )
+    parser.add_argument("--release-artifacts-output", default="release-artifacts.json", help="Output path for --emit-release-artifacts.")
+    parser.add_argument("--release-artifacts-sidecar-dir", default="", help="Directory for generated SBOM/signature/package manifests.")
+    parser.add_argument("--wrapper-package", default="", help="Wrapper release package path for --emit-release-artifacts.")
+    parser.add_argument("--android-package", default="", help="Android release package path for --emit-release-artifacts.")
+    parser.add_argument("--public-package", default="", help="Public website/package path for --emit-release-artifacts.")
+    parser.add_argument(
+        "--release-artifact-signature-algorithm",
+        default="",
+        help="Signature algorithm label recorded in release-artifacts.json.",
+    )
+    parser.add_argument(
+        "--release-artifact-key-id",
+        default="",
+        help="Signing key id recorded in release-artifacts.json. No secret key material is stored.",
     )
     parser.add_argument(
         "--hosted-nullxoid-auth",
@@ -217,6 +243,57 @@ def main(argv: list[str] | None = None) -> int:
                 f"Release details: {result['release_details_markdown']}"
             )
         )
+        return 0 if result["ok"] else 1
+
+    if args.emit_release_artifacts:
+        from pathlib import Path
+
+        package_args = {
+            "wrapper": args.wrapper_package,
+            "android": args.android_package,
+            "public": args.public_package,
+        }
+        packages = {kind: Path(path) for kind, path in package_args.items() if path}
+        try:
+            result = emit_release_artifacts_manifest(
+                packages=packages,
+                output=Path(args.release_artifacts_output),
+                sidecar_dir=Path(args.release_artifacts_sidecar_dir) if args.release_artifacts_sidecar_dir else None,
+                signature_algorithm=args.release_artifact_signature_algorithm
+                or "aibenchie-digest-bound-signature-reference-v1",
+                signing_key_id=args.release_artifact_key_id or "release-attestation-key",
+            )
+        except Exception as exc:
+            failure = {"ok": False, "failure": str(exc)}
+            print(json.dumps(failure, indent=2, sort_keys=True) if args.json else f"Result: FAIL ({exc})")
+            return 1
+        if args.json:
+            print(json.dumps({"ok": True, "output": str(Path(args.release_artifacts_output)), "manifest": result}, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Release Artifacts Manifest")
+            print(f"Output: {Path(args.release_artifacts_output)}")
+            print(f"Artifacts: {len(result.get('artifacts', []))}")
+            print("Result: PASS")
+        return 0
+
+    if args.verify_release_artifacts:
+        from pathlib import Path
+
+        manifest_path = Path(args.release_artifacts or args.release_artifacts_output)
+        result = verify_release_artifacts_manifest(manifest_path).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Release Artifacts Verification")
+            print(f"Manifest: {result['manifest']}")
+            for artifact in result["artifacts"]:
+                suffix = f" ({'; '.join(artifact['failures'])})" if artifact["failures"] else ""
+                print(f"{artifact['kind'] or artifact['name']}: {'PASS' if artifact['ok'] else 'FAIL'}{suffix}")
+            if result["failures"]:
+                print("Failures:")
+                for failure in result["failures"]:
+                    print(f"- {failure}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
     if args.hosted_nullxoid_auth:

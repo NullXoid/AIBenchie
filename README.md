@@ -271,6 +271,22 @@ This is AIBenchie's evidence gate for the deployed suite. It verifies that hoste
 
 Release reports now include a release package attestation section. A package is only marked `fully_attestable` when every artifact has a digest, SBOM path and digest, signature reference and signing key id, and release manifest path and digest. Otherwise the release details remain usable but are labeled `incomplete`.
 
+Emit release package evidence before generating release details:
+
+```powershell
+python aibenchie_local.py --emit-release-artifacts `
+  --wrapper-package .\dist\nullxoid-wrapper.zip `
+  --android-package .\dist\nullxoid-companion.apk `
+  --public-package .\dist\echolabs-site.zip `
+  --release-artifacts-output .\release-artifacts.json `
+  --release-artifact-key-id release-attestation-key `
+  --json
+
+python aibenchie_local.py --verify-release-artifacts --release-artifacts .\release-artifacts.json --json
+```
+
+The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, signature-reference, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing or any recorded hash is stale.
+
 To attach package evidence to a generated release report, pass an artifact manifest:
 
 ```powershell
