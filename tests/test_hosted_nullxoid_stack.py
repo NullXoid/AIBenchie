@@ -1,6 +1,18 @@
 from __future__ import annotations
 
+import json
+
 from aibenchie import hosted_nullxoid_stack
+
+
+VALID_MANIFEST = json.dumps(
+    {
+        "name": "NullXoid",
+        "start_url": "/nullxoid/",
+        "scope": "/nullxoid/",
+        "icons": [{"src": "/nullxoid/icons/nx-192.svg"}],
+    }
+)
 
 
 def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch):
@@ -11,7 +23,7 @@ def test_hosted_stack_check_detects_wrapper_manifest_and_json_errors(monkeypatch
         if path == "/nullxoid/":
             return 200, "text/html; charset=utf-8", "<html><title>NullXoid Gallery</title></html>"
         if path == "/nullxoid/manifest.webmanifest":
-            return 200, "application/manifest+json", '{"name":"NullXoid"}'
+            return 200, "application/manifest+json", VALID_MANIFEST
         if path == "/nullxoid/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
@@ -66,7 +78,7 @@ def test_hosted_stack_check_fails_when_api_error_is_html(monkeypatch):
         if path == "/nullxoid/":
             return 200, "text/html", "<html>NullXoid Gallery</html>"
         if path == "/nullxoid/manifest.webmanifest":
-            return 200, "application/json", '{"name":"NullXoid"}'
+            return 200, "application/json", VALID_MANIFEST
         if path == "/nullxoid/health":
             return 200, "application/json", '{"status":"ok"}'
         return 500, "text/html", "<html>Internal Server Error</html>"
@@ -102,7 +114,7 @@ def test_hosted_stack_check_fails_when_root_api_is_challenged(monkeypatch):
         if path == "/nullxoid/":
             return 200, "text/html", "<html>NullXoid Gallery</html>"
         if path == "/nullxoid/manifest.webmanifest":
-            return 200, "application/json", '{"name":"NullXoid"}'
+            return 200, "application/json", VALID_MANIFEST
         if path == "/nullxoid/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
@@ -130,7 +142,7 @@ def test_hosted_stack_check_accepts_auth_required_model_route(monkeypatch):
         if path == "/nullxoid/":
             return 200, "text/html", "<html>NullXoid Gallery</html>"
         if path == "/nullxoid/manifest.webmanifest":
-            return 200, "application/json", '{"name":"NullXoid"}'
+            return 200, "application/json", VALID_MANIFEST
         if path == "/nullxoid/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
@@ -155,7 +167,7 @@ def test_hosted_stack_check_fails_when_root_health_is_public_html(monkeypatch):
         if path == "/nullxoid/":
             return 200, "text/html", "<html>NullXoid Gallery</html>"
         if path == "/nullxoid/manifest.webmanifest":
-            return 200, "application/json", '{"name":"NullXoid"}'
+            return 200, "application/json", VALID_MANIFEST
         if path == "/nullxoid/health":
             return 200, "application/json", '{"status":"ok"}'
         if path == "/nullxoid/auth/login":
@@ -175,3 +187,29 @@ def test_hosted_stack_check_fails_when_root_health_is_public_html(monkeypatch):
     assert result.ok is False
     failures = {route.name: route.failure for route in result.routes if not route.ok}
     assert failures["root_health_route_not_challenged"] == "root_health_not_backend_json"
+
+
+def test_hosted_stack_check_fails_when_manifest_points_outside_mount(monkeypatch):
+    root_manifest = json.dumps(
+        {
+            "name": "NullXoid",
+            "start_url": "/",
+            "scope": "/",
+            "icons": [{"src": "/icons/nx-192.svg"}],
+        }
+    )
+
+    def fake_request_raw(origin, path, *, host_header="", method="GET", payload=None, timeout=15):
+        if path == "/nullxoid/":
+            return 200, "text/html", "<html>NullXoid Gallery</html>"
+        if path == "/nullxoid/manifest.webmanifest":
+            return 200, "application/manifest+json", root_manifest
+        return 200, "application/json", '{"status":"ok"}'
+
+    monkeypatch.setattr(hosted_nullxoid_stack, "request_raw", fake_request_raw)
+
+    result = hosted_nullxoid_stack.run_hosted_nullxoid_stack_check(origin="https://app.example.test")
+
+    assert result.ok is False
+    assert result.routes[1].name == "wrapper_manifest"
+    assert result.routes[1].failure == "manifest_start_url_outside_base_path"

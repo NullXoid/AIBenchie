@@ -122,7 +122,14 @@ def wrapper_page_failure(status: int, content_type: str, body: str) -> str:
     return ""
 
 
-def manifest_failure(status: int, content_type: str, body: str) -> str:
+def _mounted_path(value: Any, base_path: str) -> bool:
+    if not isinstance(value, str) or not value.startswith("/"):
+        return False
+    expected = f"{base_path.rstrip('/')}/"
+    return value == expected or value.startswith(expected)
+
+
+def manifest_failure(status: int, content_type: str, body: str, *, base_path: str = "/nullxoid") -> str:
     lowered_type = content_type.lower()
     if looks_like_cloudflare_challenge(body):
         return "manifest_challenged"
@@ -134,6 +141,20 @@ def manifest_failure(status: int, content_type: str, body: str) -> str:
         return "manifest_not_json"
     if not looks_like_json(body):
         return "manifest_not_json"
+    payload = json_payload(body)
+    if not isinstance(payload, dict):
+        return "manifest_not_object"
+    resolved_base_path = normalize_base_path(base_path)
+    if not _mounted_path(payload.get("start_url"), resolved_base_path):
+        return "manifest_start_url_outside_base_path"
+    if not _mounted_path(payload.get("scope"), resolved_base_path):
+        return "manifest_scope_outside_base_path"
+    icons = payload.get("icons")
+    if not isinstance(icons, list) or not icons:
+        return "manifest_icons_missing"
+    for icon in icons:
+        if not isinstance(icon, dict) or not _mounted_path(icon.get("src"), resolved_base_path):
+            return "manifest_icon_outside_base_path"
     return ""
 
 
@@ -181,7 +202,7 @@ def run_hosted_nullxoid_stack_check(
     status, content_type, body = request_raw(
         resolved_origin, f"{resolved_base_path}/manifest.webmanifest", host_header=host_header, timeout=timeout
     )
-    failure = manifest_failure(status, content_type, body)
+    failure = manifest_failure(status, content_type, body, base_path=resolved_base_path)
     routes.append(
         RouteResult(
             name="wrapper_manifest",
