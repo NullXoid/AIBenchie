@@ -104,6 +104,18 @@ Run tests:
 python -m pytest
 ```
 
+Default pytest runs the current deterministic gate set. Historical milestone replay tests that need frozen local
+adapter/runtime artifacts are marked `archival` and skipped by default, because they can mutate tracked
+`reports/runtime` evidence and fail when old model artifacts are not present. Run them only when intentionally
+replaying those milestones:
+
+```powershell
+python -m pytest --run-archival
+# or
+$env:AIBENCHIE_RUN_ARCHIVAL_TESTS="1"
+python -m pytest
+```
+
 Run AIBenchie as the master suite tester:
 
 ```powershell
