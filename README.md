@@ -322,6 +322,7 @@ A release should not ship only because it builds. It needs source, test evidence
 Use [docs/RELEASE_DETAILS.md](docs/RELEASE_DETAILS.md) and [templates/release-details.md](templates/release-details.md) for proper release notes. Older releases can be documented retroactively, but they must be labeled reconstructed and tied to the evidence that still exists.
 
 Architecture decisions that affect release trust and deploy boundaries are recorded in [docs/DECISION_LEDGER.md](docs/DECISION_LEDGER.md).
+Cross-repo priorities are scored in [docs/SUITE_PRIORITY_BACKLOG.md](docs/SUITE_PRIORITY_BACKLOG.md).
 
 ## Planned Deploy Add-On
 

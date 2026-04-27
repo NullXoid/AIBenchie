@@ -30,3 +30,13 @@ Durable engineering decisions live here when they affect release trust, deploy c
 - Constraints: provider credentials, deploy tokens, tunnel keys, and signing secrets must stay in runtime/local secret storage and never be committed to the repo.
 - Revisit trigger: start this when release packages, suite verdicts, and public release details are stable enough to drive a guided deploy workflow.
 - Related files: `README.md`, `docs/RELEASE_DETAILS.md`.
+
+## 2026-04-27: Prioritize Narrow E2EE Before Broad Privacy Claims
+
+- Status: accepted
+- Decision: start NullPrivacy E2EE with one narrow production storage target before claiming suite-wide E2EE.
+- Context: AIBenchie has local E2EE proof helpers, but saved chats, artifacts, uploads, workspace notes, CCC memory, offline cache, and private reports are not all product-encrypted yet.
+- Rationale: one storage class can be proven end-to-end with wrong-key, tamper, and plaintext-absence gates. Broad claims before storage integration would create user-trust risk.
+- Performance note: encryption is overhead by itself. Efficiency gains should come from safe encrypted caching, chunked sync, compression before encryption, and avoiding repeated network/disk work.
+- Revisit trigger: revisit after saved-chat E2EE is production-gated and the next storage target is selected.
+- Related files: `docs/SUITE_PRIORITY_BACKLOG.md`, `aibenchie/nullprivacy.py`, `tests/test_nullprivacy.py`.
