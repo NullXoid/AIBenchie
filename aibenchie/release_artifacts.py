@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,8 +12,9 @@ from typing import Any, Iterable
 
 RELEASE_ARTIFACT_SCHEMA_VERSION = 1
 REQUIRED_RELEASE_ARTIFACT_KINDS = ("wrapper", "android", "public")
-DEFAULT_SIGNATURE_ALGORITHM = "aibenchie-digest-bound-signature-reference-v1"
+DEFAULT_SIGNATURE_ALGORITHM = "hmac-sha256-v1"
 DEFAULT_SIGNING_KEY_ID = "release-attestation-key"
+SIGNING_SECRET_ENV = "AIBENCHIE_RELEASE_ATTESTATION_SECRET"
 SHA256_HEX_LENGTH = 64
 
 IGNORED_PACKAGE_PARTS = {
@@ -152,17 +155,45 @@ def _package_manifest(kind: str, package_path: Path, root: Path, artifact_sha256
     }
 
 
-def _signature_reference(kind: str, artifact_sha256: str, manifest_sha256: str, algorithm: str, key_id: str) -> dict[str, Any]:
-    return {
+def _resolve_signing_secret(signing_secret: str | None) -> str:
+    secret = signing_secret or os.environ.get(SIGNING_SECRET_ENV, "")
+    if not secret:
+        raise ValueError(f"{SIGNING_SECRET_ENV} is required to emit release artifact signatures")
+    return secret
+
+
+def _hmac_signature(secret: str, subject: dict[str, Any]) -> str:
+    return hmac.new(secret.encode("utf-8"), _canonical_json(subject).encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def _signature_payload(
+    *,
+    kind: str,
+    artifact_sha256: str,
+    manifest_sha256: str,
+    sbom_sha256: str,
+    algorithm: str,
+    key_id: str,
+    signing_secret: str,
+) -> dict[str, Any]:
+    if algorithm != DEFAULT_SIGNATURE_ALGORITHM:
+        raise ValueError(f"unsupported release artifact signature algorithm: {algorithm}")
+    signed_payload = {
         "schema_version": RELEASE_ARTIFACT_SCHEMA_VERSION,
-        "format": "aibenchie-release-signature-reference-v1",
         "artifact_kind": kind,
         "artifact_sha256": artifact_sha256,
         "manifest_sha256": manifest_sha256,
+        "sbom_sha256": sbom_sha256,
+    }
+    return {
+        "schema_version": RELEASE_ARTIFACT_SCHEMA_VERSION,
+        "format": "aibenchie-release-signature-v1",
         "algorithm": algorithm,
         "key_id": key_id,
+        "signed_payload_sha256": _json_sha256(signed_payload),
+        "signed_payload": signed_payload,
+        "signature": _hmac_signature(signing_secret, signed_payload),
         "generated_at": _now(),
-        "note": "Digest-bound signature evidence. Replace with channel signer output when SSH or cosign signing is configured.",
     }
 
 
@@ -174,6 +205,7 @@ def emit_release_artifacts_manifest(
     sidecar_dir: Path | None = None,
     signature_algorithm: str = DEFAULT_SIGNATURE_ALGORITHM,
     signing_key_id: str = DEFAULT_SIGNING_KEY_ID,
+    signing_secret: str | None = None,
     required_kinds: Iterable[str] = REQUIRED_RELEASE_ARTIFACT_KINDS,
 ) -> dict[str, Any]:
     resolved_output = output.resolve()
@@ -185,6 +217,7 @@ def emit_release_artifacts_manifest(
     missing = [kind for kind in required if kind not in packages or not packages[kind]]
     if missing:
         raise ValueError(f"missing required release package paths: {', '.join(missing)}")
+    resolved_signing_secret = _resolve_signing_secret(signing_secret)
 
     artifacts: list[dict[str, Any]] = []
     for kind in required:
@@ -212,12 +245,14 @@ def emit_release_artifacts_manifest(
         manifest_path.write_text(_canonical_json(manifest_payload), encoding="utf-8")
         manifest_sha256 = sha256_file(manifest_path)
 
-        signature_payload = _signature_reference(
-            kind,
-            artifact_sha256,
-            manifest_sha256,
-            signature_algorithm,
-            signing_key_id,
+        signature_payload = _signature_payload(
+            kind=kind,
+            artifact_sha256=artifact_sha256,
+            manifest_sha256=manifest_sha256,
+            sbom_sha256=sbom_sha256,
+            algorithm=signature_algorithm,
+            key_id=signing_key_id,
+            signing_secret=resolved_signing_secret,
         )
         signature_path = resolved_sidecar_dir / f"{kind}.sig.json"
         signature_path.write_text(_canonical_json(signature_payload), encoding="utf-8")
@@ -277,14 +312,83 @@ def _validate_reference_hash(root: Path, reference: dict[str, Any], label: str, 
         failures.append(f"{label}_sha256_mismatch:{path_value}")
 
 
+def _validate_signature_evidence(
+    *,
+    root: Path,
+    signature_reference: dict[str, Any],
+    artifact_kind: str,
+    artifact_sha256: str,
+    sbom_sha256: str,
+    manifest_sha256: str,
+    signing_secret: str,
+    failures: list[str],
+) -> None:
+    path_value = str(signature_reference.get("path") or "").strip()
+    if not path_value:
+        return
+    signature_path = _resolve(root, path_value)
+    if not signature_path.exists() or not signature_path.is_file():
+        return
+    try:
+        payload = json.loads(signature_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        failures.append(f"signature_invalid_json:{path_value}:{exc.lineno}")
+        return
+    if not isinstance(payload, dict):
+        failures.append(f"signature_not_object:{path_value}")
+        return
+
+    reference_algorithm = str(signature_reference.get("algorithm") or "").strip()
+    signature_algorithm = str(payload.get("algorithm") or reference_algorithm).strip()
+    if signature_algorithm != DEFAULT_SIGNATURE_ALGORITHM:
+        failures.append(f"signature_algorithm_unsupported:{signature_algorithm or '<missing>'}")
+        return
+    if reference_algorithm and reference_algorithm != signature_algorithm:
+        failures.append("signature_algorithm_reference_mismatch")
+    reference_key_id = str(signature_reference.get("key_id") or "").strip()
+    signature_key_id = str(payload.get("key_id") or "").strip()
+    if reference_key_id and signature_key_id and reference_key_id != signature_key_id:
+        failures.append("signature_key_id_reference_mismatch")
+
+    signed_payload = payload.get("signed_payload")
+    if not isinstance(signed_payload, dict):
+        failures.append("signature_signed_payload_missing")
+        return
+    expected_signed_payload = {
+        "schema_version": RELEASE_ARTIFACT_SCHEMA_VERSION,
+        "artifact_kind": artifact_kind,
+        "artifact_sha256": artifact_sha256,
+        "manifest_sha256": manifest_sha256,
+        "sbom_sha256": sbom_sha256,
+    }
+    if signed_payload != expected_signed_payload:
+        failures.append("signature_signed_payload_mismatch")
+    expected_payload_hash = _json_sha256(signed_payload)
+    if str(payload.get("signed_payload_sha256") or "").lower() != expected_payload_hash.lower():
+        failures.append("signature_signed_payload_sha256_mismatch")
+
+    signature_value = str(payload.get("signature") or "").strip()
+    if not _is_sha256(signature_value):
+        failures.append("signature_value_missing_or_invalid")
+        return
+    if not signing_secret:
+        failures.append(f"signature_secret_missing:{SIGNING_SECRET_ENV}")
+        return
+    expected_signature = _hmac_signature(signing_secret, signed_payload)
+    if not hmac.compare_digest(signature_value.lower(), expected_signature.lower()):
+        failures.append("signature_value_mismatch")
+
+
 def verify_release_artifacts_manifest(
     manifest_path: Path,
     *,
     root: Path | None = None,
+    signing_secret: str | None = None,
     required_kinds: Iterable[str] = REQUIRED_RELEASE_ARTIFACT_KINDS,
 ) -> ReleaseArtifactVerification:
     resolved_manifest = manifest_path.expanduser().resolve()
     resolved_root = (root or resolved_manifest.parent).resolve()
+    resolved_signing_secret = signing_secret or os.environ.get(SIGNING_SECRET_ENV, "")
     required = list(required_kinds)
     failures: list[str] = []
     artifact_summaries: list[dict[str, Any]] = []
@@ -358,6 +462,16 @@ def verify_release_artifacts_manifest(
             artifact_failures.append("signature_algorithm_missing")
         if not str(signature.get("key_id") or "").strip():
             artifact_failures.append("signature_key_id_missing")
+        _validate_signature_evidence(
+            root=resolved_root,
+            signature_reference=signature,
+            artifact_kind=kind,
+            artifact_sha256=expected_artifact_sha,
+            sbom_sha256=str(sbom.get("sha256") or ""),
+            manifest_sha256=str(manifest.get("sha256") or ""),
+            signing_secret=resolved_signing_secret,
+            failures=artifact_failures,
+        )
 
         if artifact_failures:
             failures.extend(f"{name}:{failure}" for failure in artifact_failures)

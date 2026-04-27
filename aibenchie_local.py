@@ -87,12 +87,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--release-artifact-signature-algorithm",
         default="",
-        help="Signature algorithm label recorded in release-artifacts.json.",
+        help="Signature algorithm used for release-artifacts.json evidence. Defaults to hmac-sha256-v1.",
     )
     parser.add_argument(
         "--release-artifact-key-id",
         default="",
-        help="Signing key id recorded in release-artifacts.json. No secret key material is stored.",
+        help="Signing key id recorded in release-artifacts.json. Secret material is read from AIBENCHIE_RELEASE_ATTESTATION_SECRET.",
     )
     parser.add_argument(
         "--hosted-nullxoid-auth",
@@ -260,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
                 output=Path(args.release_artifacts_output),
                 sidecar_dir=Path(args.release_artifacts_sidecar_dir) if args.release_artifacts_sidecar_dir else None,
                 signature_algorithm=args.release_artifact_signature_algorithm
-                or "aibenchie-digest-bound-signature-reference-v1",
+                or "hmac-sha256-v1",
                 signing_key_id=args.release_artifact_key_id or "release-attestation-key",
             )
         except Exception as exc:

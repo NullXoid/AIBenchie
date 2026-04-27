@@ -38,16 +38,17 @@ Release packages are fully attestable only when every artifact records:
 
 - artifact digest value
 - SBOM path and SHA-256 digest
-- signature reference, signature algorithm, and signing key id
+- verifiable HMAC-SHA256 signature evidence, signature algorithm, and signing key id
 - release manifest path and SHA-256 digest
 
-If any field is missing, AIBenchie must keep the release details usable but mark the package as `incomplete`. Retroactive entries can stay useful as historical evidence, but they must not be upgraded to `fully_attestable` unless the missing digest, SBOM, signature, and manifest evidence exists.
+If any field is missing, AIBenchie must keep the release details usable but mark the package as `incomplete`. Retroactive entries can stay useful as historical evidence, but they must not be upgraded to `fully_attestable` unless the missing digest, SBOM, signature, and manifest evidence exists and the signature verifies.
 
 When generating release details from the CLI, provide package evidence with `--release-artifacts path/to/release-artifacts.json`. The file may be a JSON array or an object with an `artifacts` array. Generated AIBenchie summary files remain release evidence, but the release package attestation status is controlled by the artifact evidence supplied for the package being shipped.
 
 Use AIBenchie to create and verify that package evidence:
 
 ```powershell
+$env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runner>"
 python aibenchie_local.py --emit-release-artifacts `
   --wrapper-package path/to/nullxoid-wrapper.zip `
   --android-package path/to/nullxoid-companion.apk `
@@ -59,7 +60,7 @@ python aibenchie_local.py --emit-release-artifacts `
 python aibenchie_local.py --verify-release-artifacts --release-artifacts path/to/release-artifacts.json --json
 ```
 
-The suite security gate treats release artifact evidence as release-blocking. Set `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` to the manifest path when the manifest is not at the AIBenchie repo root. The gate fails if wrapper, Android/Companion, or public package evidence is missing, if artifact/SBOM/signature/manifest hashes do not match files on disk, or if the signature reference lacks an algorithm or signing key id.
+The suite security gate treats release artifact evidence as release-blocking. Set `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` to the manifest path when the manifest is not at the AIBenchie repo root. The gate fails if wrapper, Android/Companion, or public package evidence is missing, if artifact/SBOM/signature/manifest hashes do not match files on disk, if the signature lacks an algorithm or signing key id, or if the HMAC-SHA256 signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
 
 ## Why Suite Verdict Includes NullBridge
 

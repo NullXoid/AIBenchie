@@ -5,6 +5,8 @@ import json
 import aibenchie_local
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
 
+TEST_SIGNING_SECRET = "test-release-attestation-secret"
+
 
 def _package_files(tmp_path):
     wrapper = tmp_path / "packages" / "wrapper.zip"
@@ -25,9 +27,10 @@ def test_emit_release_artifacts_manifest_and_verify_hashes(tmp_path):
         root=tmp_path,
         sidecar_dir=tmp_path / "attestation",
         signing_key_id="test-release-key",
+        signing_secret=TEST_SIGNING_SECRET,
     )
 
-    result = verify_release_artifacts_manifest(output, root=tmp_path)
+    result = verify_release_artifacts_manifest(output, root=tmp_path, signing_secret=TEST_SIGNING_SECRET)
 
     assert payload["schema_version"] == 1
     assert payload["required_artifact_kinds"] == ["wrapper", "android", "public"]
@@ -40,6 +43,7 @@ def test_emit_release_artifacts_manifest_and_verify_hashes(tmp_path):
         assert artifact["digest"]["algorithm"] == "sha256"
         assert len(artifact["digest"]["value"]) == 64
         assert artifact["signature"]["key_id"] == "test-release-key"
+        assert artifact["signature"]["algorithm"] == "hmac-sha256-v1"
         for section in ("sbom", "signature", "manifest"):
             sidecar = tmp_path / artifact[section]["path"]
             assert sidecar.exists()
@@ -53,12 +57,13 @@ def test_verify_release_artifacts_manifest_rejects_tampered_sidecar(tmp_path):
         output=output,
         root=tmp_path,
         sidecar_dir=tmp_path / "attestation",
+        signing_secret=TEST_SIGNING_SECRET,
     )
     payload = json.loads(output.read_text(encoding="utf-8"))
     sbom_path = tmp_path / payload["artifacts"][0]["sbom"]["path"]
     sbom_path.write_text("tampered\n", encoding="utf-8")
 
-    result = verify_release_artifacts_manifest(output, root=tmp_path)
+    result = verify_release_artifacts_manifest(output, root=tmp_path, signing_secret=TEST_SIGNING_SECRET)
 
     assert result.ok is False
     assert any("sbom_sha256_mismatch" in failure for failure in result.failures)
@@ -80,9 +85,26 @@ def test_verify_release_artifacts_manifest_requires_wrapper_android_public(tmp_p
     assert "required_artifact_missing:public" in result.failures
 
 
-def test_release_artifacts_cli_emit_and_verify(tmp_path, capsys):
+def test_verify_release_artifacts_manifest_rejects_wrong_signature_secret(tmp_path):
+    output = tmp_path / "release-artifacts.json"
+    emit_release_artifacts_manifest(
+        packages=_package_files(tmp_path),
+        output=output,
+        root=tmp_path,
+        sidecar_dir=tmp_path / "attestation",
+        signing_secret=TEST_SIGNING_SECRET,
+    )
+
+    result = verify_release_artifacts_manifest(output, root=tmp_path, signing_secret="wrong-secret")
+
+    assert result.ok is False
+    assert any("signature_value_mismatch" in failure for failure in result.failures)
+
+
+def test_release_artifacts_cli_emit_and_verify(tmp_path, capsys, monkeypatch):
     packages = _package_files(tmp_path)
     output = tmp_path / "release-artifacts.json"
+    monkeypatch.setenv("AIBENCHIE_RELEASE_ATTESTATION_SECRET", TEST_SIGNING_SECRET)
 
     emit_exit = aibenchie_local.main(
         [
