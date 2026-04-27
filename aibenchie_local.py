@@ -47,6 +47,21 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write AIBenchie release verdict summary and encrypted full report.",
     )
+    parser.add_argument("--release-id", default="", help="Optional release id for --release-report output.")
+    parser.add_argument(
+        "--release-type",
+        default="internal",
+        help="Release type for --release-report output: public, private, internal, retroactive, or reconstructed.",
+    )
+    parser.add_argument("--release-scope", default="", help="Short scope summary for --release-report output.")
+    parser.add_argument(
+        "--release-retroactive",
+        action="store_true",
+        help="Mark generated release details as a retroactive or reconstructed entry.",
+    )
+    parser.add_argument("--release-confidence", default="high", help="Confidence label for release details.")
+    parser.add_argument("--release-operator", default="", help="Operator label for release details.")
+    parser.add_argument("--release-reviewer", default="", help="Reviewer label for release details.")
     parser.add_argument(
         "--hosted-nullxoid-auth",
         action="store_true",
@@ -159,8 +174,26 @@ def main(argv: list[str] | None = None) -> int:
 
         from aibenchie.release_report import write_release_report
 
-        result = write_release_report(Path(__file__).resolve().parent, run_trust_smoke=True)
-        print(json.dumps(result, indent=2) if args.json else f"Verdict: {result['verdict']}\nSummary: {result['summary']}")
+        result = write_release_report(
+            Path(__file__).resolve().parent,
+            run_trust_smoke=True,
+            release_id=args.release_id or None,
+            release_type=args.release_type,
+            scope=args.release_scope,
+            retroactive=args.release_retroactive,
+            confidence=args.release_confidence,
+            operator=args.release_operator,
+            reviewer=args.release_reviewer,
+        )
+        print(
+            json.dumps(result, indent=2)
+            if args.json
+            else (
+                f"Verdict: {result['verdict']}\n"
+                f"Summary: {result['summary']}\n"
+                f"Release details: {result['release_details_markdown']}"
+            )
+        )
         return 0 if result["ok"] else 1
 
     if args.hosted_nullxoid_auth:
