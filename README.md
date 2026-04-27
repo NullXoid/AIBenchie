@@ -275,6 +275,14 @@ Emit release package evidence before generating release details:
 
 ```powershell
 $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runner>"
+python aibenchie_local.py --package-release-artifacts `
+  --wrapper-package ..\NullXoid-live\frontend\dist `
+  --android-package ..\NullXoidAndroid\app\build\outputs\apk\release\app-release.apk `
+  --public-package ..\echolabs-site\dist `
+  --release-package-output-dir .\release-packages `
+  --release-artifact-key-id release-attestation-key `
+  --json
+
 python aibenchie_local.py --emit-release-artifacts `
   --wrapper-package .\dist\nullxoid-wrapper.zip `
   --android-package .\dist\nullxoid-companion.apk `
@@ -286,7 +294,7 @@ python aibenchie_local.py --emit-release-artifacts `
 python aibenchie_local.py --verify-release-artifacts --release-artifacts .\release-artifacts.json --json
 ```
 
-The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, HMAC-SHA256 signature, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing, any recorded hash is stale, or the signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
+The package command turns actual build outputs into release packages first: wrapper build output becomes `nullxoid-wrapper.zip`, NullXoid Companion/Android becomes `nullxoid-companion.apk` or `.aab`, and the public website build becomes `echolabs-public-site.zip`. The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, HMAC-SHA256 signature, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing, any recorded hash is stale, or the signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
 
 To attach package evidence to a generated release report, pass an artifact manifest:
 
@@ -312,3 +320,7 @@ The ephemeral chat gate creates a short-lived restricted test user through a loo
 A release should not ship only because it builds. It needs source, test evidence, manifest, artifact digests, SBOM, AIBenchie verdict, and the required signature policy for that channel.
 
 Use [docs/RELEASE_DETAILS.md](docs/RELEASE_DETAILS.md) and [templates/release-details.md](templates/release-details.md) for proper release notes. Older releases can be documented retroactively, but they must be labeled reconstructed and tied to the evidence that still exists.
+
+## Planned Deploy Add-On
+
+A future AIBenchie deploy add-on can publish verified packages to a repo hub such as Forgejo, Gitea, GitHub, or another open/closed source provider. That add-on should consume the suite verdict and release artifact manifest before deploy, keep provider credentials in runtime/local secret storage, and support guided setup so users do not need to drop into the CLI for normal releases. It is intentionally separate from the current package attestation gate: AIBenchie proves what is safe to ship first, then a deploy add-on can decide where to publish it.

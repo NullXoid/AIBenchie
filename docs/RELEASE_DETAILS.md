@@ -49,6 +49,14 @@ Use AIBenchie to create and verify that package evidence:
 
 ```powershell
 $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runner>"
+python aibenchie_local.py --package-release-artifacts `
+  --wrapper-package path/to/nullxoid-wrapper/frontend/dist `
+  --android-package path/to/nullxoid-companion.apk `
+  --public-package path/to/echolabs-site/dist `
+  --release-package-output-dir path/to/release-packages `
+  --release-artifact-key-id release-attestation-key `
+  --json
+
 python aibenchie_local.py --emit-release-artifacts `
   --wrapper-package path/to/nullxoid-wrapper.zip `
   --android-package path/to/nullxoid-companion.apk `
@@ -60,6 +68,8 @@ python aibenchie_local.py --emit-release-artifacts `
 python aibenchie_local.py --verify-release-artifacts --release-artifacts path/to/release-artifacts.json --json
 ```
 
+`--package-release-artifacts` is the preferred current flow for real builds. It packages the wrapper build, Android/Companion artifact, and public website build into stable release packages before attestation. That is what makes the public website part of the same release contract as the wrapper and mobile app instead of a separate unverified deploy.
+
 The suite security gate treats release artifact evidence as release-blocking. Set `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` to the manifest path when the manifest is not at the AIBenchie repo root. The gate fails if wrapper, Android/Companion, or public package evidence is missing, if artifact/SBOM/signature/manifest hashes do not match files on disk, if the signature lacks an algorithm or signing key id, or if the HMAC-SHA256 signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
 
 ## Why Suite Verdict Includes NullBridge
@@ -67,3 +77,9 @@ The suite security gate treats release artifact evidence as release-blocking. Se
 NullBridge owns service identity, route policy, deny-by-default routing, and audit behavior. AIBenchie owns the release decision. Putting NullBridge trust and notification proofs into the AIBenchie verdict makes these controls release-blocking instead of optional.
 
 This catches cross-repo regressions before publish, proves implementation and policy together, and gives every release a repeatable evidence trail.
+
+## Planned Deploy Add-On
+
+AIBenchie can later grow a deploy add-on that publishes verified packages to a repo hub such as Forgejo, Gitea, GitHub, or another provider. The add-on should be provider-neutral, support open and closed source repos, keep credentials in runtime/local secret storage, and refuse to deploy unless the suite verdict and release artifact attestation pass.
+
+The deploy add-on is deliberately separate from release details. Release details prove what was built and verified. The deploy add-on can use that proof to publish to the selected repo hub.

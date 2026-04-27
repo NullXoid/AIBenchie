@@ -15,6 +15,7 @@ from aibenchie.companion_remote_backend import run_from_env as run_companion_rem
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
+from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.suite_security import run_suite_security_check
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
@@ -75,15 +76,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit release-artifacts.json for wrapper, Android, and public packages.",
     )
     parser.add_argument(
+        "--package-release-artifacts",
+        action="store_true",
+        help="Package wrapper, Android/Companion, and public-site build outputs, then emit release-artifacts.json.",
+    )
+    parser.add_argument(
         "--verify-release-artifacts",
         action="store_true",
         help="Verify release-artifacts.json digests, SBOM hashes, signature hashes, and manifest hashes.",
     )
     parser.add_argument("--release-artifacts-output", default="release-artifacts.json", help="Output path for --emit-release-artifacts.")
     parser.add_argument("--release-artifacts-sidecar-dir", default="", help="Directory for generated SBOM/signature/package manifests.")
-    parser.add_argument("--wrapper-package", default="", help="Wrapper release package path for --emit-release-artifacts.")
-    parser.add_argument("--android-package", default="", help="Android release package path for --emit-release-artifacts.")
-    parser.add_argument("--public-package", default="", help="Public website/package path for --emit-release-artifacts.")
+    parser.add_argument(
+        "--release-package-output-dir",
+        default="release-packages",
+        help="Output directory for --package-release-artifacts.",
+    )
+    parser.add_argument("--wrapper-package", default="", help="Wrapper release package path or build output source.")
+    parser.add_argument("--android-package", default="", help="Android/Companion release package path or build output source.")
+    parser.add_argument("--public-package", default="", help="Public website/package path or build output source.")
     parser.add_argument(
         "--release-artifact-signature-algorithm",
         default="",
@@ -244,6 +255,52 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0 if result["ok"] else 1
+
+    if args.package_release_artifacts:
+        from pathlib import Path
+
+        required = {
+            "wrapper": args.wrapper_package,
+            "android": args.android_package,
+            "public": args.public_package,
+        }
+        missing = [kind for kind, path in required.items() if not path]
+        if missing:
+            failure = {"ok": False, "failure": f"missing required package sources: {', '.join(missing)}"}
+            print(json.dumps(failure, indent=2, sort_keys=True) if args.json else f"Result: FAIL ({failure['failure']})")
+            return 1
+
+        release_artifacts_output = (
+            Path(args.release_package_output_dir) / "release-artifacts.json"
+            if args.release_artifacts_output == "release-artifacts.json"
+            else Path(args.release_artifacts_output)
+        )
+        try:
+            result = package_release_artifacts(
+                wrapper_source=Path(args.wrapper_package),
+                android_source=Path(args.android_package),
+                public_source=Path(args.public_package),
+                output_dir=Path(args.release_package_output_dir),
+                manifest_output=release_artifacts_output,
+                sidecar_dir=Path(args.release_artifacts_sidecar_dir) if args.release_artifacts_sidecar_dir else None,
+                signature_algorithm=args.release_artifact_signature_algorithm
+                or "hmac-sha256-v1",
+                signing_key_id=args.release_artifact_key_id or "release-attestation-key",
+            )
+        except Exception as exc:
+            failure = {"ok": False, "failure": str(exc)}
+            print(json.dumps(failure, indent=2, sort_keys=True) if args.json else f"Result: FAIL ({exc})")
+            return 1
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Release Package Bundle")
+            print(f"Output directory: {result['output_dir']}")
+            print(f"Release artifacts: {result['release_artifacts']}")
+            for kind, path in result["packages"].items():
+                print(f"{kind}: {path}")
+            print("Result: PASS")
+        return 0
 
     if args.emit_release_artifacts:
         from pathlib import Path

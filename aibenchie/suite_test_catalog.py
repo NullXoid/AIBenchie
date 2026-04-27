@@ -242,6 +242,7 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "tests/test_resource_budget.py",
                 "tests/test_generated_output_policy.py",
                 "tests/test_release_artifacts.py",
+                "tests/test_release_bundle.py",
                 "tests/test_companion_remote_backend.py",
             ),
             command=(
@@ -256,6 +257,7 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "tests/test_resource_budget.py",
                 "tests/test_generated_output_policy.py",
                 "tests/test_release_artifacts.py",
+                "tests/test_release_bundle.py",
                 "tests/test_companion_remote_backend.py",
             ),
             timeout_seconds=240,
