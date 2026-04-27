@@ -11,6 +11,7 @@ from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_a
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
+from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.suite_security import run_suite_security_check
@@ -74,6 +75,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--suite-security",
         action="store_true",
         help="Run the NullXoid suite security E2E gate against hosted API routes and repo hygiene checks.",
+    )
+    parser.add_argument(
+        "--companion-remote-backend",
+        action="store_true",
+        help="Run the NullXoid Companion/Android public API backend contract gate.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -238,6 +244,22 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     suffix = ""
                 print(f"{check['name']}: {check['status'].upper()} [{check['severity']}]{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.companion_remote_backend:
+        result = run_companion_remote_backend_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("NullXoid Companion Remote Backend Gate")
+            print(f"Android repo: {result['android_repo']}")
+            print(f"Public API: {result['public_api']}")
+            print(f"Origin: {result['origin']}")
+            print(f"Base path: {result['base_path']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

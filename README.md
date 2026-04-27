@@ -126,6 +126,18 @@ python aibenchie_local.py --hosted-nullxoid-stack --json
 
 This check catches public-site fallback pages, blocked wrapper manifests, dead backend health routes, operations-status routes exposed without JSON auth errors, root API routes blocked by edge security, missing model inventory on open routes, and API endpoints that return HTML instead of JSON. Auth-required JSON responses are treated as healthy plumbing for unauthenticated route checks; credentialed browser/chat checks should run as a separate gate with secrets supplied only at runtime.
 
+Run the Companion/Android remote backend gate:
+
+```powershell
+$env:AIBENCHIE_COMPANION_ANDROID_REPO="..\NullXoidAndroid"
+$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.echolabs.diy/nullxoid"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
+python aibenchie_local.py --companion-remote-backend --json
+```
+
+This check proves the NullXoid Companion/Android repo is aligned with the public HTTPS backend route used by phones outside the LAN. It verifies the hosted API preset, release-time BuildConfig override, endpoint tests, SettingsStore public URL, and the hosted API route contract. No personal admin credentials are stored or required.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell
