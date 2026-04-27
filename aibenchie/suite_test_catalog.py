@@ -12,6 +12,11 @@ from typing import Any
 
 TAIL_CHARS = 4000
 TRUE_VALUES = {"1", "true", "yes", "on"}
+PYTHON_OVERRIDE_ENV = {
+    "aibenchie_core": "AIBENCHIE_CORE_PYTHON",
+    "nullbridge_trust_fabric": "AIBENCHIE_NULLBRIDGE_PYTHON",
+    "nullxoid_wrapper_backend": "AIBENCHIE_NULLXOID_WRAPPER_PYTHON",
+}
 SECRET_VALUE_RE = re.compile(
     r"(?i)\b(password|passwd|token|secret|api[_-]?key|authorization)\b\s*[:=]\s*([^\s,;]+)"
 )
@@ -213,6 +218,14 @@ def _process_env(root: Path, env: dict[str, str], target: SuiteTestTarget) -> di
     return process_env
 
 
+def _target_command(env: dict[str, str], target: SuiteTestTarget) -> list[str]:
+    command = list(target.command)
+    override_env = PYTHON_OVERRIDE_ENV.get(target.name)
+    if override_env and env.get(override_env, "").strip():
+        command[0] = env[override_env].strip()
+    return command
+
+
 def build_suite_test_catalog() -> list[SuiteTestTarget]:
     return [
         SuiteTestTarget(
@@ -329,7 +342,7 @@ def _skip_or_fail(
 
 def _run_target(root: Path, env: dict[str, str], target: SuiteTestTarget, *, require_all: bool) -> SuiteTestResult:
     repo = _resolve_repo(root, env, target)
-    command = list(target.command)
+    command = _target_command(env, target)
     if repo is None:
         return _skip_or_fail(target, repo=repo, command=command, reason="repo_not_found", require_all=require_all)
 

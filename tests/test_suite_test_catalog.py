@@ -84,6 +84,33 @@ def test_catalog_prefers_candidate_with_required_contracts(monkeypatch, tmp_path
     assert result.results[0].repo == str(active_repo)
 
 
+def test_catalog_uses_target_python_override(monkeypatch, tmp_path):
+    repo = tmp_path / "NullXoid"
+    custom_python = tmp_path / "venv" / "bin" / "python"
+    touch_required_files(repo, "nullxoid_wrapper_backend")
+
+    def fake_run(command, **kwargs):
+        assert kwargs["cwd"] == repo
+        assert command[0] == str(custom_python)
+        assert command[1:3] == ["-m", "pytest"]
+        return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+
+    monkeypatch.setattr(suite_test_catalog.subprocess, "run", fake_run)
+
+    result = suite_test_catalog.run_suite_tests(
+        root=tmp_path,
+        env={
+            "AIBENCHIE_NULLXOID_WRAPPER_REPO": str(repo),
+            "AIBENCHIE_NULLXOID_WRAPPER_PYTHON": str(custom_python),
+        },
+        selected_targets=["nullxoid_wrapper_backend"],
+        require_all=True,
+    )
+
+    assert result.ok is True
+    assert result.results[0].command[0] == str(custom_python)
+
+
 def test_android_target_sets_discovered_java_home(monkeypatch, tmp_path):
     repo = tmp_path / "NullXoidAndroid"
     java_home = tmp_path / "jdk"
