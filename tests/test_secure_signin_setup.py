@@ -189,6 +189,34 @@ def write_wrapper_fixture(root: Path) -> None:
 
 def fake_features_request(origin, path, **kwargs):
     assert origin == PUBLIC_ORIGIN
+    if path == "/nullxoid/auth/passkey/options":
+        return (
+            501,
+            "application/json",
+            json.dumps(
+                {
+                    "detail": {
+                        "code": "passkey_provider_not_configured",
+                        "configured": False,
+                        "setup_required": True,
+                    }
+                }
+            ),
+        )
+    if path == "/nullxoid/auth/oidc/start":
+        return (
+            501,
+            "application/json",
+            json.dumps(
+                {
+                    "detail": {
+                        "code": "oidc_pkce_provider_not_configured",
+                        "configured": False,
+                        "setup_required": True,
+                    }
+                }
+            ),
+        )
     assert path == "/nullxoid/health/features"
     return (
         200,
@@ -232,6 +260,8 @@ def test_secure_signin_setup_gate_passes(monkeypatch, tmp_path):
         "android_secure_signin_files",
         "wrapper_secure_signin_files",
         "hosted_features:/nullxoid/health/features",
+        "hosted_auth_ceremony:/nullxoid/auth/passkey/options",
+        "hosted_auth_ceremony:/nullxoid/auth/oidc/start",
     }
 
 

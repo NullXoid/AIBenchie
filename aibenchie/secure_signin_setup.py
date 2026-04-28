@@ -394,8 +394,6 @@ def _feature_route_check(
         "auth_token_storage": "http_only_secure_samesite_cookie",
         "auth_password_fallback": "migration_only_mfa_required",
         "auth_native_ceremony_endpoints": True,
-        "auth_passkey_provider_configured": False,
-        "auth_oidc_provider_configured": False,
         "setup_mode": "guided_ui_first",
         "setup_cli_required": False,
     }
@@ -408,11 +406,18 @@ def _feature_route_check(
     for method in ["passkey", "oidc_pkce"]:
         if method not in allowed:
             mismatches[f"auth_allowed_methods:{method}"] = {"expected": "present", "actual": sorted(allowed)}
+    for key in ["auth_passkey_provider_configured", "auth_oidc_provider_configured"]:
+        if not isinstance(payload.get(key), bool):
+            mismatches[key] = {"expected": "boolean", "actual": payload.get(key)}
     if payload.get("nullbridge_credentials_in_frontend") is not False:
         mismatches["nullbridge_credentials_in_frontend"] = {
             "expected": False,
             "actual": payload.get("nullbridge_credentials_in_frontend"),
         }
+    provider_status_text = json.dumps(payload.get("auth_provider_status") or {}).lower()
+    for forbidden in ["client_secret", "private_key", "password"]:
+        if forbidden in provider_status_text:
+            mismatches[f"auth_provider_status:{forbidden}"] = {"expected": "absent", "actual": "present"}
     if mismatches:
         return _fail(
             f"hosted_features:{path}",
@@ -438,6 +443,79 @@ def _hosted_feature_checks(
             host_header=host_header,
             timeout=timeout,
         )
+    ]
+
+
+def _auth_ceremony_route_check(
+    *,
+    origin: str,
+    path: str,
+    host_header: str,
+    timeout: int,
+    method: str = "GET",
+    payload: dict[str, object] | None = None,
+) -> SecureSigninSetupCheck:
+    status, content_type, body = request_raw(
+        origin,
+        path,
+        host_header=host_header,
+        method=method,
+        payload=payload,
+        timeout=timeout,
+    )
+    failure = json_route_failure(
+        status,
+        content_type,
+        body,
+        route_name=path.strip("/").replace("/", "_"),
+        allowed_statuses={200, 501},
+    )
+    name = f"hosted_auth_ceremony:{path}"
+    if failure:
+        return _fail(name, failure, status=status, content_type=content_type)
+    payload_json = json_payload(body)
+    if not isinstance(payload_json, dict):
+        return _fail(name, "auth_ceremony_payload_not_object", status=status, content_type=content_type)
+    if status == 501:
+        detail = payload_json.get("detail")
+        if not isinstance(detail, dict) or detail.get("setup_required") is not True:
+            return _fail(name, "auth_ceremony_501_without_setup_contract", status=status, content_type=content_type)
+        return _pass(name, status=status, content_type=content_type, configured=False)
+    if path.endswith("/auth/passkey/options"):
+        if not isinstance(payload_json.get("credential_request_options"), dict):
+            return _fail(name, "passkey_options_missing", status=status, content_type=content_type)
+    if path.endswith("/auth/oidc/start"):
+        if not payload_json.get("authorization_url") or not payload_json.get("state"):
+            return _fail(name, "oidc_start_missing_authorization_url", status=status, content_type=content_type)
+    return _pass(name, status=status, content_type=content_type, configured=True)
+
+
+def _hosted_auth_ceremony_checks(
+    *,
+    origin: str,
+    base_path: str,
+    host_header: str,
+    timeout: int,
+) -> list[SecureSigninSetupCheck]:
+    return [
+        _auth_ceremony_route_check(
+            origin=origin,
+            path=f"{base_path}/auth/passkey/options",
+            host_header=host_header,
+            timeout=timeout,
+        ),
+        _auth_ceremony_route_check(
+            origin=origin,
+            path=f"{base_path}/auth/oidc/start",
+            host_header=host_header,
+            timeout=timeout,
+            method="POST",
+            payload={
+                "redirect_uri": "nullxoid://auth/oidc/callback",
+                "code_challenge": "aibenchie-pkce-challenge",
+                "code_challenge_method": "S256",
+            },
+        ),
     ]
 
 
@@ -492,6 +570,14 @@ def run_secure_signin_setup_check(
     if run_hosted_features:
         checks.extend(
             _hosted_feature_checks(
+                origin=resolved_origin,
+                base_path=resolved_base_path,
+                host_header=host_header,
+                timeout=timeout,
+            )
+        )
+        checks.extend(
+            _hosted_auth_ceremony_checks(
                 origin=resolved_origin,
                 base_path=resolved_base_path,
                 host_header=host_header,
