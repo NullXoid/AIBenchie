@@ -169,6 +169,8 @@ def write_wrapper_fixture(root: Path) -> None:
             '    "auth_password_fallback": "migration_only_mfa_required",\n'
             '    "setup_mode": "guided_ui_first",\n'
             '    "setup_cli_required": False,\n'
+            '    "request_json": "{}",\n'
+            '    "public_key": {},\n'
             '}\n'
         ),
         "backend/tests/test_auth_json_contract.py": (
@@ -179,6 +181,8 @@ def write_wrapper_fixture(root: Path) -> None:
             "    assert 'setup_cli_required'\n"
             "def test_native_auth_ceremony_endpoints_fail_json_until_provider_configured():\n"
             "    assert 'provider_not_configured'\n"
+            "def test_passkey_complete_verifies_assertion_and_sets_session():\n"
+            "    assert 'passkey'\n"
         ),
     }
     for relative, content in files.items():
@@ -356,6 +360,66 @@ def test_secure_signin_setup_gate_accepts_configured_oidc_ceremony(monkeypatch, 
                         "state": "abc",
                     }
                 ),
+            )
+        raise AssertionError(path)
+
+    monkeypatch.setattr(secure_signin_setup, "request_raw", fake_request)
+
+    result = secure_signin_setup.run_secure_signin_setup_check(
+        root=aibenchie_root,
+        android_repo=android_root,
+        wrapper_repo=wrapper_root,
+    )
+
+    assert result.ok is True
+
+
+def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatch, tmp_path):
+    aibenchie_root = tmp_path / "AIBenchie"
+    android_root = tmp_path / "NullXoidAndroid"
+    wrapper_root = tmp_path / "Felnx" / "NullXoid" / ".NullXoid"
+    write_policies(aibenchie_root)
+    write_android_fixture(android_root)
+    write_wrapper_fixture(wrapper_root)
+
+    def fake_request(origin, path, **kwargs):
+        if path == "/nullxoid/health/features":
+            status, content_type, body = fake_features_request(origin, path, **kwargs)
+            payload = json.loads(body)
+            payload["auth_passkey_provider_configured"] = True
+            payload["auth_passkey_login_ready"] = True
+            payload["auth_provider_status"] = {
+                "passkey": {
+                    "rp_id": "api.echolabs.diy",
+                    "origin": "https://api.echolabs.diy",
+                    "verification": "webauthn_assertion_verifier",
+                }
+            }
+            return status, content_type, json.dumps(payload)
+        if path == "/nullxoid/auth/passkey/options":
+            public_key = {
+                "challenge": "challenge",
+                "timeout": 60000,
+                "rpId": "api.echolabs.diy",
+                "userVerification": "preferred",
+            }
+            return (
+                200,
+                "application/json",
+                json.dumps(
+                    {
+                        "ok": True,
+                        "request_id": "pk-test",
+                        "request_json": json.dumps(public_key, separators=(",", ":")),
+                        "public_key": public_key,
+                    }
+                ),
+            )
+        if path == "/nullxoid/auth/oidc/start":
+            return (
+                501,
+                "application/json",
+                json.dumps({"detail": {"configured": False, "setup_required": True}}),
             )
         raise AssertionError(path)
 

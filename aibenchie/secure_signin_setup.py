@@ -350,6 +350,8 @@ def _wrapper_checks(wrapper_repo: Path) -> list[SecureSigninSetupCheck]:
                 '"auth_password_fallback": "migration_only_mfa_required"',
                 '"setup_mode": "guided_ui_first"',
                 '"setup_cli_required": False',
+                '"request_json"',
+                '"public_key"',
             ],
         )
     )
@@ -364,6 +366,7 @@ def _wrapper_checks(wrapper_repo: Path) -> list[SecureSigninSetupCheck]:
                 "auth_native_ceremony_endpoints",
                 "setup_cli_required",
                 "test_native_auth_ceremony_endpoints_fail_json_until_provider_configured",
+                "test_passkey_complete_verifies_assertion_and_sets_session",
             ],
         )
     )
@@ -488,8 +491,18 @@ def _auth_ceremony_route_check(
             return _fail(name, "auth_ceremony_501_without_setup_contract", status=status, content_type=content_type)
         return _pass(name, status=status, content_type=content_type, configured=False)
     if path.endswith("/auth/passkey/options"):
-        if not isinstance(payload_json.get("credential_request_options"), dict):
+        public_key = payload_json.get("public_key") or payload_json.get("credential_request_options")
+        if not isinstance(public_key, dict):
             return _fail(name, "passkey_options_missing", status=status, content_type=content_type)
+        request_json = payload_json.get("request_json")
+        if not isinstance(request_json, str) or not request_json.strip():
+            return _fail(name, "passkey_request_json_missing", status=status, content_type=content_type)
+        try:
+            parsed_request = json.loads(request_json)
+        except Exception:
+            return _fail(name, "passkey_request_json_invalid", status=status, content_type=content_type)
+        if not isinstance(parsed_request, dict) or parsed_request.get("challenge") != public_key.get("challenge"):
+            return _fail(name, "passkey_request_json_mismatch", status=status, content_type=content_type)
     if path.endswith("/auth/oidc/start"):
         if not payload_json.get("authorization_url") or not payload_json.get("state"):
             return _fail(name, "oidc_start_missing_authorization_url", status=status, content_type=content_type)
