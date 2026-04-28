@@ -406,7 +406,13 @@ def _feature_route_check(
     for method in ["passkey", "oidc_pkce"]:
         if method not in allowed:
             mismatches[f"auth_allowed_methods:{method}"] = {"expected": "present", "actual": sorted(allowed)}
-    for key in ["auth_passkey_provider_configured", "auth_oidc_provider_configured"]:
+    for key in [
+        "auth_passkey_provider_configured",
+        "auth_oidc_provider_configured",
+        "auth_passkey_login_ready",
+        "auth_oidc_login_ready",
+        "auth_oidc_start_ready",
+    ]:
         if not isinstance(payload.get(key), bool):
             mismatches[key] = {"expected": "boolean", "actual": payload.get(key)}
     if payload.get("nullbridge_credentials_in_frontend") is not False:

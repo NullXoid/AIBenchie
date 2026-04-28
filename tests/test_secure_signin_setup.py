@@ -230,6 +230,9 @@ def fake_features_request(origin, path, **kwargs):
                 "auth_native_ceremony_endpoints": True,
                 "auth_passkey_provider_configured": False,
                 "auth_oidc_provider_configured": False,
+                "auth_passkey_login_ready": False,
+                "auth_oidc_login_ready": False,
+                "auth_oidc_start_ready": False,
                 "setup_mode": "guided_ui_first",
                 "setup_cli_required": False,
                 "nullbridge_credentials_in_frontend": False,
@@ -311,6 +314,60 @@ def test_secure_signin_setup_gate_fails_when_hosted_features_return_html(monkeyp
     assert result.ok is False
     failures = {check.name: check.failure for check in result.checks if not check.ok}
     assert failures["hosted_features:/nullxoid/health/features"] == "nullxoid_health_features_returned_html"
+
+
+def test_secure_signin_setup_gate_accepts_configured_oidc_ceremony(monkeypatch, tmp_path):
+    aibenchie_root = tmp_path / "AIBenchie"
+    android_root = tmp_path / "NullXoidAndroid"
+    wrapper_root = tmp_path / "Felnx" / "NullXoid" / ".NullXoid"
+    write_policies(aibenchie_root)
+    write_android_fixture(android_root)
+    write_wrapper_fixture(wrapper_root)
+
+    def fake_request(origin, path, **kwargs):
+        if path == "/nullxoid/health/features":
+            status, content_type, body = fake_features_request(origin, path, **kwargs)
+            payload = json.loads(body)
+            payload["auth_oidc_provider_configured"] = True
+            payload["auth_oidc_start_ready"] = True
+            payload["auth_oidc_login_ready"] = True
+            payload["auth_provider_status"] = {
+                "oidc": {
+                    "issuer": "https://id.example.test",
+                    "client_id": "nullxoid-android",
+                    "token_exchange": "ready",
+                }
+            }
+            return status, content_type, json.dumps(payload)
+        if path == "/nullxoid/auth/passkey/options":
+            return (
+                501,
+                "application/json",
+                json.dumps({"detail": {"configured": False, "setup_required": True}}),
+            )
+        if path == "/nullxoid/auth/oidc/start":
+            return (
+                200,
+                "application/json",
+                json.dumps(
+                    {
+                        "ok": True,
+                        "authorization_url": "https://id.example.test/oauth2/authorize?state=abc",
+                        "state": "abc",
+                    }
+                ),
+            )
+        raise AssertionError(path)
+
+    monkeypatch.setattr(secure_signin_setup, "request_raw", fake_request)
+
+    result = secure_signin_setup.run_secure_signin_setup_check(
+        root=aibenchie_root,
+        android_repo=android_root,
+        wrapper_repo=wrapper_root,
+    )
+
+    assert result.ok is True
 
 
 def test_secure_signin_setup_cli_outputs_json(monkeypatch, capsys):
