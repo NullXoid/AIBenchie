@@ -20,6 +20,7 @@ from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.suite_security import run_suite_security_check
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
+from aibenchie.zero_knowledge_devices import run_zero_knowledge_device_lifecycle_proof
 
 
 DEFAULT_PROMPT = "Reply with one sentence explaining what AIBenchie verifies before a release."
@@ -50,6 +51,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--e2ee-readiness",
         action="store_true",
         help="Run the release-blocking NullPrivacy E2EE readiness gate.",
+    )
+    parser.add_argument(
+        "--zero-knowledge-device-proof",
+        action="store_true",
+        help="Run the zero-knowledge device enrollment, recovery, and revocation proof.",
     )
     parser.add_argument(
         "--release-report",
@@ -240,6 +246,20 @@ def main(argv: list[str] | None = None) -> int:
             for target in result["targets"]:
                 suffix = f" ({'; '.join(target['failures'])})" if target["failures"] else ""
                 print(f"{target['target']}: {'PASS' if target['ok'] else 'FAIL'}{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.zero_knowledge_device_proof:
+        result = run_zero_knowledge_device_lifecycle_proof().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("Zero-Knowledge Device Lifecycle Proof")
+            print(f"Device enrollment: {result['device_enrollment_ok']}")
+            print(f"Recovery secret restores key: {result['recovery_secret_restores_key']}")
+            print(f"Wrong recovery secret rejected: {result['wrong_recovery_secret_rejected']}")
+            print(f"Revoked device rejected after rotation: {result['revoked_device_rejected_after_rotation']}")
+            print(f"Audit redacted: {result['audit_redacted']}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

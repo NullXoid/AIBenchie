@@ -2,12 +2,18 @@
 
 AIBenchie treats E2EE as complete only when the readiness gate passes. The local crypto proof is necessary, but it is not enough by itself. Product storage targets must also publish evidence that they encrypt data at rest, reject wrong keys and tampering, avoid plaintext persistence, and keep key material out of the repo.
 
-When this gate is green, dashboards and release notes should display it as complete for the current readiness boundary, not as "work in progress". The stricter zero-knowledge upgrade is a separate planned track: it requires user/device-held keys for supported private payloads so the backend cannot decrypt user content.
+When this gate is green, dashboards and release notes should display it as complete for the current readiness boundary, not as "work in progress". The stricter zero-knowledge track now has a device lifecycle proof: user/device-held keys for supported private payloads, device-to-device enrollment, recovery with a user-held secret, revocation with key rotation, and redacted audit evidence.
 
 Run the gate:
 
 ```powershell
 python aibenchie_local.py --e2ee-readiness --json
+```
+
+Run the focused device lifecycle proof:
+
+```powershell
+python aibenchie_local.py --zero-knowledge-device-proof --json
 ```
 
 To make the broader suite security gate release-blocking for E2EE, set:
@@ -56,6 +62,24 @@ Schema shape:
 {
   "version": 1,
   "status": "complete",
+  "device_lifecycle": {
+    "status": "implemented",
+    "encryption_boundary": "device_to_device_zero_knowledge",
+    "key_management": "user held recovery secret plus device enrollment envelopes that are not server readable",
+    "backend_key_material": "forbidden",
+    "tests": [
+      "device_enrollment",
+      "recovery_secret_restores_key",
+      "wrong_recovery_secret_rejected",
+      "revoked_device_rejected_after_rotation",
+      "backend_plaintext_key_absent",
+      "audit_redacted"
+    ],
+    "evidence": [
+      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs"
+    ]
+  },
   "targets": [
     {
       "target": "saved_chats",
@@ -83,6 +107,8 @@ Schema shape:
 AIBenchie reports E2EE complete only when:
 
 - the local NullPrivacy envelope proof passes
+- the zero-knowledge device lifecycle proof passes
+- lifecycle evidence covers enrollment, recovery, wrong-secret rejection, revocation/key rotation, backend key absence, and redacted audit events
 - every required target appears in policy and evidence
 - every target is marked `implemented`, `proven`, or `complete`
 - the encryption boundary is not `tls_only`, `server_only`, or backend-only
@@ -93,13 +119,15 @@ AIBenchie reports E2EE complete only when:
 
 Until then, `--e2ee-readiness` must fail. That failure is intentional: it prevents broad E2EE claims before product storage integration is proven.
 
-## Separate Zero-Knowledge Track
+## Zero-Knowledge Track
 
-Passing `--e2ee-readiness` does not automatically mean the full suite is zero-knowledge. The next privacy track should be labeled separately and should prove:
+Passing `--e2ee-readiness` now proves the current zero-knowledge device lifecycle boundary, but it still should not be overclaimed as full privacy completion. The boundary proves:
 
 - per-user or per-device key material for supported private payloads
 - no backend-side decryption path for zero-knowledge payload classes
 - device enrollment, recovery, and revocation behavior
-- metadata minimization for encrypted records
-- replay/tamper protection for sync envelopes
-- AIBenchie gates that distinguish readiness-complete from zero-knowledge-complete
+- recovery secrets are user held and wrong recovery secrets are rejected
+- revoked devices cannot decrypt the next account-key epoch
+- backend records and audit events omit plaintext key material
+
+Remaining future work is UI onboarding and operational policy around how users approve new devices, export recovery kits, and view/revoke devices without using the CLI.

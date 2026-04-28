@@ -245,6 +245,7 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "tests/test_release_bundle.py",
                 "tests/test_companion_remote_backend.py",
                 "tests/test_e2ee_readiness.py",
+                "tests/test_zero_knowledge_devices.py",
             ),
             command=(
                 sys.executable,
@@ -261,6 +262,7 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "tests/test_release_bundle.py",
                 "tests/test_companion_remote_backend.py",
                 "tests/test_e2ee_readiness.py",
+                "tests/test_zero_knowledge_devices.py",
             ),
             timeout_seconds=240,
         ),

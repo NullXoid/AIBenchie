@@ -5,7 +5,11 @@ import json
 import pytest
 
 import aibenchie_local
-from aibenchie.e2ee_readiness import REQUIRED_TARGET_CHECKS, run_e2ee_readiness_check
+from aibenchie.e2ee_readiness import (
+    REQUIRED_DEVICE_LIFECYCLE_CHECKS,
+    REQUIRED_TARGET_CHECKS,
+    run_e2ee_readiness_check,
+)
 from aibenchie import suite_security
 
 
@@ -49,7 +53,25 @@ def evidence(targets=TARGETS, **overrides):
     payload = {
         "version": 1,
         "status": "complete",
+        "device_lifecycle": device_lifecycle_evidence(),
         "targets": [target_evidence(target) for target in targets],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def device_lifecycle_evidence(**overrides):
+    payload = {
+        "status": "implemented",
+        "encryption_boundary": "device_to_device_zero_knowledge",
+        "key_management": "user held recovery secret and non server readable device enrollment envelopes",
+        "backend_key_material": "forbidden",
+        "tests": list(REQUIRED_DEVICE_LIFECYCLE_CHECKS),
+        "evidence": [
+            "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+            "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+            "EchoLabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
+        ],
     }
     payload.update(overrides)
     return payload
@@ -72,6 +94,7 @@ def test_e2ee_readiness_passes_only_with_complete_target_evidence(tmp_path):
 
     assert result.ok is True
     assert result.proof["ok"] is True
+    assert result.device_lifecycle["ok"] is True
     assert {target.target for target in result.targets} == set(TARGETS)
 
 
@@ -84,6 +107,7 @@ def test_e2ee_readiness_fails_when_evidence_manifest_is_missing(tmp_path):
 
     assert result.ok is False
     assert "e2ee_evidence_manifest_missing" in result.failures
+    assert "device_lifecycle_evidence_missing" in result.failures
     assert "evidence_target_missing:saved_chats" in result.failures
 
 
@@ -96,6 +120,7 @@ def test_e2ee_readiness_fails_for_incomplete_target_claims(tmp_path):
         {
             "version": 1,
             "status": "incomplete",
+            "device_lifecycle": device_lifecycle_evidence(),
             "storage_targets": [
                 target_evidence(
                     "saved_chats",
@@ -122,6 +147,35 @@ def test_e2ee_readiness_fails_for_incomplete_target_claims(tmp_path):
     assert "evidence_target_missing:private_artifacts" in result.failures
 
 
+def test_e2ee_readiness_fails_for_incomplete_device_lifecycle_claims(tmp_path):
+    policy_path = tmp_path / "privacy-levels.json"
+    evidence_path = tmp_path / "e2ee-readiness.json"
+    write_json(policy_path, policy())
+    write_json(
+        evidence_path,
+        evidence(
+            device_lifecycle=device_lifecycle_evidence(
+                status="planned",
+                encryption_boundary="server_only",
+                key_management="committed repo recovery secret",
+                backend_key_material="plaintext",
+                tests=["device_enrollment"],
+                evidence=[],
+            )
+        ),
+    )
+
+    result = run_e2ee_readiness_check(root=tmp_path, env=env_for(policy_path, evidence_path))
+
+    assert result.ok is False
+    assert "device_lifecycle:status_not_implemented" in result.failures
+    assert "device_lifecycle:encryption_boundary_invalid" in result.failures
+    assert "device_lifecycle:key_management_invalid" in result.failures
+    assert "device_lifecycle:backend_key_material_not_absent" in result.failures
+    assert "device_lifecycle:test_missing:recovery_secret_restores_key" in result.failures
+    assert "device_lifecycle:evidence_missing" in result.failures
+
+
 def test_e2ee_readiness_rejects_raw_localstorage_key_claims(tmp_path):
     policy_path = tmp_path / "privacy-levels.json"
     evidence_path = tmp_path / "e2ee-readiness.json"
@@ -131,6 +185,7 @@ def test_e2ee_readiness_rejects_raw_localstorage_key_claims(tmp_path):
         {
             "version": 1,
             "status": "complete",
+            "device_lifecycle": device_lifecycle_evidence(),
             "targets": [
                 target_evidence("saved_chats", key_management="raw localStorage key kept in browser storage")
             ],

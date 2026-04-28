@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from aibenchie.nullprivacy import run_e2ee_storage_proof
+from aibenchie.zero_knowledge_devices import run_zero_knowledge_device_lifecycle_proof
 
 
 DEFAULT_REQUIRED_TARGETS = (
@@ -25,6 +26,14 @@ REQUIRED_TARGET_CHECKS = (
     "tamper_rejected",
     "plaintext_absent_at_rest",
     "key_not_persisted_in_repo",
+)
+REQUIRED_DEVICE_LIFECYCLE_CHECKS = (
+    "device_enrollment",
+    "recovery_secret_restores_key",
+    "wrong_recovery_secret_rejected",
+    "revoked_device_rejected_after_rotation",
+    "backend_plaintext_key_absent",
+    "audit_redacted",
 )
 IMPLEMENTED_STATUSES = {"implemented", "proven", "complete"}
 FORBIDDEN_BOUNDARIES = {"", "tls_only", "server_only", "backend_only", "not_applicable"}
@@ -65,6 +74,7 @@ class E2EEReadinessResult:
     evidence_path: str
     required_targets: list[str]
     proof: dict[str, Any]
+    device_lifecycle: dict[str, Any]
     targets: list[E2EETargetReadiness]
     failures: list[str] = field(default_factory=list)
 
@@ -76,6 +86,7 @@ class E2EEReadinessResult:
             "evidence_path": self.evidence_path,
             "required_targets": self.required_targets,
             "proof": self.proof,
+            "device_lifecycle": self.device_lifecycle,
             "targets": [target.as_dict() for target in self.targets],
             "failures": self.failures,
         }
@@ -171,6 +182,63 @@ def _target_readiness(target: str, policy_targets: set[str], evidence: dict[str,
     )
 
 
+def _device_lifecycle_evidence(evidence: dict[str, Any]) -> dict[str, Any] | None:
+    raw = evidence.get("device_lifecycle") or evidence.get("zero_knowledge_device_lifecycle")
+    return raw if isinstance(raw, dict) else None
+
+
+def _device_lifecycle_readiness(evidence: dict[str, Any] | None, proof: dict[str, Any]) -> tuple[bool, dict[str, Any], list[str]]:
+    failures: list[str] = []
+    detail: dict[str, Any] = {"proof": proof}
+
+    if not proof.get("ok"):
+        failures.append("zero_knowledge_device_lifecycle_proof_failed")
+
+    if evidence is None:
+        failures.append("device_lifecycle_evidence_missing")
+        return False, detail, failures
+
+    status = str(evidence.get("status") or "").strip().lower()
+    if status not in IMPLEMENTED_STATUSES:
+        failures.append("device_lifecycle:status_not_implemented")
+
+    boundary = str(evidence.get("encryption_boundary") or "").strip().lower()
+    if boundary in FORBIDDEN_BOUNDARIES:
+        failures.append("device_lifecycle:encryption_boundary_invalid")
+
+    key_management = str(evidence.get("key_management") or "").strip().lower()
+    normalized_key_management = (
+        key_management.replace(" ", "").replace("-", "").replace("_", "").replace("/", "")
+    )
+    if not key_management or any(term in normalized_key_management for term in FORBIDDEN_KEY_MANAGEMENT_TERMS):
+        failures.append("device_lifecycle:key_management_invalid")
+
+    backend_key_material = str(evidence.get("backend_key_material") or "").strip().lower()
+    if backend_key_material not in {"forbidden", "absent", "encrypted_envelopes_only"}:
+        failures.append("device_lifecycle:backend_key_material_not_absent")
+
+    tests = {str(item).strip() for item in evidence.get("tests") or [] if str(item).strip()}
+    for check in REQUIRED_DEVICE_LIFECYCLE_CHECKS:
+        if check not in tests:
+            failures.append(f"device_lifecycle:test_missing:{check}")
+
+    proof_paths = [str(item) for item in evidence.get("evidence") or [] if str(item).strip()]
+    if not proof_paths:
+        failures.append("device_lifecycle:evidence_missing")
+
+    detail.update(
+        {
+            "status": status,
+            "encryption_boundary": boundary,
+            "key_management": key_management,
+            "backend_key_material": backend_key_material,
+            "tests": sorted(tests),
+            "evidence": proof_paths,
+        }
+    )
+    return not failures, detail, failures
+
+
 def run_e2ee_readiness_check(
     *,
     root: Path | None = None,
@@ -209,6 +277,13 @@ def run_e2ee_readiness_check(
     if not proof.get("ok"):
         failures.append("e2ee_crypto_proof_failed")
 
+    device_proof = run_zero_knowledge_device_lifecycle_proof().as_dict()
+    device_lifecycle_ok, device_lifecycle_detail, device_lifecycle_failures = _device_lifecycle_readiness(
+        _device_lifecycle_evidence(evidence),
+        device_proof,
+    )
+    failures.extend(device_lifecycle_failures)
+
     evidence_targets = _evidence_by_target(evidence)
     target_results = [
         _target_readiness(target, policy_targets, evidence_targets.get(target))
@@ -217,7 +292,12 @@ def run_e2ee_readiness_check(
     for target_result in target_results:
         failures.extend(target_result.failures)
 
-    ok = bool(proof.get("ok")) and not failures and all(target.ok for target in target_results)
+    ok = (
+        bool(proof.get("ok"))
+        and device_lifecycle_ok
+        and not failures
+        and all(target.ok for target in target_results)
+    )
     return E2EEReadinessResult(
         ok=ok,
         root=str(resolved_root),
@@ -225,6 +305,11 @@ def run_e2ee_readiness_check(
         evidence_path=str(evidence_path),
         required_targets=required,
         proof=proof,
+        device_lifecycle={
+            "ok": device_lifecycle_ok,
+            **device_lifecycle_detail,
+            "failures": device_lifecycle_failures,
+        },
         targets=target_results,
         failures=sorted(set(failures)),
     )

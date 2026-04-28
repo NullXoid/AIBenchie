@@ -132,7 +132,15 @@ Run the release-blocking NullPrivacy E2EE readiness gate:
 python aibenchie_local.py --e2ee-readiness --json
 ```
 
-This gate is documented in [docs/E2EE_READINESS.md](docs/E2EE_READINESS.md). It only passes when the crypto proof and product evidence for every E2EE storage target are present. To include it in the broader suite security verdict, set `AIBENCHIE_SUITE_SECURITY_E2EE=1`.
+This gate is documented in [docs/E2EE_READINESS.md](docs/E2EE_READINESS.md). It only passes when the crypto proof, zero-knowledge device lifecycle proof, and product evidence for every E2EE storage target are present. To include it in the broader suite security verdict, set `AIBENCHIE_SUITE_SECURITY_E2EE=1`.
+
+Run the focused zero-knowledge device lifecycle proof:
+
+```powershell
+python aibenchie_local.py --zero-knowledge-device-proof --json
+```
+
+That proof covers device enrollment, recovery with a user-held secret, wrong-secret rejection, revocation with account-key rotation, backend plaintext-key absence, and redacted lifecycle audit evidence.
 
 Configure repo locations at runtime when they are not next to this checkout:
 

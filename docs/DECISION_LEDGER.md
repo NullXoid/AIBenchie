@@ -40,3 +40,21 @@ Durable engineering decisions live here when they affect release trust, deploy c
 - Performance note: encryption is overhead by itself. Efficiency gains should come from safe encrypted caching, chunked sync, compression before encryption, and avoiding repeated network/disk work.
 - Revisit trigger: revisit after saved-chat E2EE is production-gated and the next storage target is selected.
 - Related files: `docs/SUITE_PRIORITY_BACKLOG.md`, `aibenchie/nullprivacy.py`, `tests/test_nullprivacy.py`.
+
+## 2026-04-28: Gate Zero-Knowledge Device Lifecycle Before UI
+
+- Status: accepted
+- Decision: prove device enrollment, recovery, and revocation/key rotation as an AIBenchie gate before building the guided setup UI.
+- Context: saved chats already use client/device-held encryption, but real users need manageable devices. The next zero-knowledge risk is not only encryption at rest; it is whether a second device can be enrolled, a lost device can be recovered, and a revoked device stops receiving future account-key epochs without exposing secrets to the backend.
+- Alternatives considered:
+  - Build the UI first and add tests later.
+  - Treat device management as documentation only.
+  - Put recovery secrets or raw device keys in backend-managed storage for convenience.
+- Rationale: device lifecycle is security-critical. A deterministic proof gives the UI a clear contract and prevents broad zero-knowledge claims before enrollment, recovery, revocation, backend key absence, and audit redaction are proven.
+- Consequences: `--e2ee-readiness` now requires zero-knowledge device lifecycle evidence. Future UI work should consume the lifecycle primitives rather than creating a separate key path.
+- Revisit trigger: revisit when passkey/OIDC setup and device approval UI are ready, or if platform keychain APIs require a different envelope format.
+- Related files: `aibenchie/zero_knowledge_devices.py`, `tests/test_zero_knowledge_devices.py`, `docs/E2EE_READINESS.md`, `EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js`.
+- Validation commands:
+  - `python aibenchie_local.py --zero-knowledge-device-proof --json`
+  - `python aibenchie_local.py --e2ee-readiness --json`
+  - `npm run test:e2ee`
