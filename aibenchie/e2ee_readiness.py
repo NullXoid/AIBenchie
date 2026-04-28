@@ -34,6 +34,7 @@ REQUIRED_DEVICE_LIFECYCLE_CHECKS = (
     "revoked_device_rejected_after_rotation",
     "backend_plaintext_key_absent",
     "audit_redacted",
+    "guided_setup_ui_contract",
 )
 IMPLEMENTED_STATUSES = {"implemented", "proven", "complete"}
 FORBIDDEN_BOUNDARIES = {"", "tls_only", "server_only", "backend_only", "not_applicable"}

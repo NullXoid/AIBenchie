@@ -12,11 +12,14 @@
       "wrong_recovery_secret_rejected",
       "revoked_device_rejected_after_rotation",
       "backend_plaintext_key_absent",
-      "audit_redacted"
+      "audit_redacted",
+      "guided_setup_ui_contract"
     ],
     "evidence": [
       "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
       "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs",
       "EchoLabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
       "EchoLabs/AIBenchie:tests/test_zero_knowledge_devices.py"
     ]

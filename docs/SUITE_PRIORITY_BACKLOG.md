@@ -22,6 +22,7 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Resource bloat guardrails | Partial | resource budget gate and generated-output policy |
 | NullPrivacy E2EE readiness gate | Done | local proof plus evidence for saved chats, private artifacts, CCC memory, workspace notes, private uploads, offline cache, sync blobs, and private AIBenchie reports |
 | Zero-knowledge device lifecycle proof | Done | AIBenchie proof plus wrapper frontend helper for device enrollment, recovery-secret restore, wrong-secret rejection, revocation/key rotation, backend key absence, and redacted audit |
+| Zero-knowledge setup UI v1 | Done | Wrapper Privacy/Security panel can initialize a device, show a recovery kit, approve a Companion device, recover, revoke, rotate the recovery kit, and expose redacted audit evidence |
 
 ## Visual Status Tracks
 
@@ -31,7 +32,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | --- | --- | --- | --- |
 | E2EE readiness | GREEN / PASS | AIBenchie has proof/evidence for the current E2EE readiness boundary. | Show as complete when `--e2ee-readiness` passes. |
 | Zero-knowledge device lifecycle | GREEN / GATED | Enrollment, recovery, and revocation/key-rotation proof exists for the current zero-knowledge boundary. | Show as complete when `--zero-knowledge-device-proof` and `--e2ee-readiness` pass. |
-| Zero-knowledge setup UI | PLANNED | Guided user setup for approving devices, exporting recovery kits, and revoking devices without CLI work. | Show as planned until the product UI and live route gates exist. |
+| Zero-knowledge setup UI | GREEN / V1 GATED | Guided browser UI exists for approving devices, exporting recovery kits, recovery unlock, revocation, and redacted audit evidence. | Show as complete for v1 when wrapper `npm run test:e2ee` and AIBenchie suite tests pass. |
 | Resource bloat guardrails | YELLOW / PARTIAL | Budgets and generated-output policy exist, but runtime lease enforcement is not complete. | Show as partial until leases and cleanup jobs are enforced. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
 
@@ -39,16 +40,15 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| 1 | NullPrivacy zero-knowledge setup UI | 490 | Planned | UI-first device approval, recovery-kit export, and revocation controls backed by the zero-knowledge lifecycle proof. |
-| 2 | Android/Companion remote profile | 455 | Planned | Production profile points to the public HTTPS NullXoid API origin, signs in securely, lists models, syncs saved chats, and passes AIBenchie remote Android gate. |
-| 3 | Secure sign-in setup | 450 | Planned | UI-first setup for passkey/OIDC-capable sign-in; no normal user CLI setup. |
-| 4 | NullBridge trust fabric hardening | 440 | Partial | Signed backend identity, deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
-| 5 | Resource Manager v1 runtime enforcement | 420 | Partial | Backend leases, cleanup jobs, retention caps, pressure alerts, and no unbounded heavy work. |
-| 6 | Backend Operations UI v1 | 390 | Planned | Read-only UI shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
-| 7 | AIBenchie website scoreboard and release evidence display | 365 | Partial | Website shows latest valid score per class/test, overall score, release details, and progress bars from public-safe exports. |
-| 8 | Notification system through NullBridge | 345 | Planned | Backend emits operational events, NullBridge applies policy, frontend shows notification center/toasts. |
-| 9 | AIBenchie deploy add-on | 295 | Planned | Provider-neutral deploy flow for Forgejo/Gitea/GitHub-style hubs, gated by suite verdict and release attestation. |
-| 10 | Docker support documentation | 210 | Planned | Website/docs mark Docker as coming soon, with constraints and no false support claim. |
+| 1 | Android/Companion remote profile | 455 | Planned | Production profile points to the public HTTPS NullXoid API origin, signs in securely, lists models, syncs saved chats, and passes AIBenchie remote Android gate. |
+| 2 | Secure sign-in setup | 450 | Planned | UI-first setup for passkey/OIDC-capable sign-in; no normal user CLI setup. |
+| 3 | NullBridge trust fabric hardening | 440 | Partial | Signed backend identity, deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
+| 4 | Resource Manager v1 runtime enforcement | 420 | Partial | Backend leases, cleanup jobs, retention caps, pressure alerts, and no unbounded heavy work. |
+| 5 | Backend Operations UI v1 | 390 | Planned | Read-only UI shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
+| 6 | AIBenchie website scoreboard and release evidence display | 365 | Partial | Website shows latest valid score per class/test, overall score, release details, and progress bars from public-safe exports. |
+| 7 | Notification system through NullBridge | 345 | Planned | Backend emits operational events, NullBridge applies policy, frontend shows notification center/toasts. |
+| 8 | AIBenchie deploy add-on | 295 | Planned | Provider-neutral deploy flow for Forgejo/Gitea/GitHub-style hubs, gated by suite verdict and release attestation. |
+| 9 | Docker support documentation | 210 | Planned | Website/docs mark Docker as coming soon, with constraints and no false support claim. |
 
 ## Encryption and Performance Notes
 
@@ -63,7 +63,7 @@ Encryption usually adds CPU overhead. It can still improve whole-system efficien
 
 ## Immediate Next Recommendation
 
-Build the NullPrivacy zero-knowledge setup UI around the now-gated lifecycle primitives. A narrow saved-chat-first UI is easier to ship than trying to expose every encrypted artifact class at once.
+Next highest-value item is the Android/Companion remote profile. The zero-knowledge setup UI v1 is now done for the wrapper browser surface, so the next gap is proving mobile/off-network authentication and encrypted data access against `https://api.echolabs.diy/nullxoid`.
 
 Acceptance:
 
@@ -71,5 +71,5 @@ Acceptance:
 - User can export or regenerate a recovery kit without exposing the recovery secret to the backend.
 - User can revoke a device and trigger account-key epoch rotation.
 - Backend stores only ciphertext envelopes plus minimal routing metadata.
-- AIBenchie gate proves enrollment, recovery, revocation, and redacted audit behavior.
+- AIBenchie gate proves enrollment, recovery, revocation, redacted audit behavior, and the wrapper frontend setup-state contract.
 - Remote inference is labeled honestly as encrypted in transit, not end-to-end private from the inference service.

@@ -111,6 +111,29 @@ def test_catalog_uses_target_python_override(monkeypatch, tmp_path):
     assert result.results[0].command[0] == str(custom_python)
 
 
+def test_catalog_runs_wrapper_frontend_e2ee_target(monkeypatch, tmp_path):
+    repo = tmp_path / "NullXoid"
+    touch_required_files(repo, "nullxoid_wrapper_frontend_e2ee")
+
+    def fake_run(command, **kwargs):
+        assert kwargs["cwd"] == repo
+        assert command[-2:] == ["--prefix", "frontend"]
+        assert "test:e2ee" in command
+        return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+
+    monkeypatch.setattr(suite_test_catalog.subprocess, "run", fake_run)
+
+    result = suite_test_catalog.run_suite_tests(
+        root=tmp_path,
+        env={"AIBENCHIE_NULLXOID_WRAPPER_REPO": str(repo)},
+        selected_targets=["nullxoid_wrapper_frontend_e2ee"],
+        require_all=True,
+    )
+
+    assert result.ok is True
+    assert result.results[0].status == "pass"
+
+
 def test_android_target_sets_discovered_java_home(monkeypatch, tmp_path):
     repo = tmp_path / "NullXoidAndroid"
     java_home = tmp_path / "jdk"
@@ -145,6 +168,7 @@ def test_catalog_contains_suite_boundaries():
     assert "aibenchie_core" in targets
     assert "nullbridge_trust_fabric" in targets
     assert "nullxoid_wrapper_backend" in targets
+    assert "nullxoid_wrapper_frontend_e2ee" in targets
     assert "android_companion_unit" in targets
     assert targets["android_companion_unit"].optional is True
 

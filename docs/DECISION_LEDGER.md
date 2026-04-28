@@ -58,3 +58,21 @@ Durable engineering decisions live here when they affect release trust, deploy c
   - `python aibenchie_local.py --zero-knowledge-device-proof --json`
   - `python aibenchie_local.py --e2ee-readiness --json`
   - `npm run test:e2ee`
+
+## 2026-04-28: Guided Device Setup Uses Existing Zero-Knowledge Primitives
+
+- Status: accepted
+- Decision: build the wrapper setup UI as a thin state layer over the existing device lifecycle primitives, then let AIBenchie run the wrapper frontend E2EE contract as a suite target.
+- Context: the product needs an easy settings flow for initializing a browser, exporting a recovery kit, approving a Companion device, recovering, revoking, and seeing redacted audit evidence without asking normal users to use the CLI.
+- Alternatives considered:
+  - Build a separate UI-only key path.
+  - Mark setup UI as complete based only on screenshots.
+  - Store recovery secrets or raw account keys in browser storage for convenience.
+- Rationale: the UI should not weaken the security boundary. Keeping the UI on top of the same tested primitives means AIBenchie can reject regressions where key material leaks, revocation fails to rotate the recovery kit, or the setup contract is removed.
+- Consequences: the master suite now includes a `nullxoid_wrapper_frontend_e2ee` target. The v1 UI is local/browser scoped; live cross-device sync and platform keychain integration remain future work.
+- Revisit trigger: revisit when Android/Companion enrollment uses the public API route or when passkey/OIDC device identity changes the storage/envelope design.
+- Related files: `EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js`, `EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs`, `aibenchie/suite_test_catalog.py`, `docs/E2EE_READINESS.md`.
+- Validation commands:
+  - `npm run test:e2ee`
+  - `python -m pytest tests/test_e2ee_readiness.py tests/test_suite_test_catalog.py -q`
+  - `python aibenchie_local.py --suite-tests --suite-test-target nullxoid_wrapper_frontend_e2ee --suite-test-require-all --json`

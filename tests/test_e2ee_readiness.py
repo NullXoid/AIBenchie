@@ -69,7 +69,9 @@ def device_lifecycle_evidence(**overrides):
         "tests": list(REQUIRED_DEVICE_LIFECYCLE_CHECKS),
         "evidence": [
             "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+            "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
             "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+            "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs",
             "EchoLabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
         ],
     }
@@ -173,6 +175,7 @@ def test_e2ee_readiness_fails_for_incomplete_device_lifecycle_claims(tmp_path):
     assert "device_lifecycle:key_management_invalid" in result.failures
     assert "device_lifecycle:backend_key_material_not_absent" in result.failures
     assert "device_lifecycle:test_missing:recovery_secret_restores_key" in result.failures
+    assert "device_lifecycle:test_missing:guided_setup_ui_contract" in result.failures
     assert "device_lifecycle:evidence_missing" in result.failures
 
 

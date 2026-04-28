@@ -73,11 +73,14 @@ Schema shape:
       "wrong_recovery_secret_rejected",
       "revoked_device_rejected_after_rotation",
       "backend_plaintext_key_absent",
-      "audit_redacted"
+      "audit_redacted",
+      "guided_setup_ui_contract"
     ],
     "evidence": [
       "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
-      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs"
+      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
+      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs"
     ]
   },
   "targets": [
@@ -108,7 +111,7 @@ AIBenchie reports E2EE complete only when:
 
 - the local NullPrivacy envelope proof passes
 - the zero-knowledge device lifecycle proof passes
-- lifecycle evidence covers enrollment, recovery, wrong-secret rejection, revocation/key rotation, backend key absence, and redacted audit events
+- lifecycle evidence covers enrollment, recovery, wrong-secret rejection, revocation/key rotation, backend key absence, redacted audit events, and guided setup UI contracts
 - every required target appears in policy and evidence
 - every target is marked `implemented`, `proven`, or `complete`
 - the encryption boundary is not `tls_only`, `server_only`, or backend-only
@@ -130,4 +133,4 @@ Passing `--e2ee-readiness` now proves the current zero-knowledge device lifecycl
 - revoked devices cannot decrypt the next account-key epoch
 - backend records and audit events omit plaintext key material
 
-Remaining future work is UI onboarding and operational policy around how users approve new devices, export recovery kits, and view/revoke devices without using the CLI.
+Remaining future work is server-synced multi-device state, platform keychain storage, and live mobile/device revocation policy. The wrapper now has a v1 guided setup surface; the next gate is proving that flow across real Companion devices.

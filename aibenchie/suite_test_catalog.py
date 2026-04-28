@@ -165,6 +165,11 @@ def _android_command() -> tuple[str, ...]:
     return ("./gradlew", ":app:testDebugUnitTest")
 
 
+def _npm_command(*args: str) -> tuple[str, ...]:
+    executable = "npm.cmd" if os.name == "nt" else "npm"
+    return (executable, *args)
+
+
 def _java_executable(java_home: Path) -> Path:
     name = "java.exe" if os.name == "nt" else "java"
     return java_home / "bin" / name
@@ -312,6 +317,23 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "backend/tests/test_ephemeral_e2e_user.py",
                 "backend/tests/test_dependency_contract.py",
             ),
+            timeout_seconds=180,
+        ),
+        SuiteTestTarget(
+            name="nullxoid_wrapper_frontend_e2ee",
+            description="NullXoid wrapper frontend saved-chat E2EE and zero-knowledge device setup contracts",
+            repo_env="AIBENCHIE_NULLXOID_WRAPPER_REPO",
+            repo_candidates=("../.NullXoid", "../NullXoid-live", "../Felnx/NullXoid", "../NullXoid"),
+            required_paths=(
+                "frontend/package.json",
+                "frontend/scripts/test-chat-e2ee.mjs",
+                "frontend/scripts/test-e2ee-device-lifecycle.mjs",
+                "frontend/scripts/test-e2ee-device-setup-state.mjs",
+                "frontend/src/lib/chatE2ee.js",
+                "frontend/src/lib/e2eeDeviceLifecycle.js",
+                "frontend/src/lib/e2eeDeviceSetupState.js",
+            ),
+            command=_npm_command("run", "test:e2ee", "--prefix", "frontend"),
             timeout_seconds=180,
         ),
         SuiteTestTarget(
