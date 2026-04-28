@@ -90,15 +90,63 @@ def write_android_fixture(root: Path) -> None:
         ),
         "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt": (
             'Modifier.testTag("login-passkey")\n'
-            'Text("Set up passkey sign-in")\n'
+            'Text("Sign in with passkey")\n'
             'Modifier.testTag("login-oidc")\n'
-            'Text("Set up OIDC")\n'
+            'Text("Continue with OIDC")\n'
             'Text("Password fallback is for development or migration only.")\n'
+        ),
+        "app/build.gradle.kts": (
+            'implementation("androidx.credentials:credentials:1.3.0")\n'
+            'implementation("androidx.credentials:credentials-play-services-auth:1.3.0")\n'
+        ),
+        "app/src/main/AndroidManifest.xml": (
+            '<category android:name="android.intent.category.BROWSABLE" />\n'
+            '<data android:scheme="nullxoid" android:host="auth" android:path="/oidc/callback" />\n'
+        ),
+        "app/src/main/java/com/nullxoid/android/MainActivity.kt": (
+            "onNewIntent\n"
+            "NullXoidApp(app = app, oidcRedirect = oidcRedirect)\n"
+        ),
+        "app/src/main/java/com/nullxoid/android/ui/NullXoidNavHost.kt": (
+            "vm.loginWithPasskey(context)\n"
+            "vm::startOidcSignIn\n"
+            "vm.completeOidcSignIn\n"
+        ),
+        "app/src/main/java/com/nullxoid/android/ui/NullXoidViewModel.kt": (
+            "loginWithPasskey\n"
+            "startOidcSignIn\n"
+            "completeOidcSignIn\n"
+            "nullxoid://auth/oidc/callback\n"
+            "OIDC state mismatch\n"
+        ),
+        "app/src/main/java/com/nullxoid/android/data/auth/NativeAuthCoordinator.kt": (
+            "CredentialManager\n"
+            "GetPublicKeyCredentialOption\n"
+            "PublicKeyCredential\n"
+            "authenticationResponseJson\n"
+            "codeChallenge\n"
+            "codeVerifier\n"
+        ),
+        "app/src/main/java/com/nullxoid/android/data/auth/Pkce.kt": (
+            'CHALLENGE_METHOD = "S256"\n'
+            'MessageDigest.getInstance("SHA-256")\n'
+            "Base64.getUrlEncoder().withoutPadding()\n"
         ),
         "app/src/main/java/com/nullxoid/android/data/api/NullXoidApi.kt": (
             'data class LoginRequest(val username: String, val password: String)\n'
             '"/auth/login"\n'
+            '"/auth/passkey/options"\n'
+            '"/auth/passkey/complete"\n'
+            '"/auth/oidc/start"\n'
+            '"/auth/oidc/complete"\n'
         ),
+        "app/src/main/java/com/nullxoid/android/data/repo/NullXoidRepository.kt": "NativeAuthCoordinator\n",
+        "app/src/main/java/com/nullxoid/android/data/model/Models.kt": (
+            "PasskeyOptionsResponse\n"
+            "OidcStartRequest\n"
+            "OidcCompleteRequest\n"
+        ),
+        "app/src/test/java/com/nullxoid/android/data/auth/PkceTest.kt": "challengeMatchesRfc7636Example\n",
     }
     for relative, content in files.items():
         path = root / relative
@@ -112,6 +160,11 @@ def write_wrapper_fixture(root: Path) -> None:
             'features = {\n'
             '    "auth_primary_method": "passkey",\n'
             '    "auth_allowed_methods": ["passkey", "oidc_pkce", "session_cookie"],\n'
+            '    "auth_native_ceremony_endpoints": True,\n'
+            '    "/auth/passkey/options": True,\n'
+            '    "/auth/passkey/complete": True,\n'
+            '    "/auth/oidc/start": True,\n'
+            '    "/auth/oidc/complete": True,\n'
             '    "auth_token_storage": "http_only_secure_samesite_cookie",\n'
             '    "auth_password_fallback": "migration_only_mfa_required",\n'
             '    "setup_mode": "guided_ui_first",\n'
@@ -122,7 +175,10 @@ def write_wrapper_fixture(root: Path) -> None:
             "def test_health_features_advertises_passkey_guided_setup_contract():\n"
             "    assert 'auth_primary_method'\n"
             "    assert 'auth_allowed_methods'\n"
+            "    assert 'auth_native_ceremony_endpoints'\n"
             "    assert 'setup_cli_required'\n"
+            "def test_native_auth_ceremony_endpoints_fail_json_until_provider_configured():\n"
+            "    assert 'provider_not_configured'\n"
         ),
     }
     for relative, content in files.items():
@@ -143,6 +199,9 @@ def fake_features_request(origin, path, **kwargs):
                 "auth_allowed_methods": ["passkey", "oidc_pkce", "session_cookie"],
                 "auth_token_storage": "http_only_secure_samesite_cookie",
                 "auth_password_fallback": "migration_only_mfa_required",
+                "auth_native_ceremony_endpoints": True,
+                "auth_passkey_provider_configured": False,
+                "auth_oidc_provider_configured": False,
                 "setup_mode": "guided_ui_first",
                 "setup_cli_required": False,
                 "nullbridge_credentials_in_frontend": False,

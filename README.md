@@ -224,7 +224,7 @@ $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --secure-signin-setup --json
 ```
 
-This gate proves the setup boundary for easy secure sign-in: AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android's visible passkey/OIDC setup surface, wrapper `/health/features` auth capability metadata, hosted JSON route behavior, and absence of frontend NullBridge service credentials. It does not store user credentials and does not claim the native passkey ceremony is complete until the platform implementation lands.
+This gate proves the setup boundary for easy secure sign-in: AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android's native passkey/OIDC ceremony wiring, wrapper `/health/features` auth capability metadata, hosted JSON route behavior, and absence of frontend NullBridge service credentials. It does not store user credentials and requires unconfigured passkey/OIDC providers to fail as JSON instead of falling through to HTML or privileged NullBridge routes.
 
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 

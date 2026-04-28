@@ -18,8 +18,18 @@ DEFAULT_BASE_PATH = "/nullxoid"
 ANDROID_REQUIRED_FILES = (
     "README.md",
     "docs/PASSKEY_AUTH_ANDROID.md",
+    "app/build.gradle.kts",
+    "app/src/main/AndroidManifest.xml",
+    "app/src/main/java/com/nullxoid/android/MainActivity.kt",
+    "app/src/main/java/com/nullxoid/android/ui/NullXoidNavHost.kt",
+    "app/src/main/java/com/nullxoid/android/ui/NullXoidViewModel.kt",
     "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt",
+    "app/src/main/java/com/nullxoid/android/data/auth/NativeAuthCoordinator.kt",
+    "app/src/main/java/com/nullxoid/android/data/auth/Pkce.kt",
     "app/src/main/java/com/nullxoid/android/data/api/NullXoidApi.kt",
+    "app/src/main/java/com/nullxoid/android/data/repo/NullXoidRepository.kt",
+    "app/src/main/java/com/nullxoid/android/data/model/Models.kt",
+    "app/src/test/java/com/nullxoid/android/data/auth/PkceTest.kt",
 )
 
 WRAPPER_REQUIRED_FILES = (
@@ -218,10 +228,57 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
             "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt",
             [
                 'Modifier.testTag("login-passkey")',
-                "Set up passkey sign-in",
+                "Sign in with passkey",
                 'Modifier.testTag("login-oidc")',
-                "Set up OIDC",
+                "Continue with OIDC",
                 "Password fallback is for development or migration only.",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/build.gradle.kts",
+            [
+                "androidx.credentials:credentials",
+                "androidx.credentials:credentials-play-services-auth",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/AndroidManifest.xml",
+            [
+                "android.intent.category.BROWSABLE",
+                'android:scheme="nullxoid"',
+                'android:host="auth"',
+                'android:path="/oidc/callback"',
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/data/auth/NativeAuthCoordinator.kt",
+            [
+                "CredentialManager",
+                "GetPublicKeyCredentialOption",
+                "PublicKeyCredential",
+                "authenticationResponseJson",
+                "codeChallenge",
+                "codeVerifier",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/data/auth/Pkce.kt",
+            [
+                "CHALLENGE_METHOD = \"S256\"",
+                "MessageDigest.getInstance(\"SHA-256\")",
+                "Base64.getUrlEncoder().withoutPadding()",
             ],
         )
     )
@@ -231,7 +288,35 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
             "app/src/main/java/com/nullxoid/android/data/api/NullXoidApi.kt",
             [
                 "/auth/login",
+                "/auth/passkey/options",
+                "/auth/passkey/complete",
+                "/auth/oidc/start",
+                "/auth/oidc/complete",
                 "LoginRequest",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/ui/NullXoidViewModel.kt",
+            [
+                "loginWithPasskey",
+                "startOidcSignIn",
+                "completeOidcSignIn",
+                "nullxoid://auth/oidc/callback",
+                "OIDC state mismatch",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/ui/NullXoidNavHost.kt",
+            [
+                "vm.loginWithPasskey(context)",
+                "vm::startOidcSignIn",
+                "vm.completeOidcSignIn",
             ],
         )
     )
@@ -256,6 +341,11 @@ def _wrapper_checks(wrapper_repo: Path) -> list[SecureSigninSetupCheck]:
             [
                 '"auth_primary_method": "passkey"',
                 '"oidc_pkce"',
+                '"auth_native_ceremony_endpoints": True',
+                '"/auth/passkey/options"',
+                '"/auth/passkey/complete"',
+                '"/auth/oidc/start"',
+                '"/auth/oidc/complete"',
                 '"auth_token_storage": "http_only_secure_samesite_cookie"',
                 '"auth_password_fallback": "migration_only_mfa_required"',
                 '"setup_mode": "guided_ui_first"',
@@ -271,7 +361,9 @@ def _wrapper_checks(wrapper_repo: Path) -> list[SecureSigninSetupCheck]:
                 "test_health_features_advertises_passkey_guided_setup_contract",
                 "auth_primary_method",
                 "auth_allowed_methods",
+                "auth_native_ceremony_endpoints",
                 "setup_cli_required",
+                "test_native_auth_ceremony_endpoints_fail_json_until_provider_configured",
             ],
         )
     )
@@ -301,6 +393,9 @@ def _feature_route_check(
         "auth_primary_method": "passkey",
         "auth_token_storage": "http_only_secure_samesite_cookie",
         "auth_password_fallback": "migration_only_mfa_required",
+        "auth_native_ceremony_endpoints": True,
+        "auth_passkey_provider_configured": False,
+        "auth_oidc_provider_configured": False,
         "setup_mode": "guided_ui_first",
         "setup_cli_required": False,
     }
