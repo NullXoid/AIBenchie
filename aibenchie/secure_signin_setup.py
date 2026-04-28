@@ -24,6 +24,7 @@ ANDROID_REQUIRED_FILES = (
     "app/src/main/java/com/nullxoid/android/ui/NullXoidNavHost.kt",
     "app/src/main/java/com/nullxoid/android/ui/NullXoidViewModel.kt",
     "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt",
+    "app/src/main/java/com/nullxoid/android/ui/settings/SettingsScreen.kt",
     "app/src/main/java/com/nullxoid/android/data/auth/NativeAuthCoordinator.kt",
     "app/src/main/java/com/nullxoid/android/data/auth/Pkce.kt",
     "app/src/main/java/com/nullxoid/android/data/api/NullXoidApi.kt",
@@ -219,6 +220,7 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
                 "OIDC Authorization Code with PKCE",
                 "Password sign-in remains a development or migration fallback only",
                 "Android Keystore",
+                "/auth/passkey/register/complete",
             ],
         )
     )
@@ -263,9 +265,13 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
             "app/src/main/java/com/nullxoid/android/data/auth/NativeAuthCoordinator.kt",
             [
                 "CredentialManager",
+                "CreatePublicKeyCredentialRequest",
+                "CreatePublicKeyCredentialResponse",
                 "GetPublicKeyCredentialOption",
                 "PublicKeyCredential",
                 "authenticationResponseJson",
+                "registrationResponseJson",
+                "registerPasskey",
                 "codeChallenge",
                 "codeVerifier",
             ],
@@ -290,6 +296,9 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
                 "/auth/login",
                 "/auth/passkey/options",
                 "/auth/passkey/complete",
+                "/auth/passkey/credentials",
+                "/auth/passkey/register/options",
+                "/auth/passkey/register/complete",
                 "/auth/oidc/start",
                 "/auth/oidc/complete",
                 "LoginRequest",
@@ -301,6 +310,9 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
             android_repo,
             "app/src/main/java/com/nullxoid/android/ui/NullXoidViewModel.kt",
             [
+                "registerPasskey",
+                "refreshPasskeys",
+                "revokePasskey",
                 "loginWithPasskey",
                 "startOidcSignIn",
                 "completeOidcSignIn",
@@ -315,8 +327,46 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
             "app/src/main/java/com/nullxoid/android/ui/NullXoidNavHost.kt",
             [
                 "vm.loginWithPasskey(context)",
+                "vm.registerPasskey(context)",
+                "onRefreshPasskeys",
                 "vm::startOidcSignIn",
                 "vm.completeOidcSignIn",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/ui/settings/SettingsScreen.kt",
+            [
+                'Modifier.testTag("settings-passkey-add")',
+                'Modifier.testTag("settings-passkey-remove")',
+                "Add passkey",
+                "Passkey enrollment",
+                "onRefreshPasskeys",
+                "onRevokePasskey",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/data/repo/NullXoidRepository.kt",
+            [
+                "registerPasskey",
+                "passkeyCredentials",
+                "revokePasskey",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "app/src/main/java/com/nullxoid/android/data/model/Models.kt",
+            [
+                "PasskeyCredentialsResponse",
+                "PasskeyCredentialRecord",
+                "PasskeyProviderStatus",
             ],
         )
     )
@@ -543,6 +593,74 @@ def _hosted_auth_ceremony_checks(
     ]
 
 
+def _protected_auth_route_check(
+    *,
+    origin: str,
+    path: str,
+    host_header: str,
+    timeout: int,
+    method: str = "GET",
+    payload: dict[str, object] | None = None,
+) -> SecureSigninSetupCheck:
+    status, content_type, body = request_raw(
+        origin,
+        path,
+        host_header=host_header,
+        method=method,
+        payload=payload,
+        timeout=timeout,
+    )
+    failure = json_route_failure(
+        status,
+        content_type,
+        body,
+        route_name=path.strip("/").replace("/", "_"),
+        allowed_statuses={401, 403, 501},
+    )
+    name = f"hosted_protected_auth:{path}"
+    if failure:
+        return _fail(name, failure, status=status, content_type=content_type)
+    payload_json = json_payload(body)
+    if not isinstance(payload_json, dict):
+        return _fail(name, "protected_auth_payload_not_object", status=status, content_type=content_type)
+    serialized = json.dumps(payload_json).lower()
+    for forbidden in ["client_secret", "private_key", "nullbridge_service_secret"]:
+        if forbidden in serialized:
+            return _fail(name, "protected_auth_payload_exposed_secret", status=status, content_type=content_type)
+    return _pass(name, status=status, content_type=content_type)
+
+
+def _hosted_protected_auth_checks(
+    *,
+    origin: str,
+    base_path: str,
+    host_header: str,
+    timeout: int,
+) -> list[SecureSigninSetupCheck]:
+    return [
+        _protected_auth_route_check(
+            origin=origin,
+            path=f"{base_path}/auth/passkey/credentials",
+            host_header=host_header,
+            timeout=timeout,
+        ),
+        _protected_auth_route_check(
+            origin=origin,
+            path=f"{base_path}/auth/passkey/register/options",
+            host_header=host_header,
+            timeout=timeout,
+        ),
+        _protected_auth_route_check(
+            origin=origin,
+            path=f"{base_path}/auth/passkey/register/complete",
+            host_header=host_header,
+            timeout=timeout,
+            method="POST",
+            payload={"request_id": "aibenchie-route-check", "credential_json": "{}"},
+        ),
+    ]
+
+
 def run_secure_signin_setup_check(
     *,
     root: str | Path | None = None,
@@ -602,6 +720,14 @@ def run_secure_signin_setup_check(
         )
         checks.extend(
             _hosted_auth_ceremony_checks(
+                origin=resolved_origin,
+                base_path=resolved_base_path,
+                host_header=host_header,
+                timeout=timeout,
+            )
+        )
+        checks.extend(
+            _hosted_protected_auth_checks(
                 origin=resolved_origin,
                 base_path=resolved_base_path,
                 host_header=host_header,

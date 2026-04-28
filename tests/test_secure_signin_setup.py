@@ -87,6 +87,7 @@ def write_android_fixture(root: Path) -> None:
             "OIDC Authorization Code with PKCE is allowed.\n"
             "Password sign-in remains a development or migration fallback only.\n"
             "Store refresh material in Android Keystore.\n"
+            "Register passkeys through /auth/passkey/register/complete.\n"
         ),
         "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt": (
             'Modifier.testTag("login-passkey")\n'
@@ -94,6 +95,14 @@ def write_android_fixture(root: Path) -> None:
             'Modifier.testTag("login-oidc")\n'
             'Text("Continue with OIDC")\n'
             'Text("Password fallback is for development or migration only.")\n'
+        ),
+        "app/src/main/java/com/nullxoid/android/ui/settings/SettingsScreen.kt": (
+            'Modifier.testTag("settings-passkey-add")\n'
+            'Modifier.testTag("settings-passkey-remove")\n'
+            'Text("Add passkey")\n'
+            'Text("Passkey enrollment ready.")\n'
+            "onRefreshPasskeys\n"
+            "onRevokePasskey\n"
         ),
         "app/build.gradle.kts": (
             'implementation("androidx.credentials:credentials:1.3.0")\n'
@@ -109,10 +118,15 @@ def write_android_fixture(root: Path) -> None:
         ),
         "app/src/main/java/com/nullxoid/android/ui/NullXoidNavHost.kt": (
             "vm.loginWithPasskey(context)\n"
+            "vm.registerPasskey(context)\n"
+            "onRefreshPasskeys\n"
             "vm::startOidcSignIn\n"
             "vm.completeOidcSignIn\n"
         ),
         "app/src/main/java/com/nullxoid/android/ui/NullXoidViewModel.kt": (
+            "registerPasskey\n"
+            "refreshPasskeys\n"
+            "revokePasskey\n"
             "loginWithPasskey\n"
             "startOidcSignIn\n"
             "completeOidcSignIn\n"
@@ -121,9 +135,13 @@ def write_android_fixture(root: Path) -> None:
         ),
         "app/src/main/java/com/nullxoid/android/data/auth/NativeAuthCoordinator.kt": (
             "CredentialManager\n"
+            "CreatePublicKeyCredentialRequest\n"
+            "CreatePublicKeyCredentialResponse\n"
             "GetPublicKeyCredentialOption\n"
             "PublicKeyCredential\n"
             "authenticationResponseJson\n"
+            "registrationResponseJson\n"
+            "registerPasskey\n"
             "codeChallenge\n"
             "codeVerifier\n"
         ),
@@ -137,12 +155,23 @@ def write_android_fixture(root: Path) -> None:
             '"/auth/login"\n'
             '"/auth/passkey/options"\n'
             '"/auth/passkey/complete"\n'
+            '"/auth/passkey/credentials"\n'
+            '"/auth/passkey/register/options"\n'
+            '"/auth/passkey/register/complete"\n'
             '"/auth/oidc/start"\n'
             '"/auth/oidc/complete"\n'
         ),
-        "app/src/main/java/com/nullxoid/android/data/repo/NullXoidRepository.kt": "NativeAuthCoordinator\n",
+        "app/src/main/java/com/nullxoid/android/data/repo/NullXoidRepository.kt": (
+            "NativeAuthCoordinator\n"
+            "registerPasskey\n"
+            "passkeyCredentials\n"
+            "revokePasskey\n"
+        ),
         "app/src/main/java/com/nullxoid/android/data/model/Models.kt": (
             "PasskeyOptionsResponse\n"
+            "PasskeyCredentialsResponse\n"
+            "PasskeyCredentialRecord\n"
+            "PasskeyProviderStatus\n"
             "OidcStartRequest\n"
             "OidcCompleteRequest\n"
         ),
@@ -226,6 +255,16 @@ def fake_features_request(origin, path, **kwargs):
                 }
             ),
         )
+    if path in {
+        "/nullxoid/auth/passkey/credentials",
+        "/nullxoid/auth/passkey/register/options",
+        "/nullxoid/auth/passkey/register/complete",
+    }:
+        return (
+            401,
+            "application/json",
+            json.dumps({"detail": "Authentication required"}),
+        )
     assert path == "/nullxoid/health/features"
     return (
         200,
@@ -275,6 +314,9 @@ def test_secure_signin_setup_gate_passes(monkeypatch, tmp_path):
         "hosted_features:/nullxoid/health/features",
         "hosted_auth_ceremony:/nullxoid/auth/passkey/options",
         "hosted_auth_ceremony:/nullxoid/auth/oidc/start",
+        "hosted_protected_auth:/nullxoid/auth/passkey/credentials",
+        "hosted_protected_auth:/nullxoid/auth/passkey/register/options",
+        "hosted_protected_auth:/nullxoid/auth/passkey/register/complete",
     }
 
 
@@ -367,6 +409,16 @@ def test_secure_signin_setup_gate_accepts_configured_oidc_ceremony(monkeypatch, 
                     }
                 ),
             )
+        if path in {
+            "/nullxoid/auth/passkey/credentials",
+            "/nullxoid/auth/passkey/register/options",
+            "/nullxoid/auth/passkey/register/complete",
+        }:
+            return (
+                401,
+                "application/json",
+                json.dumps({"detail": "Authentication required"}),
+            )
         raise AssertionError(path)
 
     monkeypatch.setattr(secure_signin_setup, "request_raw", fake_request)
@@ -427,6 +479,16 @@ def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatc
                 501,
                 "application/json",
                 json.dumps({"detail": {"configured": False, "setup_required": True}}),
+            )
+        if path in {
+            "/nullxoid/auth/passkey/credentials",
+            "/nullxoid/auth/passkey/register/options",
+            "/nullxoid/auth/passkey/register/complete",
+        }:
+            return (
+                401,
+                "application/json",
+                json.dumps({"detail": "Authentication required"}),
             )
         raise AssertionError(path)
 
