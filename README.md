@@ -213,6 +213,19 @@ python aibenchie_local.py --companion-remote-backend --json
 
 This check proves the NullXoid Companion/Android repo is aligned with the public HTTPS backend route used by phones outside the LAN. It verifies the hosted API preset, release-time BuildConfig override, Forgejo-first update source, release network security config, endpoint tests, SettingsStore public URL, and the hosted API route contract. No personal admin credentials are stored or required.
 
+Run the secure sign-in setup gate:
+
+```powershell
+$env:AIBENCHIE_ANDROID_REPO="..\NullXoidAndroid"
+$env:AIBENCHIE_NULLXOID_WRAPPER_REPO="..\Felnx\NullXoid\.NullXoid"
+$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.echolabs.diy/nullxoid"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
+python aibenchie_local.py --secure-signin-setup --json
+```
+
+This gate proves the setup boundary for easy secure sign-in: AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android's visible passkey/OIDC setup surface, wrapper `/health/features` auth capability metadata, hosted JSON route behavior, and absence of frontend NullBridge service credentials. It does not store user credentials and does not claim the native passkey ceremony is complete until the platform implementation lands.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell

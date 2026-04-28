@@ -235,11 +235,12 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
     return [
         SuiteTestTarget(
             name="aibenchie_core",
-            description="AIBenchie hosted, security, NullBridge E2E trust/notification, resource, output, and Companion gates",
+            description="AIBenchie hosted, security, secure sign-in, NullBridge E2E trust/notification, resource, output, and Companion gates",
             repo_env="AIBENCHIE_REPO",
             repo_candidates=(".",),
             required_paths=(
                 "tests/test_suite_security.py",
+                "tests/test_secure_signin_setup.py",
                 "tests/test_local_nullbridge_runner.py",
                 "tests/test_live_trust_path.py",
                 "tests/test_hosted_nullxoid_stack.py",
@@ -257,6 +258,7 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "-m",
                 "pytest",
                 "tests/test_suite_security.py",
+                "tests/test_secure_signin_setup.py",
                 "tests/test_local_nullbridge_runner.py",
                 "tests/test_live_trust_path.py",
                 "tests/test_hosted_nullxoid_stack.py",

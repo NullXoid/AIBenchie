@@ -18,6 +18,7 @@ from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
 from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
+from aibenchie.secure_signin_setup import run_from_env as run_secure_signin_setup_from_env
 from aibenchie.suite_security import run_suite_security_check
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
 from aibenchie.zero_knowledge_devices import run_zero_knowledge_device_lifecycle_proof
@@ -187,6 +188,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--companion-remote-backend",
         action="store_true",
         help="Run the NullXoid Companion/Android public API backend contract gate.",
+    )
+    parser.add_argument(
+        "--secure-signin-setup",
+        action="store_true",
+        help="Run secure sign-in setup policy, Android UI, wrapper feature, and hosted route gates.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -567,6 +573,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Public API: {result['public_api']}")
             print(f"Origin: {result['origin']}")
             print(f"Base path: {result['base_path']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.secure_signin_setup:
+        result = run_secure_signin_setup_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("Secure Sign-In Setup Gate")
+            print(f"Android repo: {result['android_repo']}")
+            print(f"Wrapper repo: {result['wrapper_repo']}")
+            print(f"Public API: {result['public_api']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")
