@@ -344,6 +344,9 @@ def _wrapper_checks(wrapper_repo: Path) -> list[SecureSigninSetupCheck]:
                 '"auth_native_ceremony_endpoints": True',
                 '"/auth/passkey/options"',
                 '"/auth/passkey/complete"',
+                '"/auth/passkey/credentials"',
+                '"/auth/passkey/register/options"',
+                '"/auth/passkey/register/complete"',
                 '"/auth/oidc/start"',
                 '"/auth/oidc/complete"',
                 '"auth_token_storage": "http_only_secure_samesite_cookie"',
@@ -367,6 +370,7 @@ def _wrapper_checks(wrapper_repo: Path) -> list[SecureSigninSetupCheck]:
                 "setup_cli_required",
                 "test_native_auth_ceremony_endpoints_fail_json_until_provider_configured",
                 "test_passkey_complete_verifies_assertion_and_sets_session",
+                "test_passkey_registration_stores_verified_public_key",
             ],
         )
     )
@@ -413,6 +417,7 @@ def _feature_route_check(
         "auth_passkey_provider_configured",
         "auth_oidc_provider_configured",
         "auth_passkey_login_ready",
+        "auth_passkey_registration_enabled",
         "auth_oidc_login_ready",
         "auth_oidc_start_ready",
     ]:

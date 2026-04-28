@@ -163,6 +163,9 @@ def write_wrapper_fixture(root: Path) -> None:
             '    "auth_native_ceremony_endpoints": True,\n'
             '    "/auth/passkey/options": True,\n'
             '    "/auth/passkey/complete": True,\n'
+            '    "/auth/passkey/credentials": True,\n'
+            '    "/auth/passkey/register/options": True,\n'
+            '    "/auth/passkey/register/complete": True,\n'
             '    "/auth/oidc/start": True,\n'
             '    "/auth/oidc/complete": True,\n'
             '    "auth_token_storage": "http_only_secure_samesite_cookie",\n'
@@ -183,6 +186,8 @@ def write_wrapper_fixture(root: Path) -> None:
             "    assert 'provider_not_configured'\n"
             "def test_passkey_complete_verifies_assertion_and_sets_session():\n"
             "    assert 'passkey'\n"
+            "def test_passkey_registration_stores_verified_public_key():\n"
+            "    assert 'passkey registration'\n"
         ),
     }
     for relative, content in files.items():
@@ -235,6 +240,7 @@ def fake_features_request(origin, path, **kwargs):
                 "auth_passkey_provider_configured": False,
                 "auth_oidc_provider_configured": False,
                 "auth_passkey_login_ready": False,
+                "auth_passkey_registration_enabled": False,
                 "auth_oidc_login_ready": False,
                 "auth_oidc_start_ready": False,
                 "setup_mode": "guided_ui_first",
@@ -388,6 +394,7 @@ def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatc
             payload = json.loads(body)
             payload["auth_passkey_provider_configured"] = True
             payload["auth_passkey_login_ready"] = True
+            payload["auth_passkey_registration_enabled"] = True
             payload["auth_provider_status"] = {
                 "passkey": {
                     "rp_id": "api.echolabs.diy",
