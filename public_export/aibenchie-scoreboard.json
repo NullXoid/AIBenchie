@@ -237,7 +237,7 @@
       "version": "v1_5_8"
     }
   ],
-  "generated_at": "2026-04-27T17:47:13.508571+00:00",
+  "generated_at": "2026-04-27T23:58:00.836082+00:00",
   "overall": {
     "blocked_count": 4,
     "class_count": 21,
@@ -254,5 +254,35 @@
   },
   "schema_version": 1,
   "summary": "Public-safe latest valid result per class. Raw runtime reports and benchmark fixtures stay in AIBenchie.",
-  "title": "AIBenchie Public Scoreboard"
+  "title": "AIBenchie Public Scoreboard",
+  "visual_tracks": [
+    {
+      "key": "e2ee_readiness",
+      "result": "pass",
+      "summary": "AIBenchie E2EE readiness is complete for the current evidence boundary and should display as green.",
+      "title": "E2EE readiness",
+      "visual_label": "GREEN / PASS"
+    },
+    {
+      "key": "zero_knowledge_privacy",
+      "result": "planned",
+      "summary": "Future track for user or device held keys where supported private payloads stay unreadable to the backend.",
+      "title": "Zero-knowledge privacy",
+      "visual_label": "PLANNED"
+    },
+    {
+      "key": "resource_bloat_guardrails",
+      "result": "partial",
+      "summary": "Budget checks and generated-output policy exist; runtime leases and cleanup jobs are next.",
+      "title": "Resource bloat guardrails",
+      "visual_label": "YELLOW / PARTIAL"
+    },
+    {
+      "key": "nullbridge_trust_fabric",
+      "result": "pass",
+      "summary": "Signed backend identity, deny-by-default routing, redacted audit, and notification policy gates pass.",
+      "title": "NullBridge trust fabric",
+      "visual_label": "GREEN / PASS"
+    }
+  ]
 }

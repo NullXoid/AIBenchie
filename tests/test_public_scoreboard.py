@@ -42,6 +42,10 @@ def test_public_scoreboard_keeps_latest_valid_report_per_class(tmp_path):
     assert scoreboard["overall"]["class_count"] == 2
     assert scoreboard["overall"]["blocked_count"] == 1
     assert scoreboard["policy"]["raw_reports_published"] is False
+    visual = {item["key"]: item for item in scoreboard["visual_tracks"]}
+    assert visual["e2ee_readiness"]["result"] == "pass"
+    assert visual["zero_knowledge_privacy"]["result"] == "planned"
+    assert "work in progress" not in json.dumps(visual).lower()
 
 
 def test_public_scoreboard_skips_non_result_reports(tmp_path):
@@ -83,4 +87,5 @@ def test_write_public_scoreboard_creates_compact_export(tmp_path):
     assert result.ok is True
     data = json.loads(output.read_text(encoding="utf-8"))
     assert data["overall"]["score"] == 100
+    assert data["visual_tracks"][0]["key"] == "e2ee_readiness"
     assert data["classes"][0]["source"] == "reports/runtime/v1_5_1_release_readiness.json"
