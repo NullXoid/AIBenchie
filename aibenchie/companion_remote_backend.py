@@ -4,13 +4,14 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_stack import HostedStackResult, run_hosted_nullxoid_stack_check
 
 
-DEFAULT_PUBLIC_API = "https://api.example.test/nullxoid"
-DEFAULT_ORIGIN = "https://api.example.test"
+DEFAULT_PUBLIC_API = "https://api.echolabs.diy/nullxoid"
+DEFAULT_ORIGIN = "https://api.echolabs.diy"
 DEFAULT_BASE_PATH = "/nullxoid"
 
 REQUIRED_ANDROID_FILES = (
@@ -18,6 +19,8 @@ REQUIRED_ANDROID_FILES = (
     "app/build.gradle.kts",
     "app/src/main/java/com/nullxoid/android/data/api/BackendEndpoint.kt",
     "app/src/main/java/com/nullxoid/android/data/prefs/SettingsStore.kt",
+    "app/src/main/java/com/nullxoid/android/data/update/AppUpdateChecker.kt",
+    "app/src/main/res/xml/network_security_config.xml",
     "app/src/test/java/com/nullxoid/android/data/api/BackendEndpointTest.kt",
 )
 
@@ -101,6 +104,53 @@ def _file_contains(repo: Path, relative_path: str, needles: list[str]) -> Compan
     return _pass(f"{relative_path}:content", relative_path=relative_path)
 
 
+def _file_excludes(repo: Path, relative_path: str, forbidden: list[str]) -> CompanionRemoteBackendCheck:
+    path = repo / relative_path
+    if not path.exists():
+        return _fail(
+            f"{relative_path}:excludes",
+            "missing_file",
+            relative_path=relative_path,
+            forbidden=forbidden,
+        )
+    text = _read_text(path)
+    present = [needle for needle in forbidden if needle in text]
+    if present:
+        return _fail(
+            f"{relative_path}:excludes",
+            "forbidden_text_present",
+            relative_path=relative_path,
+            present=present,
+        )
+    return _pass(f"{relative_path}:excludes", relative_path=relative_path)
+
+
+def _public_api_contract(public_api: str, origin: str, base_path: str) -> CompanionRemoteBackendCheck:
+    parsed = urlparse(public_api)
+    failures: list[str] = []
+    if parsed.scheme != "https":
+        failures.append("public_api_must_be_https")
+    if not parsed.netloc:
+        failures.append("public_api_missing_host")
+    if "api.example.test" in public_api:
+        failures.append("placeholder_public_api")
+    expected_origin = f"{parsed.scheme}://{parsed.netloc}" if parsed.scheme and parsed.netloc else ""
+    if expected_origin and expected_origin != origin:
+        failures.append("origin_does_not_match_public_api")
+    expected_base_path = normalize_base_path(parsed.path or "/")
+    if expected_base_path != base_path:
+        failures.append("base_path_does_not_match_public_api")
+    if failures:
+        return _fail(
+            "public_api_contract",
+            ",".join(failures),
+            public_api=public_api,
+            origin=origin,
+            base_path=base_path,
+        )
+    return _pass("public_api_contract", public_api=public_api, origin=origin, base_path=base_path)
+
+
 def _hosted_stack_check(
     *,
     origin: str,
@@ -166,6 +216,7 @@ def run_companion_remote_backend_check(
         )
 
     checks.append(_pass("android_repo_exists", android_repo=str(repo)))
+    checks.append(_public_api_contract(resolved_public_api, resolved_origin, resolved_base_path))
 
     missing_files = [relative for relative in REQUIRED_ANDROID_FILES if not (repo / relative).exists()]
     if missing_files:
@@ -190,8 +241,11 @@ def run_companion_remote_backend_check(
             "app/build.gradle.kts",
             [
                 "NULLXOID_PUBLIC_BACKEND_URL",
+                "NULLXOID_APP_UPDATE_RELEASES_URL",
+                "NULLXOID_APP_UPDATE_FALLBACK_RELEASES_URL",
                 "PUBLIC_BACKEND_URL",
                 resolved_public_api,
+                "git.echolabs.diy/api/v1/repos/EchoLabs/NullXoidAndroid/releases",
             ],
         )
     )
@@ -227,6 +281,28 @@ def run_companion_remote_backend_check(
             ],
         )
     )
+    checks.append(
+        _file_contains(
+            repo,
+            "app/src/main/java/com/nullxoid/android/data/update/AppUpdateChecker.kt",
+            [
+                "BuildConfig.APP_UPDATE_RELEASES_URL",
+                "BuildConfig.APP_UPDATE_FALLBACK_RELEASES_URL",
+                "findApkDownloadUrl",
+            ],
+        )
+    )
+    checks.append(
+        _file_contains(
+            repo,
+            "app/src/main/res/xml/network_security_config.xml",
+            [
+                'cleartextTrafficPermitted="false"',
+                "localhost",
+                "127.0.0.1",
+            ],
+        )
+    )
 
     if run_hosted_stack:
         stack_check, hosted_stack = _hosted_stack_check(
@@ -238,6 +314,18 @@ def run_companion_remote_backend_check(
         checks.append(stack_check)
     else:
         checks.append(_pass("hosted_api_stack_contract", skipped=True))
+
+    for relative in REQUIRED_ANDROID_FILES:
+        checks.append(
+            _file_excludes(
+                repo,
+                relative,
+                [
+                    "api.example.test",
+                    "http://api.echolabs.diy",
+                ],
+            )
+        )
 
     return CompanionRemoteBackendResult(
         ok=all(check.ok for check in checks),

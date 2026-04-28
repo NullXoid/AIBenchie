@@ -205,13 +205,13 @@ Run the Companion/Android remote backend gate:
 
 ```powershell
 $env:AIBENCHIE_COMPANION_ANDROID_REPO="..\NullXoidAndroid"
-$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.example.test/nullxoid"
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.example.test"
+$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.echolabs.diy/nullxoid"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --companion-remote-backend --json
 ```
 
-This check proves the NullXoid Companion/Android repo is aligned with the public HTTPS backend route used by phones outside the LAN. It verifies the hosted API preset, release-time BuildConfig override, endpoint tests, SettingsStore public URL, and the hosted API route contract. No personal admin credentials are stored or required.
+This check proves the NullXoid Companion/Android repo is aligned with the public HTTPS backend route used by phones outside the LAN. It verifies the hosted API preset, release-time BuildConfig override, Forgejo-first update source, release network security config, endpoint tests, SettingsStore public URL, and the hosted API route contract. No personal admin credentials are stored or required.
 
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 

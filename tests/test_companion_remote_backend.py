@@ -8,7 +8,9 @@ from aibenchie import companion_remote_backend
 from aibenchie.hosted_nullxoid_stack import HostedStackResult, RouteResult
 
 
-PUBLIC_API = "https://api.example.test/nullxoid"
+PUBLIC_API = "https://api.echolabs.diy/nullxoid"
+PUBLIC_ORIGIN = "https://api.echolabs.diy"
+FORGEJO_RELEASES = "git.echolabs.diy/api/v1/repos/EchoLabs/NullXoidAndroid/releases"
 
 
 def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
@@ -23,6 +25,10 @@ def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
             'val nullxoidPublicBackendUrl = providers.environmentVariable("NULLXOID_PUBLIC_BACKEND_URL")\n'
             f'    .orElse("{public_api}")\n'
             'buildConfigField("String", "PUBLIC_BACKEND_URL", "\"$nullxoidPublicBackendUrl\"")\n'
+            f'val NULLXOID_APP_UPDATE_RELEASES_URL = "http://{FORGEJO_RELEASES}"\n'
+            'buildConfigField("String", "APP_UPDATE_RELEASES_URL", "\"$appUpdateReleasesUrl\"")\n'
+            'val NULLXOID_APP_UPDATE_FALLBACK_RELEASES_URL = "https://api.github.com/repos/NullXoid/NullXoidAndroid/releases"\n'
+            'buildConfigField("String", "APP_UPDATE_FALLBACK_RELEASES_URL", "\"$appUpdateFallbackReleasesUrl\"")\n'
         ),
         "app/src/main/java/com/nullxoid/android/data/api/BackendEndpoint.kt": (
             "object BackendEndpoint {\n"
@@ -37,10 +43,26 @@ def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
             "    }\n"
             "}\n"
         ),
+        "app/src/main/java/com/nullxoid/android/data/update/AppUpdateChecker.kt": (
+            "class AppUpdateChecker {\n"
+            "    val primary = BuildConfig.APP_UPDATE_RELEASES_URL\n"
+            "    val fallback = BuildConfig.APP_UPDATE_FALLBACK_RELEASES_URL\n"
+            "    fun findApkDownloadUrl() = Unit\n"
+            "}\n"
+        ),
+        "app/src/main/res/xml/network_security_config.xml": (
+            "<network-security-config>\n"
+            '    <base-config cleartextTrafficPermitted="false" />\n'
+            '    <domain-config cleartextTrafficPermitted="true">\n'
+            "        <domain>localhost</domain>\n"
+            "        <domain>127.0.0.1</domain>\n"
+            "    </domain-config>\n"
+            "</network-security-config>\n"
+        ),
         "app/src/test/java/com/nullxoid/android/data/api/BackendEndpointTest.kt": (
             "class BackendEndpointTest {\n"
             f'    val login = "{public_api}/auth/login"\n'
-            '    val normalized = "api.example.test/nullxoid"\n'
+            f'    val normalized = "{public_api.removeprefix("https://")}"\n'
             "}\n"
         ),
     }
@@ -53,7 +75,7 @@ def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
 def hosted_stack(ok: bool = True) -> HostedStackResult:
     return HostedStackResult(
         ok=ok,
-        origin="https://api.example.test",
+        origin=PUBLIC_ORIGIN,
         base_path="/nullxoid",
         routes=[
             RouteResult(
@@ -78,6 +100,7 @@ def test_companion_remote_backend_gate_passes_with_android_contract(monkeypatch,
     assert {check.name for check in result.checks} >= {
         "android_repo_exists",
         "android_contract_files",
+        "public_api_contract",
         "hosted_api_stack_contract",
     }
 
@@ -92,6 +115,40 @@ def test_companion_remote_backend_gate_fails_when_android_public_api_drifts(monk
     failures = {check.name: check.failure for check in result.checks if not check.ok}
     assert "README.md:content" in failures
     assert failures["README.md:content"] == "missing_required_text"
+
+
+def test_companion_remote_backend_gate_fails_on_placeholder_or_http_public_api(monkeypatch, tmp_path):
+    write_android_fixture(tmp_path, public_api="http://api.example.test/nullxoid")
+    monkeypatch.setattr(companion_remote_backend, "run_hosted_nullxoid_stack_check", lambda **kwargs: hosted_stack())
+
+    result = companion_remote_backend.run_companion_remote_backend_check(
+        android_repo=tmp_path,
+        public_api="http://api.example.test/nullxoid",
+        origin="http://api.example.test",
+    )
+
+    assert result.ok is False
+    failures = {check.name: check.failure for check in result.checks if not check.ok}
+    assert "public_api_contract" in failures
+    assert "public_api_must_be_https" in failures["public_api_contract"]
+    assert "app/src/main/java/com/nullxoid/android/data/api/BackendEndpoint.kt:excludes" in failures
+
+
+def test_companion_remote_backend_gate_requires_release_network_security(monkeypatch, tmp_path):
+    write_android_fixture(tmp_path)
+    (tmp_path / "app/src/main/res/xml/network_security_config.xml").write_text(
+        "<network-security-config>\n"
+        '    <base-config cleartextTrafficPermitted="true" />\n'
+        "</network-security-config>\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(companion_remote_backend, "run_hosted_nullxoid_stack_check", lambda **kwargs: hosted_stack())
+
+    result = companion_remote_backend.run_companion_remote_backend_check(android_repo=tmp_path)
+
+    assert result.ok is False
+    failures = {check.name: check.failure for check in result.checks if not check.ok}
+    assert failures["app/src/main/res/xml/network_security_config.xml:content"] == "missing_required_text"
 
 
 def test_companion_remote_backend_gate_fails_when_hosted_stack_fails(monkeypatch, tmp_path):
@@ -112,7 +169,7 @@ def test_companion_remote_backend_cli_outputs_json(monkeypatch, capsys):
                 "ok": True,
                 "android_repo": "C:/repo",
                 "public_api": PUBLIC_API,
-                "origin": "https://api.example.test",
+                "origin": PUBLIC_ORIGIN,
                 "base_path": "/nullxoid",
                 "checks": [],
                 "hosted_stack": {},
