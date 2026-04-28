@@ -24,7 +24,7 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Zero-knowledge device lifecycle proof | Done | AIBenchie proof plus wrapper frontend helper for device enrollment, recovery-secret restore, wrong-secret rejection, revocation/key rotation, backend key absence, and redacted audit |
 | Zero-knowledge setup UI v1 | Done | Wrapper Privacy/Security panel can initialize a device, show a recovery kit, approve a Companion device, recover, revoke, rotate the recovery kit, and expose redacted audit evidence |
 | Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.echolabs.diy/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
-| Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, and hosted JSON route behavior |
+| Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, hosted JSON route behavior, and configured-provider Android Digital Asset Links |
 
 ## Visual Status Tracks
 
@@ -36,7 +36,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Zero-knowledge device lifecycle | GREEN / GATED | Enrollment, recovery, and revocation/key-rotation proof exists for the current zero-knowledge boundary. | Show as complete when `--zero-knowledge-device-proof` and `--e2ee-readiness` pass. |
 | Zero-knowledge setup UI | GREEN / V1 GATED | Guided browser UI exists for approving devices, exporting recovery kits, recovery unlock, revocation, and redacted audit evidence. | Show as complete for v1 when wrapper `npm run test:e2ee` and AIBenchie suite tests pass. |
 | Android/Companion remote profile | GREEN / GATED | Mobile/off-network profile uses the public HTTPS API route and passes AIBenchie remote backend checks. | Show as complete when `--companion-remote-backend` and Android unit tests pass. |
-| Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, and backend auth capabilities are advertised as JSON. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
+| Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, backend auth capabilities are advertised as JSON, and configured Android passkey providers require valid Digital Asset Links. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
 | Resource bloat guardrails | YELLOW / PARTIAL | Budgets and generated-output policy exist, but runtime lease enforcement is not complete. | Show as partial until leases and cleanup jobs are enforced. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
 
@@ -44,7 +44,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| 1 | Passkey/OIDC provider configuration | 455 | Planned | Configure real WebAuthn and OIDC provider settings behind the native ceremony endpoints. |
+| 1 | Passkey/OIDC provider configuration | 455 | Planned | Configure real WebAuthn/OIDC provider settings and publish Android Digital Asset Links for the passkey RP domain. |
 | 2 | NullBridge trust fabric hardening | 440 | Partial | Signed backend identity, deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 3 | Resource Manager v1 runtime enforcement | 420 | Partial | Backend leases, cleanup jobs, retention caps, pressure alerts, and no unbounded heavy work. |
 | 4 | Backend Operations UI v1 | 390 | Planned | Read-only UI shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
@@ -71,8 +71,10 @@ Native passkey/OIDC ceremony wiring is now implemented and gated. The next auth 
 Acceptance:
 
 - Android uses Credential Manager for passkeys.
+- Configured Android passkey providers serve `/.well-known/assetlinks.json` with `delegate_permission/common.get_login_creds` for `com.nullxoid.android` and release signing SHA-256 fingerprints.
 - OIDC uses Authorization Code with PKCE.
 - Unconfigured passkey/OIDC providers return JSON provider-not-configured responses.
 - Password fallback remains migration/development and MFA-gated where enabled.
 - Mobile session tokens stay in Android Keystore or equivalent platform storage.
 - AIBenchie proves the native ceremony cannot leak tokens through URLs, logs, frontend storage, or NullBridge service credentials.
+- A physical Android device proves Credential Manager passkey enrollment after provider metadata and Digital Asset Links are live.

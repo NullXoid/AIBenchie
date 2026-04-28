@@ -88,6 +88,9 @@ def write_android_fixture(root: Path) -> None:
             "Password sign-in remains a development or migration fallback only.\n"
             "Store refresh material in Android Keystore.\n"
             "Register passkeys through /auth/passkey/register/complete.\n"
+            "Publish Digital Asset Links at .well-known/assetlinks.json.\n"
+            "Use delegate_permission/common.get_login_creds for passkey association.\n"
+            "Use the release signing SHA-256 fingerprint for production.\n"
         ),
         "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt": (
             'Modifier.testTag("login-passkey")\n'
@@ -290,6 +293,23 @@ def fake_features_request(origin, path, **kwargs):
     )
 
 
+def assetlinks_body() -> str:
+    return json.dumps(
+        [
+            {
+                "relation": ["delegate_permission/common.get_login_creds"],
+                "target": {
+                    "namespace": "android_app",
+                    "package_name": "com.nullxoid.android",
+                    "sha256_cert_fingerprints": [
+                        "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"
+                    ],
+                },
+            }
+        ]
+    )
+
+
 def test_secure_signin_setup_gate_passes(monkeypatch, tmp_path):
     aibenchie_root = tmp_path / "AIBenchie"
     android_root = tmp_path / "NullXoidAndroid"
@@ -432,6 +452,98 @@ def test_secure_signin_setup_gate_accepts_configured_oidc_ceremony(monkeypatch, 
     assert result.ok is True
 
 
+def test_secure_signin_setup_gate_fails_configured_passkey_without_assetlinks(monkeypatch, tmp_path):
+    aibenchie_root = tmp_path / "AIBenchie"
+    android_root = tmp_path / "NullXoidAndroid"
+    wrapper_root = tmp_path / "Felnx" / "NullXoid" / ".NullXoid"
+    write_policies(aibenchie_root)
+    write_android_fixture(android_root)
+    write_wrapper_fixture(wrapper_root)
+
+    def fake_request(origin, path, **kwargs):
+        if path == "/.well-known/assetlinks.json":
+            return (
+                200,
+                "application/json",
+                json.dumps(
+                    [
+                        {
+                            "relation": ["delegate_permission/common.handle_all_urls"],
+                            "target": {
+                                "namespace": "android_app",
+                                "package_name": "com.nullxoid.android",
+                                "sha256_cert_fingerprints": [
+                                    "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"
+                                ],
+                            },
+                        }
+                    ]
+                ),
+            )
+        if path == "/nullxoid/health/features":
+            status, content_type, body = fake_features_request(origin, path, **kwargs)
+            payload = json.loads(body)
+            payload["auth_passkey_provider_configured"] = True
+            payload["auth_passkey_login_ready"] = True
+            payload["auth_passkey_registration_enabled"] = True
+            payload["auth_provider_status"] = {
+                "passkey": {
+                    "rp_id": "api.echolabs.diy",
+                    "origin": "https://api.echolabs.diy",
+                    "verification": "webauthn_assertion_verifier",
+                }
+            }
+            return status, content_type, json.dumps(payload)
+        if path == "/nullxoid/auth/passkey/options":
+            public_key = {
+                "challenge": "challenge",
+                "timeout": 60000,
+                "rpId": "api.echolabs.diy",
+                "userVerification": "preferred",
+            }
+            return (
+                200,
+                "application/json",
+                json.dumps(
+                    {
+                        "ok": True,
+                        "request_id": "pk-test",
+                        "request_json": json.dumps(public_key, separators=(",", ":")),
+                        "public_key": public_key,
+                    }
+                ),
+            )
+        if path == "/nullxoid/auth/oidc/start":
+            return (
+                501,
+                "application/json",
+                json.dumps({"detail": {"configured": False, "setup_required": True}}),
+            )
+        if path in {
+            "/nullxoid/auth/passkey/credentials",
+            "/nullxoid/auth/passkey/register/options",
+            "/nullxoid/auth/passkey/register/complete",
+        }:
+            return (
+                401,
+                "application/json",
+                json.dumps({"detail": "Authentication required"}),
+            )
+        raise AssertionError(path)
+
+    monkeypatch.setattr(secure_signin_setup, "request_raw", fake_request)
+
+    result = secure_signin_setup.run_secure_signin_setup_check(
+        root=aibenchie_root,
+        android_repo=android_root,
+        wrapper_repo=wrapper_root,
+    )
+
+    assert result.ok is False
+    failures = {check.name: check.failure for check in result.checks if not check.ok}
+    assert failures["hosted_android_assetlinks"] == "assetlinks_missing_get_login_creds_relation"
+
+
 def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatch, tmp_path):
     aibenchie_root = tmp_path / "AIBenchie"
     android_root = tmp_path / "NullXoidAndroid"
@@ -441,6 +553,9 @@ def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatc
     write_wrapper_fixture(wrapper_root)
 
     def fake_request(origin, path, **kwargs):
+        if path == "/.well-known/assetlinks.json":
+            assert origin == PUBLIC_ORIGIN
+            return 200, "application/json", assetlinks_body()
         if path == "/nullxoid/health/features":
             status, content_type, body = fake_features_request(origin, path, **kwargs)
             payload = json.loads(body)
@@ -501,6 +616,9 @@ def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatc
     )
 
     assert result.ok is True
+    assetlinks = {check.name: check for check in result.checks}["hosted_android_assetlinks"]
+    assert assetlinks.ok is True
+    assert assetlinks.detail["physical_mobile_test_required"] is True
 
 
 def test_secure_signin_setup_cli_outputs_json(monkeypatch, capsys):

@@ -226,6 +226,8 @@ python aibenchie_local.py --secure-signin-setup --json
 
 This gate proves the setup boundary for easy secure sign-in: AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android's native passkey/OIDC ceremony wiring, wrapper `/health/features` auth capability metadata, hosted JSON route behavior, and absence of frontend NullBridge service credentials. It does not store user credentials and requires unconfigured passkey/OIDC providers to fail as JSON instead of falling through to HTML or privileged NullBridge routes.
 
+When `/health/features` reports that the hosted passkey provider is configured, this gate also requires Android Digital Asset Links at `/.well-known/assetlinks.json` on the passkey RP origin. The statement must bind `com.nullxoid.android` to `delegate_permission/common.get_login_creds` with valid release signing SHA-256 fingerprints. After that passes, physical Android testing is required to prove Credential Manager enrollment on a real device.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell

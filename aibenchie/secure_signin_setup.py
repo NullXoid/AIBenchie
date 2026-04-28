@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_stack import json_payload, json_route_failure, request_raw
@@ -14,6 +16,10 @@ from training.release_fabric import validate_auth_policy, validate_setup_policy
 DEFAULT_PUBLIC_API = "https://api.echolabs.diy/nullxoid"
 DEFAULT_ORIGIN = "https://api.echolabs.diy"
 DEFAULT_BASE_PATH = "/nullxoid"
+ANDROID_PACKAGE_NAME = "com.nullxoid.android"
+ANDROID_ASSETLINKS_RELATION = "delegate_permission/common.get_login_creds"
+ANDROID_ASSETLINKS_PATH = "/.well-known/assetlinks.json"
+ANDROID_SHA256_FINGERPRINT = re.compile(r"^[0-9a-f]{2}(:[0-9a-f]{2}){31}$", re.IGNORECASE)
 
 ANDROID_REQUIRED_FILES = (
     "README.md",
@@ -221,6 +227,10 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
                 "Password sign-in remains a development or migration fallback only",
                 "Android Keystore",
                 "/auth/passkey/register/complete",
+                "Digital Asset Links",
+                ".well-known/assetlinks.json",
+                "delegate_permission/common.get_login_creds",
+                "release signing SHA-256",
             ],
         )
     )
@@ -490,7 +500,17 @@ def _feature_route_check(
             content_type=content_type,
             mismatches=mismatches,
         )
-    return _pass(f"hosted_features:{path}", status=status, content_type=content_type)
+    provider_status = payload.get("auth_provider_status") if isinstance(payload.get("auth_provider_status"), dict) else {}
+    passkey_status = provider_status.get("passkey") if isinstance(provider_status.get("passkey"), dict) else {}
+    return _pass(
+        f"hosted_features:{path}",
+        status=status,
+        content_type=content_type,
+        auth_passkey_provider_configured=payload.get("auth_passkey_provider_configured"),
+        auth_passkey_registration_enabled=payload.get("auth_passkey_registration_enabled"),
+        passkey_rp_id=passkey_status.get("rp_id"),
+        passkey_origin=passkey_status.get("origin"),
+    )
 
 
 def _hosted_feature_checks(
@@ -508,6 +528,138 @@ def _hosted_feature_checks(
             timeout=timeout,
         )
     ]
+
+
+def _relation_values(statement: dict[str, Any]) -> list[str]:
+    relation = statement.get("relation")
+    if isinstance(relation, str):
+        return [relation]
+    if isinstance(relation, list):
+        return [value for value in relation if isinstance(value, str)]
+    return []
+
+
+def _valid_assetlinks_statement(payload: Any) -> tuple[bool, str, dict[str, Any]]:
+    if not isinstance(payload, list):
+        return False, "assetlinks_not_list", {}
+    package_seen = False
+    relation_seen = False
+    for statement in payload:
+        if not isinstance(statement, dict):
+            continue
+        target = statement.get("target")
+        if not isinstance(target, dict):
+            continue
+        if target.get("namespace") != "android_app":
+            continue
+        if target.get("package_name") != ANDROID_PACKAGE_NAME:
+            continue
+        package_seen = True
+        relations = _relation_values(statement)
+        if ANDROID_ASSETLINKS_RELATION not in relations:
+            continue
+        relation_seen = True
+        fingerprints = target.get("sha256_cert_fingerprints")
+        if not isinstance(fingerprints, list) or not fingerprints:
+            return False, "assetlinks_missing_fingerprints", {"package_name": ANDROID_PACKAGE_NAME}
+        invalid = [
+            value
+            for value in fingerprints
+            if not isinstance(value, str) or not ANDROID_SHA256_FINGERPRINT.fullmatch(value.strip())
+        ]
+        if invalid:
+            return False, "assetlinks_invalid_fingerprints", {"invalid_count": len(invalid)}
+        return True, "", {"package_name": ANDROID_PACKAGE_NAME, "fingerprint_count": len(fingerprints)}
+    if package_seen and not relation_seen:
+        return False, "assetlinks_missing_get_login_creds_relation", {"package_name": ANDROID_PACKAGE_NAME}
+    return False, "assetlinks_missing_android_package", {"package_name": ANDROID_PACKAGE_NAME}
+
+
+def _assetlinks_origin_from_feature(feature_check: SecureSigninSetupCheck, default_origin: str) -> tuple[str, str]:
+    passkey_origin = feature_check.detail.get("passkey_origin")
+    rp_id = feature_check.detail.get("passkey_rp_id")
+    if isinstance(passkey_origin, str) and passkey_origin.strip():
+        parsed = urlparse(passkey_origin.strip())
+        if parsed.scheme == "https" and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}", str(rp_id or parsed.netloc)
+    if isinstance(rp_id, str) and rp_id.strip():
+        return f"https://{rp_id.strip()}", rp_id.strip()
+    return default_origin, ""
+
+
+def _hosted_android_assetlinks_check(
+    *,
+    feature_check: SecureSigninSetupCheck,
+    origin: str,
+    timeout: int,
+) -> SecureSigninSetupCheck:
+    name = "hosted_android_assetlinks"
+    if not feature_check.ok:
+        return _pass(name, skipped=True, reason="feature_contract_failed")
+    if feature_check.detail.get("auth_passkey_provider_configured") is not True:
+        return _pass(
+            name,
+            skipped=True,
+            reason="passkey_provider_not_configured",
+            physical_mobile_test_required=False,
+        )
+    passkey_rp_id = feature_check.detail.get("passkey_rp_id")
+    if not isinstance(passkey_rp_id, str) or not passkey_rp_id.strip():
+        return _fail(name, "passkey_rp_id_missing")
+    passkey_origin = feature_check.detail.get("passkey_origin")
+    if isinstance(passkey_origin, str) and passkey_origin.strip():
+        parsed_origin = urlparse(passkey_origin.strip())
+        if parsed_origin.scheme != "https" or not parsed_origin.netloc:
+            return _fail(name, "passkey_origin_not_https", passkey_origin=passkey_origin, rp_id=passkey_rp_id)
+    assetlinks_origin, rp_id = _assetlinks_origin_from_feature(feature_check, origin)
+    if not assetlinks_origin.startswith("https://"):
+        return _fail(name, "assetlinks_origin_not_https", assetlinks_origin=assetlinks_origin, rp_id=rp_id)
+    status, content_type, body = request_raw(
+        assetlinks_origin,
+        ANDROID_ASSETLINKS_PATH,
+        timeout=timeout,
+    )
+    failure = json_route_failure(
+        status,
+        content_type,
+        body,
+        route_name="android_assetlinks",
+        allowed_statuses={200},
+    )
+    if failure:
+        return _fail(
+            name,
+            failure,
+            status=status,
+            content_type=content_type,
+            assetlinks_origin=assetlinks_origin,
+            path=ANDROID_ASSETLINKS_PATH,
+            rp_id=rp_id,
+        )
+    payload = json_payload(body)
+    ok, assetlinks_failure, detail = _valid_assetlinks_statement(payload)
+    if not ok:
+        return _fail(
+            name,
+            assetlinks_failure,
+            status=status,
+            content_type=content_type,
+            assetlinks_origin=assetlinks_origin,
+            path=ANDROID_ASSETLINKS_PATH,
+            rp_id=rp_id,
+            **detail,
+        )
+    return _pass(
+        name,
+        status=status,
+        content_type=content_type,
+        assetlinks_origin=assetlinks_origin,
+        path=ANDROID_ASSETLINKS_PATH,
+        rp_id=rp_id,
+        relation=ANDROID_ASSETLINKS_RELATION,
+        physical_mobile_test_required=True,
+        **detail,
+    )
 
 
 def _auth_ceremony_route_check(
@@ -710,14 +862,21 @@ def run_secure_signin_setup_check(
     else:
         checks.append(_pass("public_api_consistency", public_api=resolved_public_api))
     if run_hosted_features:
-        checks.extend(
-            _hosted_feature_checks(
-                origin=resolved_origin,
-                base_path=resolved_base_path,
-                host_header=host_header,
-                timeout=timeout,
-            )
+        hosted_feature_checks = _hosted_feature_checks(
+            origin=resolved_origin,
+            base_path=resolved_base_path,
+            host_header=host_header,
+            timeout=timeout,
         )
+        checks.extend(hosted_feature_checks)
+        if hosted_feature_checks:
+            checks.append(
+                _hosted_android_assetlinks_check(
+                    feature_check=hosted_feature_checks[0],
+                    origin=resolved_origin,
+                    timeout=timeout,
+                )
+            )
         checks.extend(
             _hosted_auth_ceremony_checks(
                 origin=resolved_origin,
