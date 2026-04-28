@@ -91,6 +91,7 @@ def write_android_fixture(root: Path) -> None:
             "Publish Digital Asset Links at .well-known/assetlinks.json.\n"
             "Use delegate_permission/common.get_login_creds for passkey association.\n"
             "Use the release signing SHA-256 fingerprint for production.\n"
+            "Generate the statement with scripts/generate_assetlinks.py.\n"
         ),
         "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt": (
             'Modifier.testTag("login-passkey")\n'
@@ -177,6 +178,12 @@ def write_android_fixture(root: Path) -> None:
             "PasskeyProviderStatus\n"
             "OidcStartRequest\n"
             "OidcCompleteRequest\n"
+        ),
+        "scripts/generate_assetlinks.py": (
+            "delegate_permission/common.get_login_creds\n"
+            "com.nullxoid.android\n"
+            "apksigner\n"
+            "sha256_cert_fingerprints\n"
         ),
         "app/src/test/java/com/nullxoid/android/data/auth/PkceTest.kt": "challengeMatchesRfc7636Example\n",
     }

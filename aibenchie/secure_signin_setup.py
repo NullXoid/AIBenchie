@@ -36,6 +36,7 @@ ANDROID_REQUIRED_FILES = (
     "app/src/main/java/com/nullxoid/android/data/api/NullXoidApi.kt",
     "app/src/main/java/com/nullxoid/android/data/repo/NullXoidRepository.kt",
     "app/src/main/java/com/nullxoid/android/data/model/Models.kt",
+    "scripts/generate_assetlinks.py",
     "app/src/test/java/com/nullxoid/android/data/auth/PkceTest.kt",
 )
 
@@ -231,6 +232,19 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
                 ".well-known/assetlinks.json",
                 "delegate_permission/common.get_login_creds",
                 "release signing SHA-256",
+                "scripts/generate_assetlinks.py",
+            ],
+        )
+    )
+    checks.append(
+        _contains_check(
+            android_repo,
+            "scripts/generate_assetlinks.py",
+            [
+                "delegate_permission/common.get_login_creds",
+                "com.nullxoid.android",
+                "apksigner",
+                "sha256_cert_fingerprints",
             ],
         )
     )
