@@ -342,13 +342,7 @@ def _hosted_feature_checks(
             path=f"{base_path}/health/features",
             host_header=host_header,
             timeout=timeout,
-        ),
-        _feature_route_check(
-            origin=origin,
-            path="/health/features",
-            host_header=host_header,
-            timeout=timeout,
-        ),
+        )
     ]
 
 

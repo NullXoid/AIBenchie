@@ -133,7 +133,7 @@ def write_wrapper_fixture(root: Path) -> None:
 
 def fake_features_request(origin, path, **kwargs):
     assert origin == PUBLIC_ORIGIN
-    assert path in {"/nullxoid/health/features", "/health/features"}
+    assert path == "/nullxoid/health/features"
     return (
         200,
         "application/json",
@@ -173,7 +173,6 @@ def test_secure_signin_setup_gate_passes(monkeypatch, tmp_path):
         "android_secure_signin_files",
         "wrapper_secure_signin_files",
         "hosted_features:/nullxoid/health/features",
-        "hosted_features:/health/features",
     }
 
 
