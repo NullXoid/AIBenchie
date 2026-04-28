@@ -29,6 +29,14 @@ REQUIRED_TARGET_CHECKS = (
 IMPLEMENTED_STATUSES = {"implemented", "proven", "complete"}
 FORBIDDEN_BOUNDARIES = {"", "tls_only", "server_only", "backend_only", "not_applicable"}
 SAFE_PLAINTEXT_STORAGE = {"forbidden", "none", "plaintext_absent", "encrypted_only"}
+FORBIDDEN_KEY_MANAGEMENT_TERMS = {
+    "repo",
+    "committed",
+    "localstoragekey",
+    "rawlocalstorage",
+    "rawbrowserstorage",
+    "plaintextkey",
+}
 
 
 @dataclass(frozen=True)
@@ -125,7 +133,10 @@ def _target_readiness(target: str, policy_targets: set[str], evidence: dict[str,
         failures.append(f"{target}:encryption_boundary_invalid")
 
     key_management = str(evidence.get("key_management") or "").strip().lower()
-    if not key_management or "repo" in key_management or "committed" in key_management:
+    normalized_key_management = (
+        key_management.replace(" ", "").replace("-", "").replace("_", "").replace("/", "")
+    )
+    if not key_management or any(term in normalized_key_management for term in FORBIDDEN_KEY_MANAGEMENT_TERMS):
         failures.append(f"{target}:key_management_invalid")
 
     plaintext_storage = str(evidence.get("plaintext_storage") or "").strip().lower()

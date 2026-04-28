@@ -6,7 +6,7 @@
       "target": "saved_chats",
       "status": "implemented",
       "encryption_boundary": "client_or_device",
-      "key_management": "device-local WebCrypto key in browser storage; no deploy, test, or source credential storage",
+      "key_management": "non-extractable device-local WebCrypto CryptoKey in IndexedDB; legacy browser raw-key fallback entries are migrated and removed; no deploy, test, or source credential storage",
       "plaintext_storage": "forbidden",
       "tests": [
         "roundtrip",

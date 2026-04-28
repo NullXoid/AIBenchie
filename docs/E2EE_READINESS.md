@@ -61,7 +61,7 @@ Schema shape:
       "target": "saved_chats",
       "status": "implemented",
       "encryption_boundary": "client_or_device",
-      "key_management": "os_secure_storage_or_user_wrapped_key",
+      "key_management": "non-extractable device-local WebCrypto CryptoKey in IndexedDB",
       "plaintext_storage": "forbidden",
       "tests": [
         "roundtrip",
@@ -86,7 +86,7 @@ AIBenchie reports E2EE complete only when:
 - every required target appears in policy and evidence
 - every target is marked `implemented`, `proven`, or `complete`
 - the encryption boundary is not `tls_only`, `server_only`, or backend-only
-- key management is not committed or stored in repo
+- key management is not committed, stored in repo, or based on raw localStorage/browser-storage keys
 - plaintext storage is forbidden
 - each target has roundtrip, wrong-key, tamper, plaintext-at-rest, and key-persistence tests
 - each target points to concrete evidence

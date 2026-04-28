@@ -122,6 +122,27 @@ def test_e2ee_readiness_fails_for_incomplete_target_claims(tmp_path):
     assert "evidence_target_missing:private_artifacts" in result.failures
 
 
+def test_e2ee_readiness_rejects_raw_localstorage_key_claims(tmp_path):
+    policy_path = tmp_path / "privacy-levels.json"
+    evidence_path = tmp_path / "e2ee-readiness.json"
+    write_json(policy_path, policy(targets=["saved_chats"]))
+    write_json(
+        evidence_path,
+        {
+            "version": 1,
+            "status": "complete",
+            "targets": [
+                target_evidence("saved_chats", key_management="raw localStorage key kept in browser storage")
+            ],
+        },
+    )
+
+    result = run_e2ee_readiness_check(root=tmp_path, env=env_for(policy_path, evidence_path))
+
+    assert result.ok is False
+    assert "saved_chats:key_management_invalid" in result.failures
+
+
 def test_e2ee_readiness_cli_returns_failure_until_product_evidence_exists(tmp_path, monkeypatch, capsys):
     policy_path = tmp_path / "privacy-levels.json"
     evidence_path = tmp_path / "missing-e2ee-readiness.json"
