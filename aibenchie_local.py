@@ -6,6 +6,7 @@ import sys
 
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
+from aibenchie.nullbridge_platform_adapters import run_from_env as run_nullbridge_platform_adapters_from_env
 from aibenchie.nullprivacy import run_e2ee_storage_proof
 from aibenchie.e2ee_readiness import run_e2ee_readiness_check
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
@@ -193,6 +194,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--secure-signin-setup",
         action="store_true",
         help="Run secure sign-in setup policy, Android UI, wrapper feature, and hosted route gates.",
+    )
+    parser.add_argument(
+        "--nullbridge-platform-adapters",
+        action="store_true",
+        help="Run the M35 platform backend NullBridge adapter E2E gate.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -592,6 +598,18 @@ def main(argv: list[str] | None = None) -> int:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.nullbridge_platform_adapters:
+        result = run_nullbridge_platform_adapters_from_env()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("NullBridge Platform Backend Adapter Gate")
+            print(f"Repo: {result.get('repo') or '(not found)'}")
+            for platform, status in (result.get("m35PlatformAdapters") or {}).items():
+                print(f"{platform}: {status}")
+            print("Result: PASS" if result["ok"] else f"Result: FAIL ({result.get('failure')})")
         return 0 if result["ok"] else 1
 
     models = list_ollama_models(args.ollama_url)
