@@ -166,10 +166,12 @@ def test_catalog_contains_suite_boundaries():
     targets = {target.name: target for target in suite_test_catalog.build_suite_test_catalog()}
 
     assert "aibenchie_core" in targets
+    assert "aibenchie_security_privacy" in targets
     assert "nullbridge_trust_fabric" in targets
     assert "nullxoid_wrapper_backend" in targets
     assert "nullxoid_wrapper_frontend_e2ee" in targets
     assert "android_companion_unit" in targets
+    assert "tests/test_suite_security_privacy.py" in targets["aibenchie_security_privacy"].required_paths
     assert targets["android_companion_unit"].optional is True
 
 

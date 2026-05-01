@@ -21,6 +21,7 @@ from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
 from aibenchie.secure_signin_setup import run_from_env as run_secure_signin_setup_from_env
 from aibenchie.suite_security import run_suite_security_check
+from aibenchie.suite_security_privacy import run_from_env as run_suite_security_privacy_from_env
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
 from aibenchie.zero_knowledge_devices import run_zero_knowledge_device_lifecycle_proof
 
@@ -163,6 +164,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--suite-security",
         action="store_true",
         help="Run the NullXoid suite security E2E gate against hosted API routes and repo hygiene checks.",
+    )
+    parser.add_argument(
+        "--suite-security-privacy",
+        action="store_true",
+        help="Run the M36 suite security/privacy release-gate definition check.",
     )
     parser.add_argument(
         "--suite-tests",
@@ -547,6 +553,25 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     suffix = ""
                 print(f"{check['name']}: {check['status'].upper()} [{check['severity']}]{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.suite_security_privacy:
+        result = run_suite_security_privacy_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie M36 Suite Security/Privacy Gate")
+            print(f"Verdict: {result['releaseVerdict']}")
+            for name, check in result["m36SecurityPrivacy"].items():
+                suffix = ""
+                if check.get("failures"):
+                    suffix = f" ({'; '.join(check['failures'])})"
+                print(f"{name}: {check['status'].upper()} [{check['severity']}]{suffix}")
+            if result["knownPending"]:
+                print("Known pending:")
+                for group, items in result["knownPending"].items():
+                    print(f"- {group}: {', '.join(items)}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
