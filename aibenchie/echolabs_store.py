@@ -21,6 +21,18 @@ STORE_SECTIONS = (
     "artifactSandboxing",
     "credentialIsolation",
     "realProviderSmoke",
+    "localVideoStudio",
+    "local3DStudio",
+    "videoApprovalRequired",
+    "model3DApprovalRequired",
+    "videoApprovedGeneration",
+    "model3DApprovedGeneration",
+    "videoDeniedGeneration",
+    "model3DDeniedGeneration",
+    "videoArtifactSandboxing",
+    "model3DArtifactSandboxing",
+    "realProviderSmoke.video",
+    "realProviderSmoke.model3d",
     "storeAssistant.contextEndpoint",
     "storeAssistant.groundingPrompt",
     "storeAssistant.noHostedCloudFalseClaim",
@@ -30,7 +42,18 @@ STORE_SECTIONS = (
 LOCAL_IMAGE_STUDIO = "local-image-studio"
 LOCAL_IMAGE_CAPABILITY = "suite.media.image.generate"
 LOCAL_IMAGE_ACTION = "media.image.generate.local"
+LOCAL_VIDEO_STUDIO = "local-video-studio"
+LOCAL_VIDEO_CAPABILITY = "suite.media.video.generate"
+LOCAL_VIDEO_ACTION = "media.video.generate.local"
+LOCAL_3D_STUDIO = "local-3d-studio"
+LOCAL_3D_CAPABILITY = "suite.media.model3d.generate"
+LOCAL_3D_ACTION = "media.model3d.generate.local"
 CREATIVE_WORKFLOWS = "Creative Workflows"
+STORE_ADDONS = {
+    LOCAL_IMAGE_STUDIO: ("Local Image Studio", LOCAL_IMAGE_CAPABILITY, LOCAL_IMAGE_ACTION),
+    LOCAL_VIDEO_STUDIO: ("Local Video Studio", LOCAL_VIDEO_CAPABILITY, LOCAL_VIDEO_ACTION),
+    LOCAL_3D_STUDIO: ("Local 3D Studio", LOCAL_3D_CAPABILITY, LOCAL_3D_ACTION),
+}
 
 FORBIDDEN_CLIENT_MARKERS = (
     "CREATIVE_PROVIDER_BASE_URL",
@@ -227,6 +250,17 @@ def _real_provider_smoke_gate(source: dict[str, str], wrapper: Path | None) -> S
     )
 
 
+def _optional_media_provider_smoke_gate(provider_kind: str) -> StoreGateCheck:
+    return StoreGateCheck(
+        status="skipped",
+        evidence=[f"optional {provider_kind} smoke is non-blocking by default"],
+        failures=[],
+        required=False,
+        configured=False,
+        provider_kind=provider_kind,
+    )
+
+
 def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStoreResult:
     source = dict(os.environ if env is None else env)
     wrapper = _find_repo(source, "AIBENCHIE_NULLXOID_WRAPPER_REPO", ("../Felnx/NullXoid/.NullXoid", "../.NullXoid"))
@@ -254,7 +288,19 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
 
     web_missing = _has_all(
         wrapper_catalog + wrapper_service + wrapper_ui,
-        [LOCAL_IMAGE_STUDIO, LOCAL_IMAGE_CAPABILITY, LOCAL_IMAGE_ACTION, CREATIVE_WORKFLOWS, "/api/store/catalog"],
+        [
+            LOCAL_IMAGE_STUDIO,
+            LOCAL_IMAGE_CAPABILITY,
+            LOCAL_IMAGE_ACTION,
+            LOCAL_VIDEO_STUDIO,
+            LOCAL_VIDEO_CAPABILITY,
+            LOCAL_VIDEO_ACTION,
+            LOCAL_3D_STUDIO,
+            LOCAL_3D_CAPABILITY,
+            LOCAL_3D_ACTION,
+            CREATIVE_WORKFLOWS,
+            "/api/store/catalog",
+        ],
     )
     gates["webCatalog"] = _gate(
         wrapper is not None and not web_missing,
@@ -264,7 +310,18 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
 
     android_missing = _has_all(
         android_models + android_screen + android_test,
-        [LOCAL_IMAGE_STUDIO, LOCAL_IMAGE_CAPABILITY, LOCAL_IMAGE_ACTION, CREATIVE_WORKFLOWS],
+        [
+            LOCAL_IMAGE_STUDIO,
+            LOCAL_IMAGE_CAPABILITY,
+            LOCAL_IMAGE_ACTION,
+            LOCAL_VIDEO_STUDIO,
+            LOCAL_VIDEO_CAPABILITY,
+            LOCAL_VIDEO_ACTION,
+            LOCAL_3D_STUDIO,
+            LOCAL_3D_CAPABILITY,
+            LOCAL_3D_ACTION,
+            CREATIVE_WORKFLOWS,
+        ],
     )
     gates["androidCatalog"] = _gate(
         android is not None and not android_missing,
@@ -274,7 +331,16 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
 
     windows_missing = _has_all(
         windows_adapter + windows_test,
-        [LOCAL_IMAGE_STUDIO, LOCAL_IMAGE_CAPABILITY, CREATIVE_WORKFLOWS, "EchoLabsStoreAdapter"],
+        [
+            LOCAL_IMAGE_STUDIO,
+            LOCAL_IMAGE_CAPABILITY,
+            LOCAL_VIDEO_STUDIO,
+            LOCAL_VIDEO_CAPABILITY,
+            LOCAL_3D_STUDIO,
+            LOCAL_3D_CAPABILITY,
+            CREATIVE_WORKFLOWS,
+            "EchoLabsStoreAdapter",
+        ],
     )
     gates["windowsCatalog"] = _gate(
         windows is not None and not windows_missing,
@@ -286,8 +352,9 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     for platform, text in (("web", wrapper_catalog + wrapper_ui), ("android", android_models + android_screen), ("windows", windows_adapter + windows_test)):
         if CREATIVE_WORKFLOWS not in text:
             parity_failures.append(f"CATEGORY_PARITY_MISSING:{platform}")
-        if LOCAL_IMAGE_STUDIO not in text:
-            parity_failures.append(f"ADDON_PARITY_MISSING:{platform}")
+        for addon_id in STORE_ADDONS:
+            if addon_id not in text:
+                parity_failures.append(f"ADDON_PARITY_MISSING:{platform}:{addon_id}")
     gates["categoryParity"] = _gate(not parity_failures, ["shared category/add-on strings across wrapper, Android, Windows"], parity_failures)
 
     gates["localImageStudio"] = _gate(
@@ -296,10 +363,34 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         [] if wrapper_catalog else ["LOCAL_IMAGE_STUDIO_MANIFEST_MISSING"],
     )
 
+    gates["localVideoStudio"] = _gate(
+        all(marker in wrapper_catalog for marker in (LOCAL_VIDEO_STUDIO, "Local Video Studio", LOCAL_VIDEO_CAPABILITY, LOCAL_VIDEO_ACTION, "mock-video", "local-video-engine")),
+        ["safe Local Video Studio manifest"],
+        [] if wrapper_catalog else ["LOCAL_VIDEO_STUDIO_MANIFEST_MISSING"],
+    )
+
+    gates["local3DStudio"] = _gate(
+        all(marker in wrapper_catalog for marker in (LOCAL_3D_STUDIO, "Local 3D Studio", LOCAL_3D_CAPABILITY, LOCAL_3D_ACTION, "mock-3d", "local-3d-engine", "glb", "gltf")),
+        ["safe Local 3D Studio manifest with GLB/glTF metadata"],
+        [] if wrapper_catalog else ["LOCAL_3D_STUDIO_MANIFEST_MISSING"],
+    )
+
     gates["approvalRequired"] = _gate(
         "requiresApproval" in wrapper_catalog and "submit_approval_route" in wrapper_service,
         ["wrapper store manifest requires approval", "wrapper store_service submits NullBridge approval route"],
         [] if "submit_approval_route" in wrapper_service else ["APPROVAL_ROUTE_NOT_USED"],
+    )
+
+    gates["videoApprovalRequired"] = _gate(
+        LOCAL_VIDEO_CAPABILITY in wrapper_catalog and "submit_approval_route" in wrapper_service,
+        ["Local Video Studio approval-gated manifest", "shared store_service approval path"],
+        [] if LOCAL_VIDEO_CAPABILITY in wrapper_catalog else ["VIDEO_APPROVAL_MANIFEST_MISSING"],
+    )
+
+    gates["model3DApprovalRequired"] = _gate(
+        LOCAL_3D_CAPABILITY in wrapper_catalog and "submit_approval_route" in wrapper_service,
+        ["Local 3D Studio approval-gated manifest", "shared store_service approval path"],
+        [] if LOCAL_3D_CAPABILITY in wrapper_catalog else ["MODEL3D_APPROVAL_MANIFEST_MISSING"],
     )
 
     gates["approvedGeneration"] = _gate(
@@ -308,12 +399,36 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         [] if "approved_generation_calls_mock_provider_once" in wrapper_test else ["APPROVED_GENERATION_TEST_MISSING"],
     )
 
+    gates["videoApprovedGeneration"] = _gate(
+        "approved_mock_video_and_3d_call_provider_once" in wrapper_test and "mediaKind" in wrapper_service,
+        ["backend/tests/test_store_alpha.py video/3D approved provider test", "backend/store_service.py mediaKind provider request"],
+        [] if "approved_mock_video_and_3d_call_provider_once" in wrapper_test else ["VIDEO_APPROVED_GENERATION_TEST_MISSING"],
+    )
+
+    gates["model3DApprovedGeneration"] = _gate(
+        "approved_mock_video_and_3d_call_provider_once" in wrapper_test and "format" in wrapper_service,
+        ["backend/tests/test_store_alpha.py video/3D approved provider test", "backend/store_service.py GLB/glTF format request"],
+        [] if "approved_mock_video_and_3d_call_provider_once" in wrapper_test else ["MODEL3D_APPROVED_GENERATION_TEST_MISSING"],
+    )
+
     denial_required = ["denied_expired_pending_approval_does_not_call_provider", "unsupported_capability_denies"]
     denial_missing = [name for name in denial_required if name not in wrapper_test]
     gates["deniedGeneration"] = _gate(
         not denial_missing,
         ["backend/tests/test_store_alpha.py denied/expired/unsupported tests"],
         [f"DENIED_GENERATION_TEST_MISSING:{name}" for name in denial_missing],
+    )
+
+    video_denial_missing = "denied_video_and_3d_approval_does_not_call_provider" not in wrapper_test
+    gates["videoDeniedGeneration"] = _gate(
+        not video_denial_missing,
+        ["backend/tests/test_store_alpha.py video/3D denied approval test"],
+        ["VIDEO_DENIED_GENERATION_TEST_MISSING"] if video_denial_missing else [],
+    )
+    gates["model3DDeniedGeneration"] = _gate(
+        not video_denial_missing,
+        ["backend/tests/test_store_alpha.py video/3D denied approval test"],
+        ["MODEL3D_DENIED_GENERATION_TEST_MISSING"] if video_denial_missing else [],
     )
 
     artifact_failures = []
@@ -329,6 +444,17 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         not artifact_failures,
         ["backend/store_service.py safe gallery", "backend/tests/test_store_alpha.py private path assertions"],
         artifact_failures,
+    )
+
+    gates["videoArtifactSandboxing"] = _gate(
+        "posterUrl" in wrapper_catalog + wrapper_service and "durationMs" in wrapper_catalog + wrapper_service,
+        ["video gallery safe poster/preview metadata"],
+        [] if "posterUrl" in wrapper_catalog + wrapper_service else ["VIDEO_GALLERY_SAFE_FIELDS_MISSING"],
+    )
+    gates["model3DArtifactSandboxing"] = _gate(
+        "modelPreviewUrl" in wrapper_catalog + wrapper_service and "model/gltf-binary" in wrapper_service,
+        ["3D gallery safe model preview metadata"],
+        [] if "modelPreviewUrl" in wrapper_catalog + wrapper_service else ["MODEL3D_GALLERY_SAFE_FIELDS_MISSING"],
     )
 
     client_files = []
@@ -358,6 +484,8 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     )
 
     gates["realProviderSmoke"] = _real_provider_smoke_gate(source, wrapper)
+    gates["realProviderSmoke.video"] = _optional_media_provider_smoke_gate("local-video-engine")
+    gates["realProviderSmoke.model3d"] = _optional_media_provider_smoke_gate("local-3d-engine")
 
     context_markers = [
         "/api/store/addons/{addon_id}/assistant-context",
@@ -375,10 +503,13 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     prompt_markers = [
         "buildStoreAssistantSystemPrompt",
         "buildLocalImageStudioRequirementsAnswer",
+        "buildStoreAddonRequirementsAnswer",
         "Do not invent provider behavior",
         "backend-only provider adapter",
         "NullBridge approval",
         "private artifacts",
+        "Local Video Studio",
+        "Local 3D Studio",
     ]
     prompt_missing = _has_all(wrapper_ui + wrapper_store_prompt, prompt_markers)
     gates["storeAssistant.groundingPrompt"] = _gate(

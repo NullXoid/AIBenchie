@@ -289,6 +289,58 @@
       "status": "covered"
     },
     {
+      "routeId": "wrapper.api.store.action.local-video-studio",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session plus NullBridge approval",
+      "sensitiveDataClass": "video prompt and generated private artifact refs",
+      "storageBehavior": "prompt is approval payload; generated videos are private artifacts first",
+      "logBehavior": "prompt summarized/redacted; provider config and service credentials forbidden",
+      "frontendExposure": "approval/result status and sanitized video artifact refs only",
+      "nullbridgeCapability": "suite.media.video.generate",
+      "expectedPrivacyGate": "prompt editor leakage",
+      "evidence": ["wrapper /api/store/addons/local-video-studio/actions/media.video.generate.local", "EchoLabs Store gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.gallery.local-video-studio",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "private generated video artifact metadata",
+      "storageBehavior": "private artifacts remain in private storage; response contains safe IDs/posters/previews only",
+      "logBehavior": "artifact IDs only; filesystem paths forbidden",
+      "frontendExposure": "artifactId, thumbnail/poster route, optional preview route, durationMs, status, mimeType",
+      "nullbridgeCapability": "",
+      "expectedPrivacyGate": "artifact sandboxing",
+      "evidence": ["wrapper /api/store/addons/local-video-studio/gallery", "EchoLabs Store gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.action.local-3d-studio",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session plus NullBridge approval",
+      "sensitiveDataClass": "3D model prompt and generated private artifact refs",
+      "storageBehavior": "prompt is approval payload; generated GLB/glTF models are private artifacts first",
+      "logBehavior": "prompt summarized/redacted; provider config and service credentials forbidden",
+      "frontendExposure": "approval/result status and sanitized model artifact refs only",
+      "nullbridgeCapability": "suite.media.model3d.generate",
+      "expectedPrivacyGate": "prompt editor leakage",
+      "evidence": ["wrapper /api/store/addons/local-3d-studio/actions/media.model3d.generate.local", "EchoLabs Store gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.gallery.local-3d-studio",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "private generated 3D artifact metadata",
+      "storageBehavior": "private GLB/glTF artifacts remain in private storage; response contains safe IDs/model preview routes only",
+      "logBehavior": "artifact IDs only; filesystem paths forbidden",
+      "frontendExposure": "artifactId, thumbnail route, optional modelPreviewUrl, format, status, mimeType",
+      "nullbridgeCapability": "",
+      "expectedPrivacyGate": "artifact sandboxing",
+      "evidence": ["wrapper /api/store/addons/local-3d-studio/gallery", "EchoLabs Store gate"],
+      "status": "covered"
+    },
+    {
       "routeId": "windows.backend.nullbridge.demo-route",
       "platform": "windows",
       "authRequirement": "desktop backend session",
