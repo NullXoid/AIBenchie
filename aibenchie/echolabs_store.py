@@ -21,6 +21,10 @@ STORE_SECTIONS = (
     "artifactSandboxing",
     "credentialIsolation",
     "realProviderSmoke",
+    "storeAssistant.contextEndpoint",
+    "storeAssistant.groundingPrompt",
+    "storeAssistant.noHostedCloudFalseClaim",
+    "storeAssistant.secretLeakCheck",
 )
 
 LOCAL_IMAGE_STUDIO = "local-image-studio"
@@ -237,8 +241,10 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     gates: dict[str, StoreGateCheck] = {}
 
     wrapper_catalog = _read(wrapper / "backend" / "store_catalog.py") if wrapper else ""
+    wrapper_main = _read(wrapper / "backend" / "main.py") if wrapper else ""
     wrapper_service = _read(wrapper / "backend" / "store_service.py") if wrapper else ""
     wrapper_ui = _read(wrapper / "frontend" / "src" / "App.jsx") if wrapper else ""
+    wrapper_store_prompt = _read(wrapper / "frontend" / "src" / "lib" / "storeAssistantPrompt.js") if wrapper else ""
     wrapper_test = _read(wrapper / "backend" / "tests" / "test_store_alpha.py") if wrapper else ""
     android_models = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt") if android else ""
     android_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt") if android else ""
@@ -352,6 +358,66 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     )
 
     gates["realProviderSmoke"] = _real_provider_smoke_gate(source, wrapper)
+
+    context_markers = [
+        "/api/store/addons/{addon_id}/assistant-context",
+        "assistant_context",
+        "store-assistant.v1",
+        "providerConfigVisibleToClient",
+    ]
+    context_missing = _has_all(wrapper_main + wrapper_service + wrapper_test, context_markers)
+    gates["storeAssistant.contextEndpoint"] = _gate(
+        wrapper is not None and not context_missing,
+        ["wrapper assistant context endpoint", "backend/tests/test_store_alpha.py assistant context safety"],
+        [f"STORE_ASSISTANT_CONTEXT_MISSING:{item}" for item in context_missing],
+    )
+
+    prompt_markers = [
+        "buildStoreAssistantSystemPrompt",
+        "buildLocalImageStudioRequirementsAnswer",
+        "Do not invent provider behavior",
+        "backend-only provider adapter",
+        "NullBridge approval",
+        "private artifacts",
+    ]
+    prompt_missing = _has_all(wrapper_ui + wrapper_store_prompt, prompt_markers)
+    gates["storeAssistant.groundingPrompt"] = _gate(
+        wrapper is not None and not prompt_missing,
+        ["frontend Store assistant prompt builder", "frontend Store assistant context wiring"],
+        [f"STORE_ASSISTANT_PROMPT_MISSING:{item}" for item in prompt_missing],
+    )
+
+    false_claim_failures = []
+    if "runs entirely on our servers" in wrapper_store_prompt:
+        false_claim_failures.append("STORE_ASSISTANT_HOSTED_FALSE_CLAIM")
+    if "unless the Store context explicitly says a remote or cloud provider is active" not in wrapper_store_prompt:
+        false_claim_failures.append("STORE_ASSISTANT_REMOTE_CLOUD_GUARD_MISSING")
+    if "no local hardware/install" in wrapper_store_prompt:
+        false_claim_failures.append("STORE_ASSISTANT_NO_LOCAL_INSTALL_FALSE_CLAIM")
+    gates["storeAssistant.noHostedCloudFalseClaim"] = _gate(
+        wrapper is not None and not false_claim_failures,
+        ["frontend Store assistant hosted/cloud false-claim guard"],
+        false_claim_failures,
+    )
+
+    assistant_leaks = _scan_files(
+        [
+            wrapper / "frontend" / "src" / "App.jsx",
+            wrapper / "frontend" / "src" / "lib" / "storeAssistantPrompt.js",
+        ]
+        if wrapper
+        else []
+    )
+    gates["storeAssistant.secretLeakCheck"] = _gate(
+        not assistant_leaks and "test_store_assistant_context_returns_safe_grounding_without_backend_secrets" in wrapper_test,
+        ["Store assistant safe context and frontend prompt marker scan"],
+        [f"STORE_ASSISTANT_LEAK:{item}" for item in assistant_leaks]
+        + (
+            []
+            if "test_store_assistant_context_returns_safe_grounding_without_backend_secrets" in wrapper_test
+            else ["STORE_ASSISTANT_BACKEND_LEAK_TEST_MISSING"]
+        ),
+    )
 
     blocking = [
         f"{name}:{failure}"

@@ -237,6 +237,19 @@
       "status": "covered"
     },
     {
+      "routeId": "wrapper.api.store.assistant-context",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "frontend-safe Store grounding metadata",
+      "storageBehavior": "safe context only; no provider URLs, credentials, workflow internals, service tokens, or private paths",
+      "logBehavior": "safe add-on/provider/approval status only",
+      "frontendExposure": "Store assistant context with local-debug, approval, provider safe status, and privacy summaries",
+      "nullbridgeCapability": "suite.media.image.generate",
+      "expectedPrivacyGate": "credential isolation",
+      "evidence": ["wrapper /api/store/addons/{addonId}/assistant-context", "EchoLabs Store assistant grounding gate"],
+      "status": "covered"
+    },
+    {
       "routeId": "wrapper.api.store.enable-disable",
       "platform": "wrapper",
       "authRequirement": "authenticated wrapper session",

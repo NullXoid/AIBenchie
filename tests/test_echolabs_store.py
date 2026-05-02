@@ -28,10 +28,21 @@ MANIFEST = {"name": "Local Image Studio", "categoryLabel": "Creative Workflows",
     _write(
         wrapper / "backend" / "store_service.py",
         """
+async def assistant_context(addon_id):
+    return {"contextVersion": "store-assistant.v1", "privacy": {"providerConfigVisibleToClient": False}}
+
 async def run_action():
     await nullbridge_adapter.submit_approval_route({})
     await provider.submitJob({})
     return {"artifactId": "safe", "thumbnailUrl": "/artifacts/safe/thumb"}
+""",
+    )
+    _write(
+        wrapper / "backend" / "main.py",
+        """
+@app.get("/api/store/addons/{addon_id}/assistant-context")
+async def store_addon_assistant_context(addon_id):
+    return {"ok": True, "context": await store_service.assistant_context(addon_id)}
 """,
     )
     _write(
@@ -44,7 +55,18 @@ CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED = "CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED"
     )
     _write(
         wrapper / "frontend" / "src" / "App.jsx",
-        '"/api/store/catalog"; "Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local";',
+        '"/api/store/catalog"; "/api/store/addons/${STORE_LOCAL_IMAGE_STUDIO_ID}/assistant-context"; "Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; buildStoreAssistantSystemPrompt();',
+    )
+    _write(
+        wrapper / "frontend" / "src" / "lib" / "storeAssistantPrompt.js",
+        """
+export function buildLocalImageStudioRequirementsAnswer() {
+  return "authenticated wrapper app wrapper backend NullBridge approval connector mock provider baseline configured local image engine private artifacts sanitized IDs and thumbnail routes";
+}
+export function buildStoreAssistantSystemPrompt() {
+  return "Do not invent provider behavior unless the Store context explicitly says a remote or cloud provider is active. backend-only provider adapter NullBridge approval private artifacts";
+}
+""",
     )
     _write(
         wrapper / "backend" / "tests" / "test_store_alpha.py",
@@ -58,6 +80,7 @@ def test_gallery_hides_private_artifact_path(): pass
 def test_gallery_hides_private_artifact_path(): pass
 # private artifact path
 def test_store_public_surfaces_do_not_leak_fake_prompt_or_provider_secrets(): pass
+def test_store_assistant_context_returns_safe_grounding_without_backend_secrets(): pass
 """,
     )
     _write(
@@ -99,6 +122,10 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert set(result["echolabsStore"]) == set(echolabs_store.STORE_SECTIONS)
     assert result["echolabsStore"]["credentialIsolation"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke"]["status"] == "skipped"
+    assert result["echolabsStore"]["storeAssistant.contextEndpoint"]["status"] == "passed"
+    assert result["echolabsStore"]["storeAssistant.groundingPrompt"]["status"] == "passed"
+    assert result["echolabsStore"]["storeAssistant.noHostedCloudFalseClaim"]["status"] == "passed"
+    assert result["echolabsStore"]["storeAssistant.secretLeakCheck"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke"]["required"] is False
     assert result["echolabsStore"]["realProviderSmoke"]["configured"] is False
 
