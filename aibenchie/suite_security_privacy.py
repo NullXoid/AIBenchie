@@ -225,7 +225,7 @@ def discover_registered_routes(root: Path, env: dict[str, str]) -> set[str]:
     cli = root / "aibenchie_local.py"
     if cli.is_file():
         text = cli.read_text(encoding="utf-8", errors="ignore")
-        for flag in ("--suite-security", "--nullbridge-platform-adapters", "--suite-security-privacy"):
+        for flag in ("--suite-security", "--nullbridge-platform-adapters", "--suite-security-privacy", "--echolabs-store"):
             if flag in text:
                 routes.add(f"aibenchie.cli.{flag.removeprefix('--')}")
 

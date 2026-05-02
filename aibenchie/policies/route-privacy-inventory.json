@@ -42,6 +42,19 @@
       "status": "covered"
     },
     {
+      "routeId": "aibenchie.cli.echolabs-store",
+      "platform": "aibenchie",
+      "authRequirement": "local operator",
+      "sensitiveDataClass": "Store Alpha source/integration verdict",
+      "storageBehavior": "public-safe JSON output only",
+      "logBehavior": "redacted source-surface evidence only",
+      "frontendExposure": "none",
+      "nullbridgeCapability": "suite.media.image.generate",
+      "expectedPrivacyGate": "credential isolation",
+      "evidence": ["aibenchie/echolabs_store.py"],
+      "status": "covered"
+    },
+    {
       "routeId": "nullbridge.route_policy.website_backend",
       "platform": "website",
       "authRequirement": "backend service JWT plus user context",
@@ -195,6 +208,71 @@
       "nullbridgeCapability": "suite.unsupported.route",
       "expectedPrivacyGate": "NullBridge capability denial",
       "evidence": ["M35 wrapper adapter allowlist denial"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.catalog",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "frontend-safe add-on metadata",
+      "storageBehavior": "safe manifest only; no provider URLs, credentials, workflow JSON, or private paths",
+      "logBehavior": "catalog metadata only",
+      "frontendExposure": "safe Store catalog manifest",
+      "nullbridgeCapability": "",
+      "expectedPrivacyGate": "credential isolation",
+      "evidence": ["wrapper /api/store/catalog", "EchoLabs Store Alpha gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.addon-detail",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "frontend-safe add-on metadata",
+      "storageBehavior": "safe manifest only",
+      "logBehavior": "catalog metadata only",
+      "frontendExposure": "Local Image Studio safe detail",
+      "nullbridgeCapability": "suite.media.image.generate",
+      "expectedPrivacyGate": "credential isolation",
+      "evidence": ["wrapper /api/store/addons/{addonId}", "EchoLabs Store Alpha gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.enable-disable",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "local add-on enabled state",
+      "storageBehavior": "backend-local enabled flag",
+      "logBehavior": "stable add-on id only",
+      "frontendExposure": "enabled boolean only",
+      "nullbridgeCapability": "",
+      "expectedPrivacyGate": "route privacy inventory",
+      "evidence": ["wrapper /api/store/addons/{addonId}/enable", "wrapper /api/store/addons/{addonId}/disable"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.action.local-image-studio",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session plus NullBridge approval",
+      "sensitiveDataClass": "image prompt and generated private artifact refs",
+      "storageBehavior": "prompt is approval payload; generated images are private artifacts first",
+      "logBehavior": "prompt summarized/redacted; provider config and service credentials forbidden",
+      "frontendExposure": "approval/result status and sanitized artifact refs only",
+      "nullbridgeCapability": "suite.media.image.generate",
+      "expectedPrivacyGate": "prompt editor leakage",
+      "evidence": ["wrapper /api/store/addons/local-image-studio/actions/media.image.generate.local", "EchoLabs Store Alpha gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.store.gallery.local-image-studio",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "private generated artifact metadata",
+      "storageBehavior": "private artifacts remain in private storage; response contains safe IDs/thumbnails only",
+      "logBehavior": "artifact IDs only; filesystem paths forbidden",
+      "frontendExposure": "artifactId, thumbnailId, thumbnail route, status, mimeType",
+      "nullbridgeCapability": "",
+      "expectedPrivacyGate": "artifact sandboxing",
+      "evidence": ["wrapper /api/store/addons/local-image-studio/gallery", "EchoLabs Store Alpha gate"],
       "status": "covered"
     },
     {

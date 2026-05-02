@@ -9,6 +9,7 @@ from aibenchie.local_nullbridge_runner import run_local_notification_path, run_l
 from aibenchie.nullbridge_platform_adapters import run_from_env as run_nullbridge_platform_adapters_from_env
 from aibenchie.nullprivacy import run_e2ee_storage_proof
 from aibenchie.e2ee_readiness import run_e2ee_readiness_check
+from aibenchie.echolabs_store import run_from_env as run_echolabs_store_from_env
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
@@ -205,6 +206,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--nullbridge-platform-adapters",
         action="store_true",
         help="Run the M35 platform backend NullBridge adapter E2E gate.",
+    )
+    parser.add_argument(
+        "--echolabs-store",
+        action="store_true",
+        help="Run the EchoLabs Store + Creative Workflows Alpha source/integration gate.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -635,6 +641,18 @@ def main(argv: list[str] | None = None) -> int:
             for platform, status in (result.get("m35PlatformAdapters") or {}).items():
                 print(f"{platform}: {status}")
             print("Result: PASS" if result["ok"] else f"Result: FAIL ({result.get('failure')})")
+        return 0 if result["ok"] else 1
+
+    if args.echolabs_store:
+        result = run_echolabs_store_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("EchoLabs Store + Creative Workflows Alpha Gate")
+            for name, check in result["echolabsStore"].items():
+                suffix = f" ({'; '.join(check.get('failures', []))})" if check.get("failures") else ""
+                print(f"{name}: {check['status'].upper()}{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
     models = list_ollama_models(args.ollama_url)
