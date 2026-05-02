@@ -35,6 +35,14 @@ async def run_action():
 """,
     )
     _write(
+        wrapper / "backend" / "creative_provider.py",
+        """
+def provider_config_from_env(): pass
+class LocalImageEngineProvider: pass
+CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED = "CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED"
+""",
+    )
+    _write(
         wrapper / "frontend" / "src" / "App.jsx",
         '"/api/store/catalog"; "Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local";',
     )
@@ -90,6 +98,9 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert result["blockingFailures"] == []
     assert set(result["echolabsStore"]) == set(echolabs_store.STORE_SECTIONS)
     assert result["echolabsStore"]["credentialIsolation"]["status"] == "passed"
+    assert result["echolabsStore"]["realProviderSmoke"]["status"] == "skipped"
+    assert result["echolabsStore"]["realProviderSmoke"]["required"] is False
+    assert result["echolabsStore"]["realProviderSmoke"]["configured"] is False
 
 
 def test_echolabs_store_gate_fails_client_secret_leak(tmp_path):
@@ -101,6 +112,65 @@ def test_echolabs_store_gate_fails_client_secret_leak(tmp_path):
 
     assert result["ok"] is False
     assert any("credentialIsolation" in failure for failure in result["blockingFailures"])
+
+
+def test_echolabs_store_real_provider_failure_is_non_blocking_by_default(tmp_path, monkeypatch):
+    env = _fixture_repos(tmp_path)
+    env.update(
+        {
+            "CREATIVE_PROVIDER": "local-image-engine",
+            "CREATIVE_PROVIDER_BASE_URL": "http://127.0.0.1:9",
+        }
+    )
+    monkeypatch.setattr(echolabs_store, "_provider_health", lambda *_args, **_kwargs: (False, "PROVIDER_UNAVAILABLE"))
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    smoke = result["echolabsStore"]["realProviderSmoke"]
+    assert result["ok"] is True
+    assert result["blockingFailures"] == []
+    assert smoke["status"] == "failed_non_blocking"
+    assert smoke["configured"] is True
+    assert smoke["errorCode"] == "PROVIDER_UNAVAILABLE"
+
+
+def test_echolabs_store_real_provider_failure_blocks_when_required(tmp_path, monkeypatch):
+    env = _fixture_repos(tmp_path)
+    env.update(
+        {
+            "CREATIVE_PROVIDER": "local-image-engine",
+            "CREATIVE_PROVIDER_BASE_URL": "http://127.0.0.1:9",
+            "CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED": "1",
+        }
+    )
+    monkeypatch.setattr(echolabs_store, "_provider_health", lambda *_args, **_kwargs: (False, "PROVIDER_UNAVAILABLE"))
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    smoke = result["echolabsStore"]["realProviderSmoke"]
+    assert result["ok"] is False
+    assert any("realProviderSmoke" in failure for failure in result["blockingFailures"])
+    assert smoke["status"] == "failed_blocking"
+    assert smoke["required"] is True
+
+
+def test_echolabs_store_real_provider_passes_when_configured_and_healthy(tmp_path, monkeypatch):
+    env = _fixture_repos(tmp_path)
+    env.update(
+        {
+            "CREATIVE_PROVIDER": "local-image-engine",
+            "CREATIVE_PROVIDER_BASE_URL": "http://127.0.0.1:8188",
+        }
+    )
+    monkeypatch.setattr(echolabs_store, "_provider_health", lambda *_args, **_kwargs: (True, ""))
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    smoke = result["echolabsStore"]["realProviderSmoke"]
+    assert result["ok"] is True
+    assert smoke["status"] == "passed"
+    assert smoke["configured"] is True
+    assert smoke["providerKind"] == "local-image-engine"
 
 
 def test_echolabs_store_cli_outputs_json(monkeypatch, capsys):

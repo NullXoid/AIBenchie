@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -18,6 +20,7 @@ STORE_SECTIONS = (
     "deniedGeneration",
     "artifactSandboxing",
     "credentialIsolation",
+    "realProviderSmoke",
 )
 
 LOCAL_IMAGE_STUDIO = "local-image-studio"
@@ -44,10 +47,15 @@ class StoreGateCheck:
     status: str
     evidence: list[str]
     failures: list[str]
+    warnings: list[str] | None = None
+    required: bool | None = None
+    configured: bool | None = None
+    provider_kind: str | None = None
+    error_code: str = ""
 
     @property
     def ok(self) -> bool:
-        return self.status == "passed" and not self.failures
+        return self.status in {"passed", "skipped", "failed_non_blocking"} and not self.failures
 
     def as_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -56,6 +64,16 @@ class StoreGateCheck:
         }
         if self.failures:
             payload["failures"] = self.failures
+        if self.warnings:
+            payload["warnings"] = self.warnings
+        if self.required is not None:
+            payload["required"] = self.required
+        if self.configured is not None:
+            payload["configured"] = self.configured
+        if self.provider_kind:
+            payload["providerKind"] = self.provider_kind
+        if self.error_code:
+            payload["errorCode"] = self.error_code
         return payload
 
 
@@ -118,6 +136,91 @@ def _has_all(text: str, values: Iterable[str]) -> list[str]:
 def _gate(status: bool, evidence: list[str], failures: list[str] | None = None) -> StoreGateCheck:
     actual_failures = failures or []
     return StoreGateCheck(status="passed" if status and not actual_failures else "failed", evidence=evidence, failures=actual_failures)
+
+
+def _truthy(value: str) -> bool:
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _provider_kind(raw: str) -> str:
+    normalized = (raw or "mock").strip().lower().replace("_", "-")
+    if normalized in {"", "mock", "test"}:
+        return "mock"
+    if normalized in {"local", "local-image", "local-image-engine", "real", "comfyui", "ltx"}:
+        return "local-image-engine"
+    return normalized
+
+
+def _provider_health(base_url: str, timeout_seconds: float = 3.0) -> tuple[bool, str]:
+    if not base_url:
+        return False, "PROVIDER_NOT_CONFIGURED"
+    url = base_url.rstrip("/") + "/"
+    try:
+        request = urllib.request.Request(url, method="GET", headers={"Accept": "application/json"})
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            return response.status < 500, "" if response.status < 500 else "PROVIDER_UNAVAILABLE"
+    except (OSError, urllib.error.URLError, urllib.error.HTTPError):
+        return False, "PROVIDER_UNAVAILABLE"
+
+
+def _real_provider_smoke_gate(source: dict[str, str], wrapper: Path | None) -> StoreGateCheck:
+    provider_kind = _provider_kind(source.get("CREATIVE_PROVIDER", "mock"))
+    required = _truthy(source.get("CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED", ""))
+    base_url = str(source.get("CREATIVE_PROVIDER_BASE_URL", "") or "").strip()
+    configured = provider_kind != "mock" and bool(base_url)
+    evidence = ["backend-only real provider smoke config"]
+
+    creative_provider_source = _read(wrapper / "backend" / "creative_provider.py") if wrapper else ""
+    missing_markers = [
+        marker
+        for marker in ("provider_config_from_env", "LocalImageEngineProvider", "CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED")
+        if marker not in creative_provider_source
+    ]
+    if wrapper:
+        evidence.append("wrapper backend/creative_provider.py")
+    if missing_markers:
+        return StoreGateCheck(
+            status="failed_blocking",
+            evidence=evidence,
+            failures=[f"REAL_PROVIDER_SMOKE_SOURCE_MISSING:{marker}" for marker in missing_markers],
+            required=required,
+            configured=configured,
+            provider_kind="local-image-engine",
+            error_code="REAL_PROVIDER_SOURCE_MISSING",
+        )
+
+    if not configured:
+        return StoreGateCheck(
+            status="skipped",
+            evidence=evidence,
+            failures=[],
+            required=required,
+            configured=False,
+            provider_kind="local-image-engine",
+        )
+
+    ok, error_code = _provider_health(base_url)
+    if ok:
+        return StoreGateCheck(
+            status="passed",
+            evidence=[*evidence, "redacted provider health probe"],
+            failures=[],
+            required=required,
+            configured=True,
+            provider_kind="local-image-engine",
+        )
+
+    status = "failed_blocking" if required else "failed_non_blocking"
+    return StoreGateCheck(
+        status=status,
+        evidence=[*evidence, "redacted provider health probe"],
+        failures=[error_code] if required else [],
+        warnings=[] if required else [error_code],
+        required=required,
+        configured=True,
+        provider_kind="local-image-engine",
+        error_code=error_code,
+    )
 
 
 def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStoreResult:
@@ -247,6 +350,8 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         [f"STORE_CLIENT_LEAK:{item}" for item in leaks]
         + ([] if "do_not_leak_fake_prompt_or_provider_secrets" in wrapper_test else ["FAKE_SECRET_LEAK_TEST_MISSING"]),
     )
+
+    gates["realProviderSmoke"] = _real_provider_smoke_gate(source, wrapper)
 
     blocking = [
         f"{name}:{failure}"
