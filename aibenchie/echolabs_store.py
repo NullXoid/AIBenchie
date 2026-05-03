@@ -37,6 +37,15 @@ STORE_SECTIONS = (
     "storeAssistant.groundingPrompt",
     "storeAssistant.noHostedCloudFalseClaim",
     "storeAssistant.secretLeakCheck",
+    "androidOutOfNetwork.asyncJobs",
+    "androidOutOfNetwork.connectorRegistration",
+    "androidOutOfNetwork.approvedImageGeneration",
+    "androidOutOfNetwork.approvedVideoGeneration",
+    "androidOutOfNetwork.nonAdminSelfApprovalDenied",
+    "androidOutOfNetwork.adminSamePhoneApprovalAllowed",
+    "androidOutOfNetwork.artifactDownload",
+    "androidOutOfNetwork.saveToDevice",
+    "androidOutOfNetwork.credentialIsolation",
 )
 
 LOCAL_IMAGE_STUDIO = "local-image-studio"
@@ -277,10 +286,16 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     wrapper_catalog = _read(wrapper / "backend" / "store_catalog.py") if wrapper else ""
     wrapper_main = _read(wrapper / "backend" / "main.py") if wrapper else ""
     wrapper_service = _read(wrapper / "backend" / "store_service.py") if wrapper else ""
+    wrapper_jobs = _read(wrapper / "backend" / "store_jobs.py") if wrapper else ""
     wrapper_ui = _read(wrapper / "frontend" / "src" / "App.jsx") if wrapper else ""
     wrapper_store_prompt = _read(wrapper / "frontend" / "src" / "lib" / "storeAssistantPrompt.js") if wrapper else ""
     wrapper_test = _read(wrapper / "backend" / "tests" / "test_store_alpha.py") if wrapper else ""
+    wrapper_async_test = _read(wrapper / "backend" / "tests" / "test_store_async_jobs.py") if wrapper else ""
     android_models = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt") if android else ""
+    android_api = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "api" / "NullXoidApi.kt") if android else ""
+    android_repo = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "repo" / "NullXoidRepository.kt") if android else ""
+    android_settings = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "prefs" / "SettingsStore.kt") if android else ""
+    android_vm = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt") if android else ""
     android_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt") if android else ""
     android_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt") if android else ""
     windows_adapter = _read(windows / "src" / "bridge" / "echolabs_store_adapter.cpp") + _read(windows / "src" / "bridge" / "echolabs_store_adapter.h") if windows else ""
@@ -547,6 +562,118 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
             []
             if "test_store_assistant_context_returns_safe_grounding_without_backend_secrets" in wrapper_test
             else ["STORE_ASSISTANT_BACKEND_LEAK_TEST_MISSING"]
+        ),
+    )
+
+    async_markers = [
+        "STORE_JOB_STATES",
+        "pending_approval",
+        "queued_connector",
+        "running_provider",
+        "uploading_artifact",
+        "/api/store/jobs/{store_job_id}",
+        "storeJobId",
+    ]
+    async_missing = _has_all(wrapper_jobs + wrapper_main + wrapper_service + android_models + android_api + android_vm, async_markers)
+    gates["androidOutOfNetwork.asyncJobs"] = _gate(
+        not async_missing and "test_async_store_action_returns_store_job_without_provider_execution" in wrapper_async_test,
+        ["wrapper async Store job contract", "Android Store job DTO/API/polling"],
+        [f"ANDROID_OON_ASYNC_MISSING:{item}" for item in async_missing]
+        + (
+            []
+            if "test_async_store_action_returns_store_job_without_provider_execution" in wrapper_async_test
+            else ["ANDROID_OON_ASYNC_TEST_MISSING"]
+        ),
+    )
+
+    connector_markers = [
+        "/api/creative-worker/register",
+        "/api/creative-worker/heartbeat",
+        "/api/creative-worker/jobs/next",
+        "/api/creative-worker/jobs/{store_job_id}/claim",
+        "/api/creative-worker/jobs/{store_job_id}/artifact",
+        "/api/creative-worker/jobs/{store_job_id}/complete",
+        "/api/creative-worker/jobs/{store_job_id}/fail",
+        "lease_job",
+    ]
+    connector_missing = _has_all(wrapper_main + wrapper_service + wrapper_jobs, connector_markers)
+    gates["androidOutOfNetwork.connectorRegistration"] = _gate(
+        not connector_missing and "test_connector_claim_upload_complete_produces_sanitized_gallery" in wrapper_async_test,
+        ["Creative Worker Connector polling endpoints", "connector lease/upload/complete test"],
+        [f"CREATIVE_WORKER_CONNECTOR_MISSING:{item}" for item in connector_missing]
+        + (
+            []
+            if "test_connector_claim_upload_complete_produces_sanitized_gallery" in wrapper_async_test
+            else ["CREATIVE_WORKER_CONNECTOR_TEST_MISSING"]
+        ),
+    )
+
+    gates["androidOutOfNetwork.approvedImageGeneration"] = _gate(
+        "test_connector_claim_upload_complete_produces_sanitized_gallery" in wrapper_async_test
+        and LOCAL_IMAGE_CAPABILITY in wrapper_async_test,
+        ["approved image job connector E2E contract"],
+        [] if LOCAL_IMAGE_CAPABILITY in wrapper_async_test else ["ANDROID_OON_IMAGE_APPROVAL_TEST_MISSING"],
+    )
+
+    gates["androidOutOfNetwork.approvedVideoGeneration"] = StoreGateCheck(
+        status="skipped",
+        evidence=["real Android video provider E2E remains optional; mock video Store baseline is covered"],
+        failures=[],
+        warnings=["ANDROID_OON_VIDEO_REAL_PROVIDER_SKIPPED"],
+        required=False,
+        configured=False,
+        provider_kind="local-video-engine",
+    )
+
+    gates["androidOutOfNetwork.nonAdminSelfApprovalDenied"] = _gate(
+        "test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed" in wrapper_async_test
+        and "REQUESTER_NOT_AUTHORIZED" in wrapper_service + wrapper_async_test,
+        ["non-admin self-approval denial policy test"],
+        []
+        if "test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed" in wrapper_async_test
+        else ["NON_ADMIN_SELF_APPROVAL_TEST_MISSING"],
+    )
+
+    gates["androidOutOfNetwork.adminSamePhoneApprovalAllowed"] = _gate(
+        "test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed" in wrapper_async_test
+        and '"admin"' in wrapper_service + wrapper_async_test,
+        ["admin same-phone approval policy test"],
+        []
+        if "test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed" in wrapper_async_test
+        else ["ADMIN_SAME_PHONE_APPROVAL_TEST_MISSING"],
+    )
+
+    artifact_download_missing = _has_all(android_api + android_repo, ["getBytes", "/artifacts/$artifactId", "storeArtifactBytes"])
+    gates["androidOutOfNetwork.artifactDownload"] = _gate(
+        not artifact_download_missing,
+        ["Android authenticated artifact download path"],
+        [f"ANDROID_ARTIFACT_DOWNLOAD_MISSING:{item}" for item in artifact_download_missing],
+    )
+
+    save_missing = _has_all(android_vm + android_screen, ["saveStoreArtifactToDevice", "MediaStore", "Save to device"])
+    gates["androidOutOfNetwork.saveToDevice"] = _gate(
+        not save_missing,
+        ["Android MediaStore save-to-device action"],
+        [f"ANDROID_SAVE_TO_DEVICE_MISSING:{item}" for item in save_missing],
+    )
+
+    android_oon_leaks = _scan_files(
+        [
+            android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt",
+            android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt",
+            android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt",
+        ]
+        if android
+        else []
+    )
+    gates["androidOutOfNetwork.credentialIsolation"] = _gate(
+        not android_oon_leaks and "CREATIVE_WORKER_TOKEN" not in android_models + android_api + android_repo + android_vm + android_screen,
+        ["Android out-of-network client surface credential scan"],
+        [f"ANDROID_OON_LEAK:{item}" for item in android_oon_leaks]
+        + (
+            []
+            if "CREATIVE_WORKER_TOKEN" not in android_models + android_api + android_repo + android_vm + android_screen
+            else ["ANDROID_CREATIVE_WORKER_TOKEN_LEAK"]
         ),
     )
 

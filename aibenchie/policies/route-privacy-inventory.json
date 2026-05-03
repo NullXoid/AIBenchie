@@ -341,6 +341,32 @@
       "status": "covered"
     },
     {
+      "routeId": "wrapper.api.store.job-status",
+      "platform": "wrapper",
+      "authRequirement": "authenticated wrapper session",
+      "sensitiveDataClass": "async Store job state and sanitized artifact refs",
+      "storageBehavior": "private runtime Store job state; response contains only safe status, IDs, routes, mime, timestamps, and error codes",
+      "logBehavior": "job ids and stable states only; provider config, connector credentials, workflow internals, and private paths forbidden",
+      "frontendExposure": "storeJobId, requestId, status, pollAfterMs, sanitized artifact refs",
+      "nullbridgeCapability": "suite.media.image.generate",
+      "expectedPrivacyGate": "credential isolation",
+      "evidence": ["wrapper /api/store/jobs/{storeJobId}", "Android out-of-network Store gate"],
+      "status": "covered"
+    },
+    {
+      "routeId": "wrapper.api.creative-worker.connector",
+      "platform": "wrapper",
+      "authRequirement": "backend-issued creative worker credential",
+      "sensitiveDataClass": "approved Store job provider request and private artifact upload",
+      "storageBehavior": "connector state and leases stay backend-private; generated artifacts enter private artifact store",
+      "logBehavior": "worker ids, lease state, and stable errors only; connector token, provider URLs, workflow paths, raw workflow JSON, and output paths forbidden",
+      "frontendExposure": "none",
+      "nullbridgeCapability": "suite.media.image.generate",
+      "expectedPrivacyGate": "credential isolation",
+      "evidence": ["wrapper /api/creative-worker/*", "Android out-of-network Store gate"],
+      "status": "covered"
+    },
+    {
       "routeId": "windows.backend.nullbridge.demo-route",
       "platform": "windows",
       "authRequirement": "desktop backend session",

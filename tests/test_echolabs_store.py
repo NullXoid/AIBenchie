@@ -42,7 +42,18 @@ async def assistant_context(addon_id):
 async def run_action():
     await nullbridge_adapter.submit_approval_route({})
     await provider.submitJob({"mediaKind": "video", "format": "glb"})
-    return {"artifactId": "safe", "thumbnailUrl": "/artifacts/safe/thumb", "posterUrl": "/artifacts/safe/thumb", "modelPreviewUrl": "/artifacts/safe", "durationMs": 4000, "mimeType": "model/gltf-binary"}
+    return {"storeJobId": "storejob-safe", "artifactId": "safe", "thumbnailUrl": "/artifacts/safe/thumb", "posterUrl": "/artifacts/safe/thumb", "modelPreviewUrl": "/artifacts/safe", "durationMs": 4000, "mimeType": "model/gltf-binary"}
+
+async def worker_register(): pass
+async def worker_next_job(): pass
+async def worker_claim_job(): pass
+""",
+    )
+    _write(
+        wrapper / "backend" / "store_jobs.py",
+        """
+STORE_JOB_STATES = {"pending_approval", "queued_connector", "running_provider", "uploading_artifact"}
+def lease_job(): pass
 """,
     )
     _write(
@@ -51,6 +62,22 @@ async def run_action():
 @app.get("/api/store/addons/{addon_id}/assistant-context")
 async def store_addon_assistant_context(addon_id):
     return {"ok": True, "context": await store_service.assistant_context(addon_id)}
+@app.get("/api/store/jobs/{store_job_id}")
+async def store_job_status(store_job_id): pass
+@app.post("/api/creative-worker/register")
+async def creative_worker_register(): pass
+@app.post("/api/creative-worker/heartbeat")
+async def creative_worker_heartbeat(): pass
+@app.get("/api/creative-worker/jobs/next")
+async def creative_worker_next_job(): pass
+@app.post("/api/creative-worker/jobs/{store_job_id}/claim")
+async def creative_worker_claim_job(): pass
+@app.post("/api/creative-worker/jobs/{store_job_id}/artifact")
+async def creative_worker_upload_artifact(): pass
+@app.post("/api/creative-worker/jobs/{store_job_id}/complete")
+async def creative_worker_complete_job(): pass
+@app.post("/api/creative-worker/jobs/{store_job_id}/fail")
+async def creative_worker_fail_job(): pass
 """,
     )
     _write(
@@ -97,12 +124,39 @@ def test_store_assistant_context_returns_safe_grounding_without_backend_secrets(
 """,
     )
     _write(
+        wrapper / "backend" / "tests" / "test_store_async_jobs.py",
+        """
+def test_async_store_action_returns_store_job_without_provider_execution(): pass
+def test_connector_claim_upload_complete_produces_sanitized_gallery(): pass
+def test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed():
+    assert "suite.media.image.generate"
+    assert "REQUESTER_NOT_AUTHORIZED"
+    assert "admin"
+""",
+    )
+    _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt",
-        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local";',
+        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "storeJobId";',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "api" / "NullXoidApi.kt",
+        '"storeJobId"; "/api/store/jobs/{store_job_id}"; getBytes();',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "repo" / "NullXoidRepository.kt",
+        'storeArtifactBytes(); "/artifacts/$artifactId";',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "prefs" / "SettingsStore.kt",
+        '"active_store_job_id"; "active_store_addon_id";',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt",
+        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; saveStoreArtifactToDevice(); MediaStore;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt",
-        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local";',
+        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "Save to device";',
     )
     _write(
         android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt",
