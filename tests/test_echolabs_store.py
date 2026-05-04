@@ -195,12 +195,35 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert result["echolabsStore"]["model3DApprovedGeneration"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke.video"]["status"] == "skipped"
     assert result["echolabsStore"]["realProviderSmoke.model3d"]["status"] == "skipped"
+    assert result["echolabsStore"]["androidOutOfNetwork.approvedVideoGeneration"]["status"] == "skipped"
     assert result["echolabsStore"]["storeAssistant.contextEndpoint"]["status"] == "passed"
     assert result["echolabsStore"]["storeAssistant.groundingPrompt"]["status"] == "passed"
     assert result["echolabsStore"]["storeAssistant.noHostedCloudFalseClaim"]["status"] == "passed"
     assert result["echolabsStore"]["storeAssistant.secretLeakCheck"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke"]["required"] is False
     assert result["echolabsStore"]["realProviderSmoke"]["configured"] is False
+
+
+def test_echolabs_store_android_video_e2e_manual_evidence_marks_passed(tmp_path):
+    env = _fixture_repos(tmp_path)
+    env.update(
+        {
+            "AIBENCHIE_ANDROID_VIDEO_E2E_STATUS": "passed",
+            "AIBENCHIE_ANDROID_VIDEO_E2E_STORE_JOB_ID": "storejob-123",
+            "AIBENCHIE_ANDROID_VIDEO_E2E_ARTIFACT_ID": "abc123",
+            "AIBENCHIE_ANDROID_VIDEO_E2E_MIME": "video/mp4",
+            "AIBENCHIE_ANDROID_VIDEO_E2E_PLAYER": "true",
+            "AIBENCHIE_ANDROID_VIDEO_E2E_SAVED_TO_DEVICE": "true",
+        }
+    )
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    gate = result["echolabsStore"]["androidOutOfNetwork.approvedVideoGeneration"]
+    assert result["ok"] is True
+    assert gate["status"] == "passed"
+    assert gate["configured"] is True
+    assert gate["providerKind"] == "local-video-engine"
 
 
 def test_echolabs_store_gate_fails_client_secret_leak(tmp_path):

@@ -277,6 +277,69 @@ def _optional_media_provider_smoke_gate(provider_kind: str) -> StoreGateCheck:
     )
 
 
+def _safe_public_id(value: str, prefix: str = "") -> bool:
+    raw = value.strip()
+    if prefix and not raw.startswith(prefix):
+        return False
+    return bool(raw) and all(ch.isalnum() or ch in {"-", "_"} for ch in raw)
+
+
+def _android_video_e2e_gate(source: dict[str, str]) -> StoreGateCheck:
+    status = source.get("AIBENCHIE_ANDROID_VIDEO_E2E_STATUS", "").strip().lower()
+    if not status:
+        return StoreGateCheck(
+            status="skipped",
+            evidence=["real Android video provider E2E remains optional; mock video Store baseline is covered"],
+            failures=[],
+            warnings=["ANDROID_OON_VIDEO_REAL_PROVIDER_SKIPPED"],
+            required=False,
+            configured=False,
+            provider_kind="local-video-engine",
+        )
+
+    store_job_id = source.get("AIBENCHIE_ANDROID_VIDEO_E2E_STORE_JOB_ID", "")
+    artifact_id = source.get("AIBENCHIE_ANDROID_VIDEO_E2E_ARTIFACT_ID", "")
+    mime_type = source.get("AIBENCHIE_ANDROID_VIDEO_E2E_MIME", "")
+    saved_to_device = _truthy(source.get("AIBENCHIE_ANDROID_VIDEO_E2E_SAVED_TO_DEVICE", ""))
+    player_opened = _truthy(source.get("AIBENCHIE_ANDROID_VIDEO_E2E_PLAYER", ""))
+    failures: list[str] = []
+    if status != "passed":
+        failures.append("ANDROID_OON_VIDEO_E2E_NOT_PASSED")
+    if not _safe_public_id(store_job_id, "storejob-"):
+        failures.append("ANDROID_OON_VIDEO_E2E_STORE_JOB_ID_INVALID")
+    if not _safe_public_id(artifact_id):
+        failures.append("ANDROID_OON_VIDEO_E2E_ARTIFACT_ID_INVALID")
+    if not mime_type.startswith("video/"):
+        failures.append("ANDROID_OON_VIDEO_E2E_MIME_INVALID")
+    if not player_opened:
+        failures.append("ANDROID_OON_VIDEO_E2E_PLAYER_NOT_CONFIRMED")
+    if not saved_to_device:
+        failures.append("ANDROID_OON_VIDEO_E2E_SAVE_NOT_CONFIRMED")
+
+    if failures:
+        return StoreGateCheck(
+            status="failed_non_blocking",
+            evidence=["manual hosted Android video E2E evidence was supplied but incomplete"],
+            failures=[],
+            warnings=failures,
+            required=False,
+            configured=True,
+            provider_kind="local-video-engine",
+        )
+
+    return StoreGateCheck(
+        status="passed",
+        evidence=[
+            "manual hosted Android video E2E completed",
+            "server NullBridge approval, connector execution, gallery, player, and MediaStore save verified",
+        ],
+        failures=[],
+        required=False,
+        configured=True,
+        provider_kind="local-video-engine",
+    )
+
+
 def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStoreResult:
     source = dict(os.environ if env is None else env)
     wrapper = _find_repo(source, "AIBENCHIE_NULLXOID_WRAPPER_REPO", ("../Felnx/NullXoid/.NullXoid", "../.NullXoid"))
@@ -626,15 +689,7 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         [] if LOCAL_IMAGE_CAPABILITY in wrapper_async_test else ["ANDROID_OON_IMAGE_APPROVAL_TEST_MISSING"],
     )
 
-    gates["androidOutOfNetwork.approvedVideoGeneration"] = StoreGateCheck(
-        status="skipped",
-        evidence=["real Android video provider E2E remains optional; mock video Store baseline is covered"],
-        failures=[],
-        warnings=["ANDROID_OON_VIDEO_REAL_PROVIDER_SKIPPED"],
-        required=False,
-        configured=False,
-        provider_kind="local-video-engine",
-    )
+    gates["androidOutOfNetwork.approvedVideoGeneration"] = _android_video_e2e_gate(source)
 
     gates["androidOutOfNetwork.nonAdminSelfApprovalDenied"] = _gate(
         "test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed" in wrapper_async_test
