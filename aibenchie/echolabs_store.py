@@ -46,6 +46,13 @@ STORE_SECTIONS = (
     "androidOutOfNetwork.artifactDownload",
     "androidOutOfNetwork.saveToDevice",
     "androidOutOfNetwork.credentialIsolation",
+    "timedApproval.thisJob",
+    "timedApproval.timedGrant",
+    "timedApproval.matchingImageSkipsApproval",
+    "timedApproval.crossCapabilityDenied",
+    "timedApproval.expiredGrantRequiresApproval",
+    "timedApproval.replayDoesNotExtendGrant",
+    "timedApproval.credentialIsolation",
 )
 
 LOCAL_IMAGE_STUDIO = "local-image-studio"
@@ -273,11 +280,13 @@ def _optional_media_provider_smoke_gate(provider_kind: str) -> StoreGateCheck:
 def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStoreResult:
     source = dict(os.environ if env is None else env)
     wrapper = _find_repo(source, "AIBENCHIE_NULLXOID_WRAPPER_REPO", ("../Felnx/NullXoid/.NullXoid", "../.NullXoid"))
+    nullbridge = _find_repo(source, "AIBENCHIE_NULLBRIDGE_REPO", ("../NullBridge", "NullBridge"))
     android = _find_repo(source, "AIBENCHIE_ANDROID_REPO", ("../NullXoidAndroid", "NullXoidAndroid"))
     windows = _find_repo(source, "AIBENCHIE_WINDOWS_REPO", ("../AiAssistant", "AiAssistant"))
 
     repos = {
         "wrapper": str(wrapper or ""),
+        "nullbridge": str(nullbridge or ""),
         "android": str(android or ""),
         "windows": str(windows or ""),
     }
@@ -291,6 +300,8 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     wrapper_store_prompt = _read(wrapper / "frontend" / "src" / "lib" / "storeAssistantPrompt.js") if wrapper else ""
     wrapper_test = _read(wrapper / "backend" / "tests" / "test_store_alpha.py") if wrapper else ""
     wrapper_async_test = _read(wrapper / "backend" / "tests" / "test_store_async_jobs.py") if wrapper else ""
+    nullbridge_api = _read(nullbridge / "backend" / "scripts" / "nullbridge_api.py") if nullbridge else ""
+    nullbridge_tests = _read(nullbridge / "backend" / "tests" / "test_nullbridge_generic_approval_routing.py") if nullbridge else ""
     android_models = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt") if android else ""
     android_api = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "api" / "NullXoidApi.kt") if android else ""
     android_repo = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "repo" / "NullXoidRepository.kt") if android else ""
@@ -675,6 +686,56 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
             if "CREATIVE_WORKER_TOKEN" not in android_models + android_api + android_repo + android_vm + android_screen
             else ["ANDROID_CREATIVE_WORKER_TOKEN_LEAK"]
         ),
+    )
+
+    timed_source = nullbridge_api + nullbridge_tests + wrapper_service + wrapper_async_test
+    gates["timedApproval.thisJob"] = _gate(
+        '"once"' in nullbridge_api
+        and "assert list(api.APPROVAL_GRANTS.glob(\"grant-*.json\")) == []" in nullbridge_tests,
+        ["per-job approval does not create reusable grant"],
+        [] if nullbridge else ["NULLBRIDGE_REPO_MISSING"],
+    )
+    gates["timedApproval.timedGrant"] = _gate(
+        all(marker in timed_source for marker in ["8h", "24h", "30d", "durationSeconds", "approval_grant_created"]),
+        ["8h/24h/30d timed approval source and tests"],
+        [f"TIMED_GRANT_MARKER_MISSING:{marker}" for marker in ["8h", "24h", "30d"] if marker not in timed_source],
+    )
+    gates["timedApproval.matchingImageSkipsApproval"] = _gate(
+        "approvalSource" in wrapper_service + wrapper_async_test
+        and "active_timed_grant" in wrapper_service + wrapper_async_test + nullbridge_api
+        and "test_time_limited_approval_grant_queues_matching_image_request_without_new_approval" in nullbridge_tests,
+        ["active image grant queues matching request without new approval"],
+        [] if "active_timed_grant" in timed_source else ["TIMED_APPROVAL_SOURCE_MARKER_MISSING"],
+    )
+    gates["timedApproval.crossCapabilityDenied"] = _gate(
+        "test_image_grant_does_not_authorize_video_or_3d_or_forged_grant_id" in nullbridge_tests
+        and LOCAL_VIDEO_CAPABILITY in nullbridge_tests
+        and LOCAL_3D_CAPABILITY in nullbridge_tests,
+        ["image grant does not authorize video/3D"],
+        [] if "test_image_grant_does_not_authorize_video_or_3d_or_forged_grant_id" in nullbridge_tests else ["TIMED_APPROVAL_CROSS_CAPABILITY_TEST_MISSING"],
+    )
+    gates["timedApproval.expiredGrantRequiresApproval"] = _gate(
+        "test_expired_time_limited_approval_grant_does_not_bypass_new_approval" in nullbridge_tests
+        and "2000-01-01T00:00:00+00:00" in nullbridge_tests,
+        ["expired timed grant requires approval again"],
+        [] if "test_expired_time_limited_approval_grant_does_not_bypass_new_approval" in nullbridge_tests else ["TIMED_APPROVAL_EXPIRY_TEST_MISSING"],
+    )
+    gates["timedApproval.replayDoesNotExtendGrant"] = _gate(
+        "test_replayed_approval_decision_does_not_extend_timed_grant" in nullbridge_tests
+        and "DECISION_REPLAYED" in nullbridge_tests,
+        ["replayed approval does not extend grant"],
+        [] if "test_replayed_approval_decision_does_not_extend_timed_grant" in nullbridge_tests else ["TIMED_APPROVAL_REPLAY_TEST_MISSING"],
+    )
+    safe_grant_source = nullbridge_api[
+        nullbridge_api.find("def safe_approval_grant") : nullbridge_api.find("def redacted_payload_fields")
+    ]
+    gates["timedApproval.credentialIsolation"] = _gate(
+        "scope" not in safe_grant_source
+        and "auth" not in safe_grant_source
+        and "test_image_grant_does_not_authorize_video_or_3d_or_forged_grant_id" in nullbridge_tests
+        and "approvalGrant" in wrapper_service,
+        ["safe grant metadata and no client-facing secret markers"],
+        [] if "scope" not in safe_grant_source else ["TIMED_APPROVAL_SCOPE_LEAK"],
     )
 
     blocking = [
