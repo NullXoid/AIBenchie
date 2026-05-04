@@ -58,6 +58,9 @@ STORE_SECTIONS = (
     "timedApproval.crossCapabilityDenied",
     "timedApproval.expiredGrantRequiresApproval",
     "timedApproval.replayDoesNotExtendGrant",
+    "timedApproval.revokeGrant",
+    "timedApproval.revokedGrantRequiresApproval",
+    "timedApproval.grantListSafeMetadata",
     "timedApproval.credentialIsolation",
 )
 
@@ -826,9 +829,37 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         ["replayed approval does not extend grant"],
         [] if "test_replayed_approval_decision_does_not_extend_timed_grant" in nullbridge_tests else ["TIMED_APPROVAL_REPLAY_TEST_MISSING"],
     )
-    safe_grant_source = nullbridge_api[
-        nullbridge_api.find("def safe_approval_grant") : nullbridge_api.find("def redacted_payload_fields")
-    ]
+    gates["timedApproval.revokeGrant"] = _gate(
+        "def revoke_approval_grant" in nullbridge_api
+        and 'POST /grants/{grantId}/revoke' in nullbridge_api
+        and "revokedAt" in nullbridge_api
+        and "revokedBy" in nullbridge_api
+        and "test_revoke_active_image_grant_requires_approval_again_and_is_idempotent" in nullbridge_tests
+        and "test_revoke_active_video_grant_requires_approval_again" in nullbridge_tests,
+        ["admin can revoke image and video timed grants"],
+        [] if "def revoke_approval_grant" in nullbridge_api else ["TIMED_APPROVAL_REVOKE_API_MISSING"],
+    )
+    gates["timedApproval.revokedGrantRequiresApproval"] = _gate(
+        "read_approval_grant" in nullbridge_api
+        and "revokedAt" in nullbridge_api
+        and "test_revoke_active_image_grant_requires_approval_again_and_is_idempotent" in nullbridge_tests
+        and "test_revoke_active_video_grant_requires_approval_again" in nullbridge_tests
+        and "test_revoke_does_not_cancel_already_queued_job_and_next_matching_job_requires_approval" in nullbridge_tests,
+        ["revoked grants no longer bypass approval and do not cancel already queued jobs"],
+        [] if "test_revoke_does_not_cancel_already_queued_job_and_next_matching_job_requires_approval" in nullbridge_tests else ["REVOKED_GRANT_AUTHORIZATION_TEST_MISSING"],
+    )
+    gates["timedApproval.grantListSafeMetadata"] = _gate(
+        "def list_approval_grants" in nullbridge_api
+        and "def get_approval_grant_metadata" in nullbridge_api
+        and "safe_approval_grant_metadata" in nullbridge_api
+        and "includeExpired" in nullbridge_api
+        and "includeRevoked" in nullbridge_api
+        and "test_grant_list_detail_returns_safe_metadata_and_filters_inactive_by_default" in nullbridge_tests,
+        ["grant list/detail API exposes safe metadata and filters inactive grants by default"],
+        [] if "safe_approval_grant_metadata" in nullbridge_api else ["GRANT_LIST_SAFE_METADATA_MISSING"],
+    )
+    safe_grant_start = nullbridge_api.find("def safe_approval_grant(")
+    safe_grant_source = nullbridge_api[safe_grant_start : nullbridge_api.find("def redacted_payload_fields")] if safe_grant_start >= 0 else ""
     gates["timedApproval.credentialIsolation"] = _gate(
         "scope" not in safe_grant_source
         and "auth" not in safe_grant_source

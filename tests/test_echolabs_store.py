@@ -157,6 +157,19 @@ def queue_request_via_approval_grant():
     return {"approvalSource": "active_timed_grant"}
 def safe_approval_grant(grant):
     return {"grantId": grant.get("grantId"), "duration": grant.get("duration"), "durationSeconds": grant.get("durationSeconds"), "expiresAt": grant.get("expiresAt")}
+def safe_approval_grant_metadata(grant):
+    return {"grantId": grant.get("grantId"), "displayId": "GRT-safe", "status": grant.get("status"), "addonId": "local-video-studio", "addonName": "Local Video Studio", "mediaKind": "video", "capability": "suite.media.video.generate", "action": "media.video.generate.local", "friendlyScope": "Local Video Studio video generation for this requester", "requesterHash": "req_safe", "approvedBy": "admin", "revokedBy": "admin", "duration": "8h", "durationSeconds": 28800, "createdAt": "2026-05-04T00:00:00Z", "expiresAt": "2026-05-04T08:00:00Z", "revokedAt": None}
+def read_approval_grant(path):
+    return None
+def list_approval_grants(includeExpired=False, includeRevoked=False):
+    return []
+def get_approval_grant_metadata(grantId):
+    return safe_approval_grant_metadata({"grantId": grantId})
+def revoke_approval_grant(grantId, actor, auth=None):
+    return {"grantId": grantId, "revokedAt": "2026-05-04T01:00:00Z", "revokedBy": actor}
+# GET /grants?includeExpired=&includeRevoked=
+# GET /grants/{grantId}
+# POST /grants/{grantId}/revoke
 def redacted_payload_fields(payload): pass
 """,
     )
@@ -188,6 +201,16 @@ def test_expired_time_limited_approval_grant_does_not_bypass_new_approval():
     assert "2000-01-01T00:00:00+00:00"
 def test_replayed_approval_decision_does_not_extend_timed_grant():
     assert "DECISION_REPLAYED"
+def test_grant_list_detail_returns_safe_metadata_and_filters_inactive_by_default():
+    assert "includeExpired"
+    assert "includeRevoked"
+def test_revoke_active_image_grant_requires_approval_again_and_is_idempotent():
+    assert "revokedAt"
+    assert "revokedBy"
+def test_revoke_active_video_grant_requires_approval_again():
+    assert "revokedAt"
+def test_revoke_does_not_cancel_already_queued_job_and_next_matching_job_requires_approval():
+    assert "queued"
 """,
     )
     _write(
@@ -263,6 +286,9 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert result["echolabsStore"]["timedApproval.videoGrantDoesNotAuthorizeImage"]["status"] == "passed"
     assert result["echolabsStore"]["timedApproval.videoGrantDoesNotAuthorize3D"]["status"] == "passed"
     assert result["echolabsStore"]["timedApproval.videoAudioArtifactIsolation"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.revokeGrant"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.revokedGrantRequiresApproval"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.grantListSafeMetadata"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke"]["required"] is False
     assert result["echolabsStore"]["realProviderSmoke"]["configured"] is False
 
