@@ -14,6 +14,7 @@ def _write(path: Path, text: str) -> None:
 
 def _fixture_repos(tmp_path: Path) -> dict[str, str]:
     wrapper = tmp_path / "wrapper"
+    nullbridge = tmp_path / "nullbridge"
     android = tmp_path / "android"
     windows = tmp_path / "windows"
     _write(
@@ -47,6 +48,8 @@ async def run_action():
 async def worker_register(): pass
 async def worker_next_job(): pass
 async def worker_claim_job(): pass
+def worker_input_artifact():
+    return {"audioArtifactId": "artifact-safe-voice"}
 """,
     )
     _write(
@@ -128,10 +131,63 @@ def test_store_assistant_context_returns_safe_grounding_without_backend_secrets(
         """
 def test_async_store_action_returns_store_job_without_provider_execution(): pass
 def test_connector_claim_upload_complete_produces_sanitized_gallery(): pass
+def test_active_time_limited_approval_grant_queues_job_without_new_pending_approval():
+    assert "approvalSource"
+    assert "active_timed_grant"
+def test_video_job_exposes_recorded_voice_artifact_to_authorized_worker_only():
+    assert "active_timed_grant"
+    assert "audioArtifactId"
+def test_video_audio_artifact_is_not_fetchable_before_approval_or_after_denial_or_expiry():
+    assert "audioArtifactId"
+def test_video_audio_artifact_requires_matching_authorized_worker_job():
+    assert "audioArtifactId"
 def test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed():
     assert "suite.media.image.generate"
     assert "REQUESTER_NOT_AUTHORIZED"
     assert "admin"
+""",
+    )
+    _write(
+        nullbridge / "backend" / "scripts" / "nullbridge_api.py",
+        """
+APPROVAL_GRANT_DURATIONS = {"once": 0, "8h": 28800, "24h": 86400, "30d": 2592000}
+def create_approval_grant():
+    record_event("nullbridge.approval_grant_created", durationSeconds=28800)
+def queue_request_via_approval_grant():
+    return {"approvalSource": "active_timed_grant"}
+def safe_approval_grant(grant):
+    return {"grantId": grant.get("grantId"), "duration": grant.get("duration"), "durationSeconds": grant.get("durationSeconds"), "expiresAt": grant.get("expiresAt")}
+def redacted_payload_fields(payload): pass
+""",
+    )
+    _write(
+        nullbridge / "backend" / "tests" / "test_nullbridge_generic_approval_routing.py",
+        """
+def test_approved_request_executes_exactly_once_and_can_be_delivered():
+    assert list(api.APPROVAL_GRANTS.glob("grant-*.json")) == []
+def test_time_limited_approval_grant_queues_matching_image_request_without_new_approval():
+    assert "suite.media.image.generate"
+def test_once_video_approval_does_not_create_reusable_grant():
+    assert "suite.media.video.generate"
+def test_time_limited_approval_grant_queues_matching_video_request_without_new_approval():
+    assert "suite.media.video.generate"
+    assert "audioMode"
+    assert "audioArtifactId"
+    assert "8h"
+    assert "24h"
+    assert "30d"
+def test_video_grant_covers_safe_audio_modes():
+    assert "audioMode"
+def test_image_grant_does_not_authorize_video_or_3d_or_forged_grant_id():
+    assert "suite.media.video.generate"
+    assert "suite.media.model3d.generate"
+def test_video_grant_does_not_authorize_image_or_3d_or_other_requester_or_forged_grant_id():
+    assert "suite.media.image.generate"
+    assert "suite.media.model3d.generate"
+def test_expired_time_limited_approval_grant_does_not_bypass_new_approval():
+    assert "2000-01-01T00:00:00+00:00"
+def test_replayed_approval_decision_does_not_extend_timed_grant():
+    assert "DECISION_REPLAYED"
 """,
     )
     _write(
@@ -176,6 +232,7 @@ def test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed():
     )
     return {
         "AIBENCHIE_NULLXOID_WRAPPER_REPO": str(wrapper),
+        "AIBENCHIE_NULLBRIDGE_REPO": str(nullbridge),
         "AIBENCHIE_ANDROID_REPO": str(android),
         "AIBENCHIE_WINDOWS_REPO": str(windows),
     }
@@ -200,6 +257,12 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert result["echolabsStore"]["storeAssistant.groundingPrompt"]["status"] == "passed"
     assert result["echolabsStore"]["storeAssistant.noHostedCloudFalseClaim"]["status"] == "passed"
     assert result["echolabsStore"]["storeAssistant.secretLeakCheck"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.videoThisJob"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.videoTimedGrant"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.matchingVideoSkipsApproval"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.videoGrantDoesNotAuthorizeImage"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.videoGrantDoesNotAuthorize3D"]["status"] == "passed"
+    assert result["echolabsStore"]["timedApproval.videoAudioArtifactIsolation"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke"]["required"] is False
     assert result["echolabsStore"]["realProviderSmoke"]["configured"] is False
 

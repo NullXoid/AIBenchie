@@ -49,6 +49,12 @@ STORE_SECTIONS = (
     "timedApproval.thisJob",
     "timedApproval.timedGrant",
     "timedApproval.matchingImageSkipsApproval",
+    "timedApproval.videoThisJob",
+    "timedApproval.videoTimedGrant",
+    "timedApproval.matchingVideoSkipsApproval",
+    "timedApproval.videoGrantDoesNotAuthorizeImage",
+    "timedApproval.videoGrantDoesNotAuthorize3D",
+    "timedApproval.videoAudioArtifactIsolation",
     "timedApproval.crossCapabilityDenied",
     "timedApproval.expiredGrantRequiresApproval",
     "timedApproval.replayDoesNotExtendGrant",
@@ -761,6 +767,45 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         and "test_time_limited_approval_grant_queues_matching_image_request_without_new_approval" in nullbridge_tests,
         ["active image grant queues matching request without new approval"],
         [] if "active_timed_grant" in timed_source else ["TIMED_APPROVAL_SOURCE_MARKER_MISSING"],
+    )
+    gates["timedApproval.videoThisJob"] = _gate(
+        "test_once_video_approval_does_not_create_reusable_grant" in nullbridge_tests
+        and LOCAL_VIDEO_CAPABILITY in nullbridge_tests,
+        ["per-job video approval does not create reusable grant"],
+        [] if "test_once_video_approval_does_not_create_reusable_grant" in nullbridge_tests else ["VIDEO_THIS_JOB_TEST_MISSING"],
+    )
+    gates["timedApproval.videoTimedGrant"] = _gate(
+        "test_time_limited_approval_grant_queues_matching_video_request_without_new_approval" in nullbridge_tests
+        and all(marker in nullbridge_tests for marker in ["8h", "24h", "30d", "audioMode", "audioArtifactId"]),
+        ["8h/24h/30d video timed grants cover profiles and safe audio modes"],
+        [] if "test_time_limited_approval_grant_queues_matching_video_request_without_new_approval" in nullbridge_tests else ["VIDEO_TIMED_GRANT_TEST_MISSING"],
+    )
+    gates["timedApproval.matchingVideoSkipsApproval"] = _gate(
+        "test_time_limited_approval_grant_queues_matching_video_request_without_new_approval" in nullbridge_tests
+        and "active_timed_grant" in wrapper_service + wrapper_async_test + nullbridge_api
+        and "test_video_job_exposes_recorded_voice_artifact_to_authorized_worker_only" in wrapper_async_test,
+        ["active video grant queues matching request without new approval"],
+        [] if "test_video_job_exposes_recorded_voice_artifact_to_authorized_worker_only" in wrapper_async_test else ["VIDEO_STORE_GRANT_TEST_MISSING"],
+    )
+    gates["timedApproval.videoGrantDoesNotAuthorizeImage"] = _gate(
+        "test_video_grant_does_not_authorize_image_or_3d_or_other_requester_or_forged_grant_id" in nullbridge_tests
+        and LOCAL_IMAGE_CAPABILITY in nullbridge_tests,
+        ["video grant does not authorize image"],
+        [] if "test_video_grant_does_not_authorize_image_or_3d_or_other_requester_or_forged_grant_id" in nullbridge_tests else ["VIDEO_CROSS_IMAGE_TEST_MISSING"],
+    )
+    gates["timedApproval.videoGrantDoesNotAuthorize3D"] = _gate(
+        "test_video_grant_does_not_authorize_image_or_3d_or_other_requester_or_forged_grant_id" in nullbridge_tests
+        and LOCAL_3D_CAPABILITY in nullbridge_tests,
+        ["video grant does not authorize 3D"],
+        [] if "test_video_grant_does_not_authorize_image_or_3d_or_other_requester_or_forged_grant_id" in nullbridge_tests else ["VIDEO_CROSS_3D_TEST_MISSING"],
+    )
+    gates["timedApproval.videoAudioArtifactIsolation"] = _gate(
+        "test_video_audio_artifact_is_not_fetchable_before_approval_or_after_denial_or_expiry" in wrapper_async_test
+        and "test_video_audio_artifact_requires_matching_authorized_worker_job" in wrapper_async_test
+        and "worker_input_artifact" in wrapper_service
+        and "audioArtifactId" in wrapper_async_test + wrapper_service,
+        ["video audio artifacts are scoped to approved or grant-authorized worker jobs"],
+        [] if "test_video_audio_artifact_is_not_fetchable_before_approval_or_after_denial_or_expiry" in wrapper_async_test else ["VIDEO_AUDIO_ARTIFACT_ISOLATION_TEST_MISSING"],
     )
     gates["timedApproval.crossCapabilityDenied"] = _gate(
         "test_image_grant_does_not_authorize_video_or_3d_or_forged_grant_id" in nullbridge_tests
