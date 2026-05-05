@@ -148,6 +148,7 @@ def test_unsupported_capability_denies(): pass
 def test_denied_expired_pending_approval_does_not_call_provider(): pass
 def test_approved_calls_provider_once(): pass
 def test_approved_generation_calls_mock_provider_once(): pass
+def _assert_valid_glb(): pass
 def test_store_approved_mock_video_and_3d_call_provider_once(): pass
 def test_store_denied_video_and_3d_approval_does_not_call_provider(): pass
 def test_gallery_hides_private_path(): pass
@@ -309,11 +310,19 @@ def test_model3d_and_chat_grants_have_safe_friendly_labels():
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt",
-        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; saveStoreArtifactToDevice(); MediaStore; storeJobs: List<StoreJobSummary>; repo.storeJobs(activeOnly = activeOnly, limit = 50); repo.cancelStoreJob(storeJobId); cancelStoreJob;',
+        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; saveStoreArtifactToDevice(); MediaStore; MediaStore.Downloads.EXTERNAL_CONTENT_URI; Environment.DIRECTORY_DOWNLOADS; "model/gltf-binary"; storeJobs: List<StoreJobSummary>; repo.storeJobs(activeOnly = activeOnly, limit = 50); repo.cancelStoreJob(storeJobId); cancelStoreJob;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt",
-        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "Save to device";',
+        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "Save to device"; "3D preview not yet available";',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreUiModels.kt",
+        '"3D model"; item.format.ifBlank; "model/gltf-binary";',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "GalleryScreen.kt",
+        '"3D"; StoreGalleryCard; "model/gltf-binary";',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "JobsScreen.kt",
@@ -325,7 +334,7 @@ def test_model3d_and_chat_grants_have_safe_friendly_labels():
     )
     _write(
         android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "ui" / "AndroidProductIaTest.kt",
-        'const val Jobs = "jobs"; JobsScreen; "Cancel this job?";',
+        'const val Jobs = "jobs"; JobsScreen; "Cancel this job?"; "3D preview not yet available"; MediaStore.Downloads.EXTERNAL_CONTENT_URI; Environment.DIRECTORY_DOWNLOADS; "model/gltf-binary";',
     )
     _write(
         android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt",
@@ -363,6 +372,9 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert result["echolabsStore"]["local3DStudio"]["status"] == "passed"
     assert result["echolabsStore"]["videoApprovedGeneration"]["status"] == "passed"
     assert result["echolabsStore"]["model3DApprovedGeneration"]["status"] == "passed"
+    assert result["echolabsStore"]["model3DGallerySafeMetadata"]["status"] == "passed"
+    assert result["echolabsStore"]["android3DModelCard"]["status"] == "passed"
+    assert result["echolabsStore"]["android3DGlbSave"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke.video"]["status"] == "skipped"
     assert result["echolabsStore"]["realProviderSmoke.model3d"]["status"] == "skipped"
     assert result["echolabsStore"]["androidOutOfNetwork.approvedVideoGeneration"]["status"] == "skipped"

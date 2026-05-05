@@ -31,6 +31,9 @@ STORE_SECTIONS = (
     "model3DDeniedGeneration",
     "videoArtifactSandboxing",
     "model3DArtifactSandboxing",
+    "model3DGallerySafeMetadata",
+    "android3DModelCard",
+    "android3DGlbSave",
     "realProviderSmoke.video",
     "realProviderSmoke.model3d",
     "storeAssistant.contextEndpoint",
@@ -403,6 +406,8 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     android_settings = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "prefs" / "SettingsStore.kt") if android else ""
     android_vm = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt") if android else ""
     android_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt") if android else ""
+    android_store_ui = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreUiModels.kt") if android else ""
+    android_gallery_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "GalleryScreen.kt") if android else ""
     android_jobs_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "JobsScreen.kt") if android else ""
     android_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt") if android else ""
     android_async_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreAsyncJobContractTest.kt") if android else ""
@@ -579,6 +584,33 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         "modelPreviewUrl" in wrapper_catalog + wrapper_service and "model/gltf-binary" in wrapper_service,
         ["3D gallery safe model preview metadata"],
         [] if "modelPreviewUrl" in wrapper_catalog + wrapper_service else ["MODEL3D_GALLERY_SAFE_FIELDS_MISSING"],
+    )
+    model3d_gallery_missing = _has_all(
+        wrapper_catalog + wrapper_service + wrapper_provider + wrapper_test,
+        ["modelPreviewUrl", "model/gltf-binary", "format", "_assert_valid_glb", "local-3d-studio"],
+    )
+    gates["model3DGallerySafeMetadata"] = _gate(
+        not model3d_gallery_missing,
+        ["3D GLB Gallery metadata is sanitized and fixture GLB is source-validated"],
+        [f"MODEL3D_GALLERY_METADATA_MISSING:{item}" for item in model3d_gallery_missing],
+    )
+    android_model_card_missing = _has_all(
+        android_screen + android_store_ui + android_gallery_screen + android_ia_test,
+        ["3D model", "item.format.ifBlank", "model/gltf-binary", "3D preview not yet available"],
+    )
+    gates["android3DModelCard"] = _gate(
+        not android_model_card_missing,
+        ["Android Gallery renders 3D model cards with placeholder viewer copy"],
+        [f"ANDROID_3D_MODEL_CARD_MISSING:{item}" for item in android_model_card_missing],
+    )
+    android_glb_save_missing = _has_all(
+        android_vm + android_ia_test,
+        ["MediaStore.Downloads.EXTERNAL_CONTENT_URI", "Environment.DIRECTORY_DOWNLOADS", "model/gltf-binary"],
+    )
+    gates["android3DGlbSave"] = _gate(
+        not android_glb_save_missing,
+        ["Android saves GLB/glTF model artifacts through a Downloads/document path"],
+        [f"ANDROID_3D_GLB_SAVE_MISSING:{item}" for item in android_glb_save_missing],
     )
 
     client_files = []
