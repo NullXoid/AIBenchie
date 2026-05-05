@@ -46,6 +46,15 @@ STORE_SECTIONS = (
     "androidOutOfNetwork.artifactDownload",
     "androidOutOfNetwork.saveToDevice",
     "androidOutOfNetwork.credentialIsolation",
+    "storeJobs.fifoQueueOrdering",
+    "storeJobs.safeJobListMetadata",
+    "storeJobs.pendingQueuedCancel",
+    "storeJobs.runningCancelRequest",
+    "storeJobs.cancelledJobsNotClaimable",
+    "storeJobs.lateUploadBlockedAfterCancel",
+    "storeJobs.cancelledJobsNotInGallery",
+    "storeJobs.androidJobMonitor",
+    "storeJobs.credentialIsolation",
     "timedApproval.thisJob",
     "timedApproval.timedGrant",
     "timedApproval.matchingImageSkipsApproval",
@@ -373,6 +382,8 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     wrapper_main = _read(wrapper / "backend" / "main.py") if wrapper else ""
     wrapper_service = _read(wrapper / "backend" / "store_service.py") if wrapper else ""
     wrapper_jobs = _read(wrapper / "backend" / "store_jobs.py") if wrapper else ""
+    wrapper_provider = _read(wrapper / "backend" / "creative_provider.py") if wrapper else ""
+    wrapper_comfyui = _read(wrapper / "backend" / "providers" / "comfyui.py") if wrapper else ""
     wrapper_ui = _read(wrapper / "frontend" / "src" / "App.jsx") if wrapper else ""
     wrapper_store_prompt = _read(wrapper / "frontend" / "src" / "lib" / "storeAssistantPrompt.js") if wrapper else ""
     wrapper_test = _read(wrapper / "backend" / "tests" / "test_store_alpha.py") if wrapper else ""
@@ -391,7 +402,10 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     android_settings = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "prefs" / "SettingsStore.kt") if android else ""
     android_vm = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt") if android else ""
     android_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt") if android else ""
+    android_jobs_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "JobsScreen.kt") if android else ""
     android_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt") if android else ""
+    android_async_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreAsyncJobContractTest.kt") if android else ""
+    android_ia_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "ui" / "AndroidProductIaTest.kt") if android else ""
     windows_adapter = _read(windows / "src" / "bridge" / "echolabs_store_adapter.cpp") + _read(windows / "src" / "bridge" / "echolabs_store_adapter.h") if windows else ""
     windows_test = _read(windows / "tests" / "unit" / "echolabs_store_adapter_test.cpp") if windows else ""
 
@@ -761,6 +775,90 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
             if "CREATIVE_WORKER_TOKEN" not in android_models + android_api + android_repo + android_vm + android_screen
             else ["ANDROID_CREATIVE_WORKER_TOKEN_LEAK"]
         ),
+    )
+
+    jobs_source = wrapper_main + wrapper_service + wrapper_jobs + wrapper_async_test
+    gates["storeJobs.fifoQueueOrdering"] = _gate(
+        "worker_next_job" in wrapper_service
+        and "createdAt" in wrapper_service
+        and "queuePosition" in wrapper_service
+        and "test_store_jobs_list_is_safe_active_only_and_fifo" in wrapper_async_test,
+        ["FIFO worker dispatch by createdAt and queuePosition source/test"],
+        [] if "test_store_jobs_list_is_safe_active_only_and_fifo" in wrapper_async_test else ["STORE_JOBS_FIFO_TEST_MISSING"],
+    )
+    gates["storeJobs.safeJobListMetadata"] = _gate(
+        '"/api/store/jobs"' in wrapper_main
+        and "list_store_jobs" in wrapper_service
+        and "safe events" not in jobs_source.lower()
+        and "test_store_jobs_list_is_safe_active_only_and_fifo" in wrapper_async_test
+        and all(marker in wrapper_service for marker in ["queueLane", "canCancel", "cancelRequested", "events"]),
+        ["safe Store job list/detail metadata"],
+        [] if "list_store_jobs" in wrapper_service else ["STORE_JOBS_LIST_API_MISSING"],
+    )
+    gates["storeJobs.pendingQueuedCancel"] = _gate(
+        "cancel_job" in wrapper_service
+        and "test_cancel_queued_job_is_idempotent_and_not_claimable" in wrapper_async_test
+        and "test_cancel_pending_blocks_late_approval_from_queueing" in wrapper_async_test,
+        ["pending/queued cancellation blocks claim and late approval"],
+        [] if "test_cancel_queued_job_is_idempotent_and_not_claimable" in wrapper_async_test else ["STORE_JOBS_QUEUED_CANCEL_TEST_MISSING"],
+    )
+    gates["storeJobs.runningCancelRequest"] = _gate(
+        "cancelRequested" in wrapper_service
+        and "worker_cancel_request" in wrapper_service
+        and "/api/creative-worker/jobs/{store_job_id}/cancel-request" in wrapper_main
+        and "test_cancel_running_blocks_late_upload_and_complete" in wrapper_async_test,
+        ["running jobs record cancel request and worker cancel-request route"],
+        [] if "worker_cancel_request" in wrapper_service else ["STORE_JOBS_WORKER_CANCEL_REQUEST_MISSING"],
+    )
+    gates["storeJobs.cancelledJobsNotClaimable"] = _gate(
+        "cancelRequested" in wrapper_service
+        and "worker_claim_job" in wrapper_service
+        and "test_cancel_queued_job_is_idempotent_and_not_claimable" in wrapper_async_test,
+        ["cancelled jobs are rejected by connector claim"],
+        [] if "test_cancel_queued_job_is_idempotent_and_not_claimable" in wrapper_async_test else ["STORE_JOBS_CANCELLED_NOT_CLAIMABLE_TEST_MISSING"],
+    )
+    gates["storeJobs.lateUploadBlockedAfterCancel"] = _gate(
+        "cancelled" in wrapper_service
+        and "worker_upload_artifact" in wrapper_service
+        and "worker_complete_job" in wrapper_service
+        and "test_cancel_running_blocks_late_upload_and_complete" in wrapper_async_test,
+        ["late upload/complete after cancel is blocked before artifact storage"],
+        [] if "test_cancel_running_blocks_late_upload_and_complete" in wrapper_async_test else ["STORE_JOBS_LATE_UPLOAD_BLOCK_TEST_MISSING"],
+    )
+    gates["storeJobs.cancelledJobsNotInGallery"] = _gate(
+        "cancelled" in wrapper_service
+        and "def gallery(" in wrapper_service
+        and "test_cancel_running_blocks_late_upload_and_complete" in wrapper_async_test,
+        ["cancelled jobs do not create Gallery artifacts"],
+        [] if "def gallery(" in wrapper_service else ["STORE_JOBS_GALLERY_FILTER_MISSING"],
+    )
+    gates["storeJobs.androidJobMonitor"] = _gate(
+        "StoreJobSummary" in android_models
+        and "StoreJobsResponse" in android_models
+        and "storeJobs(activeOnly" in android_api + android_repo
+        and "cancelStoreJob" in android_api + android_repo + android_vm
+        and "JobsScreen" in android_jobs_screen + android_ia_test
+        and "Cancel this job?" in android_jobs_screen,
+        ["Android Jobs screen, list state, and cancel UI"],
+        [] if "JobsScreen" in android_jobs_screen else ["ANDROID_JOB_MONITOR_SCREEN_MISSING"],
+    )
+    store_job_leaks = _scan_files(
+        [
+            wrapper / "backend" / "store_service.py",
+            wrapper / "backend" / "main.py",
+            android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "JobsScreen.kt",
+            android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt",
+        ]
+        if wrapper and android
+        else []
+    )
+    gates["storeJobs.credentialIsolation"] = _gate(
+        not store_job_leaks
+        and "test_comfyui_cancel_prompt_calls_interrupt_and_queue_delete" in wrapper_test
+        and "cancel_prompt" in wrapper_comfyui + wrapper_provider,
+        ["Store job monitor/cancel leak scan and ComfyUI cancel helper test"],
+        [f"STORE_JOBS_LEAK:{item}" for item in store_job_leaks]
+        + ([] if "test_comfyui_cancel_prompt_calls_interrupt_and_queue_delete" in wrapper_test else ["COMFYUI_CANCEL_TEST_MISSING"]),
     )
 
     timed_source = nullbridge_api + nullbridge_tests + wrapper_service + wrapper_async_test

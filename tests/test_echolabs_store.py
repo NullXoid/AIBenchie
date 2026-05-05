@@ -48,14 +48,25 @@ async def run_action():
 async def worker_register(): pass
 async def worker_next_job(): pass
 async def worker_claim_job(): pass
+async def list_store_jobs(): return {"queueLane": "suite.media.image.generate", "queuePosition": 0, "canCancel": True, "cancelRequested": False, "events": []}
+async def cancel_job(): pass
+async def worker_progress(): pass
+async def worker_cancel_request(): pass
+async def worker_upload_artifact(): pass
+async def worker_complete_job(): pass
+async def store_gallery(): pass
 def worker_input_artifact():
     return {"audioArtifactId": "artifact-safe-voice"}
+status = "CANCELLED"
 """,
     )
     _write(
         wrapper / "backend" / "store_jobs.py",
         """
 STORE_JOB_STATES = {"pending_approval", "queued_connector", "running_provider", "uploading_artifact"}
+createdAt = "2026-05-05T00:00:00Z"
+queuePosition = 0
+cancelRequested = False
 def lease_job(): pass
 """,
     )
@@ -67,6 +78,10 @@ async def store_addon_assistant_context(addon_id):
     return {"ok": True, "context": await store_service.assistant_context(addon_id)}
 @app.get("/api/store/jobs/{store_job_id}")
 async def store_job_status(store_job_id): pass
+@app.get("/api/store/jobs")
+async def store_jobs(): pass
+@app.post("/api/store/jobs/{store_job_id}/cancel")
+async def store_job_cancel(store_job_id): pass
 @app.post("/api/creative-worker/register")
 async def creative_worker_register(): pass
 @app.post("/api/creative-worker/heartbeat")
@@ -81,6 +96,10 @@ async def creative_worker_upload_artifact(): pass
 async def creative_worker_complete_job(): pass
 @app.post("/api/creative-worker/jobs/{store_job_id}/fail")
 async def creative_worker_fail_job(): pass
+@app.post("/api/creative-worker/jobs/{store_job_id}/progress")
+async def creative_worker_progress(): pass
+@app.get("/api/creative-worker/jobs/{store_job_id}/cancel-request")
+async def creative_worker_cancel_request(): pass
 """,
     )
     _write(
@@ -89,6 +108,15 @@ async def creative_worker_fail_job(): pass
 def provider_config_from_env(): pass
 class LocalImageEngineProvider: pass
 CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED = "CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED"
+def cancel_prompt(): pass
+""",
+    )
+    _write(
+        wrapper / "backend" / "providers" / "comfyui.py",
+        """
+async def cancel_prompt(prompt_id, settings):
+    await client.post("/interrupt")
+    await client.post("/queue", json={"delete": [prompt_id]})
 """,
     )
     _write(
@@ -124,6 +152,7 @@ def test_gallery_hides_private_artifact_path(): pass
 # private artifact path
 def test_store_public_surfaces_do_not_leak_fake_prompt_or_provider_secrets(): pass
 def test_store_assistant_context_returns_safe_grounding_without_backend_secrets(): pass
+def test_comfyui_cancel_prompt_calls_interrupt_and_queue_delete(): pass
 """,
     )
     _write(
@@ -145,6 +174,11 @@ def test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed():
     assert "suite.media.image.generate"
     assert "REQUESTER_NOT_AUTHORIZED"
     assert "admin"
+def test_store_jobs_list_is_safe_active_only_and_fifo(): pass
+def test_cancel_queued_job_is_idempotent_and_not_claimable(): pass
+def test_cancel_pending_blocks_late_approval_from_queueing(): pass
+def test_cancel_running_blocks_late_upload_and_complete(): pass
+def test_cancel_authorization_rejects_unrelated_user(): pass
 """,
     )
     _write(
@@ -158,7 +192,7 @@ def queue_request_via_approval_grant():
 def safe_approval_grant(grant):
     return {"grantId": grant.get("grantId"), "duration": grant.get("duration"), "durationSeconds": grant.get("durationSeconds"), "expiresAt": grant.get("expiresAt")}
 def safe_approval_grant_metadata(grant):
-    return {"grantId": grant.get("grantId"), "displayId": "GRT-safe", "status": grant.get("status"), "addonId": "local-video-studio", "addonName": "Local Video Studio", "mediaKind": "video", "capability": "suite.media.video.generate", "action": "media.video.generate.local", "friendlyScope": "Local Video Studio video generation for this requester", "requesterHash": "req_safe", "approvedBy": "admin", "revokedBy": "admin", "duration": "8h", "durationSeconds": 28800, "createdAt": "2026-05-04T00:00:00Z", "expiresAt": "2026-05-04T08:00:00Z", "revokedAt": None}
+    return {"grantId": grant.get("grantId"), "displayId": "GRT-safe", "status": grant.get("status"), "serviceId": "store", "serviceName": "EchoLabs Store", "platform": "android", "targetRole": "store-generation", "addonId": "local-video-studio", "addonName": "Local Video Studio", "mediaKind": "video", "capability": "suite.media.video.generate", "action": "media.video.generate.local", "friendlyScope": "Local Video Studio video generation for this requester", "requesterHash": "req_safe", "approvedBy": "admin", "revokedBy": "admin", "duration": "8h", "durationSeconds": 28800, "createdAt": "2026-05-04T00:00:00Z", "expiresAt": "2026-05-04T08:00:00Z", "revokedAt": None}
 def read_approval_grant(path):
     return None
 def list_approval_grants(includeExpired=False, includeRevoked=False):
@@ -167,9 +201,13 @@ def get_approval_grant_metadata(grantId):
     return safe_approval_grant_metadata({"grantId": grantId})
 def revoke_approval_grant(grantId, actor, auth=None):
     return {"grantId": grantId, "revokedAt": "2026-05-04T01:00:00Z", "revokedBy": actor}
+def update_approval_grant(grantId, duration, actor, auth=None):
+    return {"grantId": grantId, "expiresAt": "2026-05-04T09:00:00Z", "updatedBy": actor}
 # GET /grants?includeExpired=&includeRevoked=
 # GET /grants/{grantId}
 # POST /grants/{grantId}/revoke
+# POST /grants/{grantId}/update
+class ApprovalGrantUpdateRequestDto: pass
 def redacted_payload_fields(payload): pass
 """,
     )
@@ -211,19 +249,52 @@ def test_revoke_active_video_grant_requires_approval_again():
     assert "revokedAt"
 def test_revoke_does_not_cancel_already_queued_job_and_next_matching_job_requires_approval():
     assert "queued"
+def test_grant_update_changes_duration_from_server_time_and_preserves_scope():
+    assert after["scope"] == before["scope"]
+    assert "updatedBy"
+    assert "expiresAt"
+def test_grant_update_denies_revoked_and_expired_grants():
+    assert "GRANT_REVOKED"
+    assert "GRANT_EXPIRED"
+def test_model3d_and_chat_grants_have_safe_friendly_labels():
+    assert "Chat access for this requester"
 """,
     )
     _write(
+        nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "data" / "remote" / "NullBridgeDtos.kt",
+        "ApprovalGrantUpdateRequestDto serviceId serviceName platform targetRole requesterHash",
+    )
+    _write(
+        nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "data" / "remote" / "NullBridgeApi.kt",
+        "ApprovalGrantUpdateRequestDto updateGrantDuration serviceId serviceName platform targetRole requesterHash",
+    )
+    _write(
+        nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "domain" / "NullBridgeModels.kt",
+        "serviceId serviceName platform targetRole requesterHash",
+    )
+    _write(
+        nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "data" / "repository" / "NullBridgeRepositoryImpl.kt",
+        "ApprovalGrantUpdateRequestDto updateGrantDuration serviceId serviceName platform targetRole requesterHash",
+    )
+    _write(
+        nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "presentation" / "PermissionsComponents.kt",
+        "updateGrantDuration serviceId serviceName platform targetRole requesterHash",
+    )
+    _write(
+        nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "presentation" / "GrantUiFormatters.kt",
+        "Chat access for this requester serviceId serviceName platform targetRole requesterHash",
+    )
+    _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt",
-        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "storeJobId";',
+        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "storeJobId"; StoreJobSummary; StoreJobsResponse;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "api" / "NullXoidApi.kt",
-        '"storeJobId"; "/api/store/jobs/{store_job_id}"; getBytes();',
+        '"storeJobId"; "/api/store/jobs/{store_job_id}"; "/api/store/jobs?activeOnly=$activeOnly"; "/api/store/jobs/${urlEncode(storeJobId)}/cancel"; getBytes(); storeJobs(activeOnly;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "repo" / "NullXoidRepository.kt",
-        'storeArtifactBytes(); "/artifacts/$artifactId";',
+        'storeArtifactBytes(); "/artifacts/$artifactId"; storeJobs(activeOnly; cancelStoreJob;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "prefs" / "SettingsStore.kt",
@@ -231,11 +302,23 @@ def test_revoke_does_not_cancel_already_queued_job_and_next_matching_job_require
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt",
-        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; saveStoreArtifactToDevice(); MediaStore;',
+        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; saveStoreArtifactToDevice(); MediaStore; storeJobs: List<StoreJobSummary>; repo.storeJobs(activeOnly = activeOnly, limit = 50); repo.cancelStoreJob(storeJobId); cancelStoreJob;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt",
         '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "Save to device";',
+    )
+    _write(
+        android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "JobsScreen.kt",
+        'class JobsScreen; Text("Jobs"); "Cancel this job?"; "No, keep job"; "Yes, cancel job"; "Queue #"; store-job-monitor-card;',
+    )
+    _write(
+        android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreAsyncJobContractTest.kt",
+        '"StoreJobSummary"; "StoreJobsResponse"; "cancel_requested";',
+    )
+    _write(
+        android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "ui" / "AndroidProductIaTest.kt",
+        'const val Jobs = "jobs"; JobsScreen; "Cancel this job?";',
     )
     _write(
         android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt",
