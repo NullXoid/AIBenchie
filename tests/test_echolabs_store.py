@@ -54,7 +54,7 @@ async def worker_progress(): pass
 async def worker_cancel_request(): pass
 async def worker_upload_artifact(): pass
 async def worker_complete_job(): pass
-async def store_gallery(): pass
+def gallery(addon_id=None): pass
 def worker_input_artifact():
     return {"audioArtifactId": "artifact-safe-voice"}
 status = "CANCELLED"
@@ -107,6 +107,10 @@ async def creative_worker_cancel_request(): pass
         """
 def provider_config_from_env(): pass
 class LocalImageEngineProvider: pass
+class DelayedCreativeProvider: pass
+CREATIVE_PROVIDER_TEST_DELAY_MS = "CREATIVE_PROVIDER_TEST_DELAY_MS"
+MAX_CREATIVE_PROVIDER_TEST_DELAY_MS = 120000
+async def _sleep_test_delay(): pass
 CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED = "CREATIVE_REAL_PROVIDER_SMOKE_REQUIRED"
 def cancel_prompt(): pass
 """,
@@ -153,6 +157,7 @@ def test_gallery_hides_private_artifact_path(): pass
 def test_store_public_surfaces_do_not_leak_fake_prompt_or_provider_secrets(): pass
 def test_store_assistant_context_returns_safe_grounding_without_backend_secrets(): pass
 def test_comfyui_cancel_prompt_calls_interrupt_and_queue_delete(): pass
+def test_creative_provider_test_delay_env_parses_safely(): pass
 """,
     )
     _write(
@@ -179,6 +184,8 @@ def test_cancel_queued_job_is_idempotent_and_not_claimable(): pass
 def test_cancel_pending_blocks_late_approval_from_queueing(): pass
 def test_cancel_running_blocks_late_upload_and_complete(): pass
 def test_cancel_authorization_rejects_unrelated_user(): pass
+def test_slow_provider_delay_cancelled_connector_job_stores_no_artifact(): pass
+def test_slow_provider_delay_keeps_two_job_queue_positions_observable(): pass
 """,
     )
     _write(

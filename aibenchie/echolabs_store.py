@@ -54,6 +54,7 @@ STORE_SECTIONS = (
     "storeJobs.lateUploadBlockedAfterCancel",
     "storeJobs.cancelledJobsNotInGallery",
     "storeJobs.androidJobMonitor",
+    "storeJobs.slowProviderTestMode",
     "storeJobs.credentialIsolation",
     "timedApproval.thisJob",
     "timedApproval.timedGrant",
@@ -841,6 +842,19 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         and "Cancel this job?" in android_jobs_screen,
         ["Android Jobs screen, list state, and cancel UI"],
         [] if "JobsScreen" in android_jobs_screen else ["ANDROID_JOB_MONITOR_SCREEN_MISSING"],
+    )
+    gates["storeJobs.slowProviderTestMode"] = _gate(
+        "CREATIVE_PROVIDER_TEST_DELAY_MS" in wrapper_provider
+        and "MAX_CREATIVE_PROVIDER_TEST_DELAY_MS" in wrapper_provider
+        and "DelayedCreativeProvider" in wrapper_provider
+        and "_sleep_test_delay" in wrapper_provider
+        and "test_creative_provider_test_delay_env_parses_safely" in wrapper_test
+        and "test_slow_provider_delay_cancelled_connector_job_stores_no_artifact" in wrapper_async_test
+        and "test_slow_provider_delay_keeps_two_job_queue_positions_observable" in wrapper_async_test,
+        ["backend-only slow provider test mode source and tests"],
+        []
+        if "test_slow_provider_delay_cancelled_connector_job_stores_no_artifact" in wrapper_async_test
+        else ["STORE_JOBS_SLOW_PROVIDER_TEST_MISSING"],
     )
     store_job_leaks = _scan_files(
         [
