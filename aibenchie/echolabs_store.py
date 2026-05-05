@@ -32,6 +32,7 @@ STORE_SECTIONS = (
     "videoArtifactSandboxing",
     "model3DArtifactSandboxing",
     "model3DGallerySafeMetadata",
+    "model3DRequiresSourceImage",
     "android3DModelCard",
     "android3DGlbSave",
     "realProviderSmoke.video",
@@ -593,6 +594,22 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         not model3d_gallery_missing,
         ["3D GLB Gallery metadata is sanitized and fixture GLB is source-validated"],
         [f"MODEL3D_GALLERY_METADATA_MISSING:{item}" for item in model3d_gallery_missing],
+    )
+    source_image_missing = _has_all(
+        wrapper_service + wrapper_provider + wrapper_test + android_vm + android_screen + android_ia_test,
+        [
+            "SOURCE_IMAGE_REQUIRED",
+            "sourceImageArtifactId",
+            "test_store_3d_generation_requires_source_image_before_approval",
+            "test_real_3d_provider_receives_source_image",
+            "Choose a source image before generating a 3D model.",
+            "3D model generation uses an image first.",
+        ],
+    )
+    gates["model3DRequiresSourceImage"] = _gate(
+        not source_image_missing,
+        ["3D generation requires an image source and passes it to the provider workflow"],
+        [f"MODEL3D_SOURCE_IMAGE_MISSING:{item}" for item in source_image_missing],
     )
     android_model_card_missing = _has_all(
         android_screen + android_store_ui + android_gallery_screen + android_ia_test,

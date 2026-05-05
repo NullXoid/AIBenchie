@@ -42,7 +42,7 @@ async def assistant_context(addon_id):
 
 async def run_action():
     await nullbridge_adapter.submit_approval_route({})
-    await provider.submitJob({"mediaKind": "video", "format": "glb"})
+    await provider.submitJob({"mediaKind": "video", "format": "glb", "sourceImageArtifactId": "artifact-safe-image"})
     return {"storeJobId": "storejob-safe", "artifactId": "safe", "thumbnailUrl": "/artifacts/safe/thumb", "posterUrl": "/artifacts/safe/thumb", "modelPreviewUrl": "/artifacts/safe", "durationMs": 4000, "mimeType": "model/gltf-binary"}
 
 async def worker_register(): pass
@@ -56,8 +56,9 @@ async def worker_upload_artifact(): pass
 async def worker_complete_job(): pass
 def gallery(addon_id=None): pass
 def worker_input_artifact():
-    return {"audioArtifactId": "artifact-safe-voice"}
+    return {"audioArtifactId": "artifact-safe-voice", "sourceImageArtifactId": "artifact-safe-image"}
 status = "CANCELLED"
+SOURCE_IMAGE_REQUIRED = "SOURCE_IMAGE_REQUIRED"
 """,
     )
     _write(
@@ -108,6 +109,8 @@ async def creative_worker_cancel_request(): pass
 def provider_config_from_env(): pass
 class LocalImageEngineProvider: pass
 class DelayedCreativeProvider: pass
+SOURCE_IMAGE_REQUIRED = "SOURCE_IMAGE_REQUIRED"
+async def submit_model3d(imageBytes=None, imageFilename=None): pass
 CREATIVE_PROVIDER_TEST_DELAY_MS = "CREATIVE_PROVIDER_TEST_DELAY_MS"
 MAX_CREATIVE_PROVIDER_TEST_DELAY_MS = 120000
 async def _sleep_test_delay(): pass
@@ -159,6 +162,8 @@ def test_store_public_surfaces_do_not_leak_fake_prompt_or_provider_secrets(): pa
 def test_store_assistant_context_returns_safe_grounding_without_backend_secrets(): pass
 def test_comfyui_cancel_prompt_calls_interrupt_and_queue_delete(): pass
 def test_creative_provider_test_delay_env_parses_safely(): pass
+def test_store_3d_generation_requires_source_image_before_approval(): pass
+def test_real_3d_provider_receives_source_image(): pass
 """,
     )
     _write(
@@ -310,11 +315,11 @@ def test_model3d_and_chat_grants_have_safe_friendly_labels():
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt",
-        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; saveStoreArtifactToDevice(); MediaStore; MediaStore.Downloads.EXTERNAL_CONTENT_URI; Environment.DIRECTORY_DOWNLOADS; "model/gltf-binary"; storeJobs: List<StoreJobSummary>; repo.storeJobs(activeOnly = activeOnly, limit = 50); repo.cancelStoreJob(storeJobId); cancelStoreJob;',
+        '"storeJobId"; "pending_approval"; "queued_connector"; "running_provider"; "uploading_artifact"; "sourceImageArtifactId"; "Choose a source image before generating a 3D model."; saveStoreArtifactToDevice(); MediaStore; MediaStore.Downloads.EXTERNAL_CONTENT_URI; Environment.DIRECTORY_DOWNLOADS; "model/gltf-binary"; storeJobs: List<StoreJobSummary>; repo.storeJobs(activeOnly = activeOnly, limit = 50); repo.cancelStoreJob(storeJobId); cancelStoreJob;',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt",
-        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "Save to device"; "3D preview not yet available";',
+        '"Creative Workflows"; "local-image-studio"; "suite.media.image.generate"; "media.image.generate.local"; "local-video-studio"; "suite.media.video.generate"; "media.video.generate.local"; "local-3d-studio"; "suite.media.model3d.generate"; "media.model3d.generate.local"; "3D model generation uses an image first."; "Choose image first"; "Save to device"; "3D preview not yet available";',
     )
     _write(
         android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreUiModels.kt",
@@ -334,7 +339,7 @@ def test_model3d_and_chat_grants_have_safe_friendly_labels():
     )
     _write(
         android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "ui" / "AndroidProductIaTest.kt",
-        'const val Jobs = "jobs"; JobsScreen; "Cancel this job?"; "3D preview not yet available"; MediaStore.Downloads.EXTERNAL_CONTENT_URI; Environment.DIRECTORY_DOWNLOADS; "model/gltf-binary";',
+        'const val Jobs = "jobs"; JobsScreen; "Cancel this job?"; "3D preview not yet available"; "Choose a source image before generating a 3D model."; "3D model generation uses an image first."; MediaStore.Downloads.EXTERNAL_CONTENT_URI; Environment.DIRECTORY_DOWNLOADS; "model/gltf-binary";',
     )
     _write(
         android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt",
@@ -373,6 +378,7 @@ def test_echolabs_store_gate_passes_with_safe_cross_platform_fixtures(tmp_path):
     assert result["echolabsStore"]["videoApprovedGeneration"]["status"] == "passed"
     assert result["echolabsStore"]["model3DApprovedGeneration"]["status"] == "passed"
     assert result["echolabsStore"]["model3DGallerySafeMetadata"]["status"] == "passed"
+    assert result["echolabsStore"]["model3DRequiresSourceImage"]["status"] == "passed"
     assert result["echolabsStore"]["android3DModelCard"]["status"] == "passed"
     assert result["echolabsStore"]["android3DGlbSave"]["status"] == "passed"
     assert result["echolabsStore"]["realProviderSmoke.video"]["status"] == "skipped"
