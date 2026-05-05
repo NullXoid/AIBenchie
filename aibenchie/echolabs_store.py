@@ -60,7 +60,12 @@ STORE_SECTIONS = (
     "timedApproval.replayDoesNotExtendGrant",
     "timedApproval.revokeGrant",
     "timedApproval.revokedGrantRequiresApproval",
+    "timedApproval.grantUpdate",
+    "timedApproval.grantUpdatePreservesScope",
+    "timedApproval.revokedGrantUpdateDenied",
     "timedApproval.grantListSafeMetadata",
+    "timedApproval.chatGrantLabeling",
+    "timedApproval.safeRequesterServiceMetadata",
     "timedApproval.credentialIsolation",
 )
 
@@ -374,6 +379,12 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     wrapper_async_test = _read(wrapper / "backend" / "tests" / "test_store_async_jobs.py") if wrapper else ""
     nullbridge_api = _read(nullbridge / "backend" / "scripts" / "nullbridge_api.py") if nullbridge else ""
     nullbridge_tests = _read(nullbridge / "backend" / "tests" / "test_nullbridge_generic_approval_routing.py") if nullbridge else ""
+    nullbridge_android_api = _read(nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "data" / "remote" / "NullBridgeApi.kt") if nullbridge else ""
+    nullbridge_android_dtos = _read(nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "data" / "remote" / "NullBridgeDtos.kt") if nullbridge else ""
+    nullbridge_android_models = _read(nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "domain" / "NullBridgeModels.kt") if nullbridge else ""
+    nullbridge_android_repo = _read(nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "data" / "repository" / "NullBridgeRepositoryImpl.kt") if nullbridge else ""
+    nullbridge_android_permissions = _read(nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "presentation" / "PermissionsComponents.kt") if nullbridge else ""
+    nullbridge_android_formatters = _read(nullbridge / "frontend" / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "nullbridge" / "presentation" / "GrantUiFormatters.kt") if nullbridge else ""
     android_models = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "Models.kt") if android else ""
     android_api = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "api" / "NullXoidApi.kt") if android else ""
     android_repo = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "repo" / "NullXoidRepository.kt") if android else ""
@@ -848,15 +859,52 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         ["revoked grants no longer bypass approval and do not cancel already queued jobs"],
         [] if "test_revoke_does_not_cancel_already_queued_job_and_next_matching_job_requires_approval" in nullbridge_tests else ["REVOKED_GRANT_AUTHORIZATION_TEST_MISSING"],
     )
+    gates["timedApproval.grantUpdate"] = _gate(
+        "def update_approval_grant" in nullbridge_api
+        and 'POST /grants/{grantId}/update' in nullbridge_api
+        and "ApprovalGrantUpdateRequestDto" in nullbridge_android_dtos + nullbridge_android_api + nullbridge_android_repo
+        and "updateGrantDuration" in nullbridge_android_permissions + nullbridge_android_repo,
+        ["admin can update active grant duration from API and Android Permissions"],
+        [] if "def update_approval_grant" in nullbridge_api else ["GRANT_UPDATE_API_MISSING"],
+    )
+    gates["timedApproval.grantUpdatePreservesScope"] = _gate(
+        "test_grant_update_changes_duration_from_server_time_and_preserves_scope" in nullbridge_tests
+        and "after[\"scope\"] == before[\"scope\"]" in nullbridge_tests
+        and "expiresAt" in nullbridge_api
+        and "updatedBy" in nullbridge_api,
+        ["grant update recalculates expiry and preserves requester/service/capability scope"],
+        [] if "test_grant_update_changes_duration_from_server_time_and_preserves_scope" in nullbridge_tests else ["GRANT_UPDATE_PRESERVE_SCOPE_TEST_MISSING"],
+    )
+    gates["timedApproval.revokedGrantUpdateDenied"] = _gate(
+        "test_grant_update_denies_revoked_and_expired_grants" in nullbridge_tests
+        and "GRANT_REVOKED" in nullbridge_api + nullbridge_tests
+        and "GRANT_EXPIRED" in nullbridge_api + nullbridge_tests,
+        ["revoked and expired grants cannot be updated"],
+        [] if "test_grant_update_denies_revoked_and_expired_grants" in nullbridge_tests else ["GRANT_UPDATE_DENIAL_TEST_MISSING"],
+    )
     gates["timedApproval.grantListSafeMetadata"] = _gate(
         "def list_approval_grants" in nullbridge_api
         and "def get_approval_grant_metadata" in nullbridge_api
         and "safe_approval_grant_metadata" in nullbridge_api
         and "includeExpired" in nullbridge_api
         and "includeRevoked" in nullbridge_api
+        and "serviceId" in nullbridge_api
+        and "targetRole" in nullbridge_api
         and "test_grant_list_detail_returns_safe_metadata_and_filters_inactive_by_default" in nullbridge_tests,
         ["grant list/detail API exposes safe metadata and filters inactive grants by default"],
         [] if "safe_approval_grant_metadata" in nullbridge_api else ["GRANT_LIST_SAFE_METADATA_MISSING"],
+    )
+    gates["timedApproval.chatGrantLabeling"] = _gate(
+        "Chat access for this requester" in nullbridge_api + nullbridge_android_formatters
+        and "test_model3d_and_chat_grants_have_safe_friendly_labels" in nullbridge_tests,
+        ["chat grants are labeled Chat access, not generation"],
+        [] if "Chat access for this requester" in nullbridge_api + nullbridge_android_formatters else ["CHAT_GRANT_LABEL_MISSING"],
+    )
+    gates["timedApproval.safeRequesterServiceMetadata"] = _gate(
+        all(marker in nullbridge_api + nullbridge_android_models + nullbridge_android_permissions for marker in ["serviceId", "serviceName", "platform", "targetRole", "requesterHash"])
+        and "test_grant_list_detail_returns_safe_metadata_and_filters_inactive_by_default" in nullbridge_tests,
+        ["safe requester/service owner metadata is exposed and displayed"],
+        [f"SAFE_REQUESTER_METADATA_MISSING:{marker}" for marker in ["serviceId", "serviceName", "platform", "targetRole", "requesterHash"] if marker not in nullbridge_api + nullbridge_android_models + nullbridge_android_permissions],
     )
     safe_grant_start = nullbridge_api.find("def safe_approval_grant(")
     safe_grant_source = nullbridge_api[safe_grant_start : nullbridge_api.find("def redacted_payload_fields")] if safe_grant_start >= 0 else ""
