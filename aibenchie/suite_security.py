@@ -321,9 +321,9 @@ def run_suite_security_check(env: dict[str, str] | None = None) -> SuiteSecurity
         )
     )
 
+    release_artifacts_manifest = _release_artifacts_manifest_path(root, source)
     release_artifacts = verify_release_artifacts_manifest(
-        _release_artifacts_manifest_path(root, source),
-        root=root,
+        release_artifacts_manifest,
         required_kinds=_required_release_artifact_kinds(source),
     )
     checks.append(

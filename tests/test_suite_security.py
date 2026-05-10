@@ -132,6 +132,39 @@ def test_suite_security_fails_on_release_artifact_attestation_failure(monkeypatc
     assert release_check.failure == "required_artifact_missing:wrapper"
 
 
+def test_suite_security_verifies_configured_release_manifest_from_manifest_directory(monkeypatch, tmp_path):
+    manifest = tmp_path / ".suite" / "local" / "aibenchie" / "release-artifacts.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text('{"artifacts": []}', encoding="utf-8")
+    calls = {}
+
+    monkeypatch.setattr(suite_security, "run_hosted_nullxoid_stack_check", lambda **kwargs: _hosted_stack(True))
+    monkeypatch.setattr(
+        suite_security,
+        "scan_public_files_for_secrets",
+        lambda root: suite_security.SecretScanResult(ok=True, root=str(root), scanned_files=1),
+    )
+    monkeypatch.setattr(suite_security, "run_generated_output_policy_check", lambda env: _generated_policy(True))
+
+    def fake_verify(path, **kwargs):
+        calls["path"] = path
+        calls["kwargs"] = kwargs
+        return _release_artifacts(True)
+
+    monkeypatch.setattr(suite_security, "verify_release_artifacts_manifest", fake_verify)
+
+    result = suite_security.run_suite_security_check(
+        env={
+            "AIBENCHIE_SUITE_SECURITY_ROOT": str(tmp_path),
+            "AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST": str(manifest),
+        }
+    )
+
+    assert result.ok is True
+    assert calls["path"] == manifest
+    assert "root" not in calls["kwargs"]
+
+
 def test_suite_security_runs_ephemeral_chat_when_enabled(monkeypatch, tmp_path):
     called = {}
 
