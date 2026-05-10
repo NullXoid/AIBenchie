@@ -97,3 +97,5 @@ Implemented now:
 - Unified verdict with lane, target, evidence, and summary data.
 
 Next adapters should add Playwright, ADB, desktop automation, SSE/WebSocket streams, artifact capture, screenshot capture, and JUnit/HTML reporters without changing the manifest or verdict contract.
+
+The next paused implementation item is tracked in `docs/SUITE_PRIORITY_BACKLOG.md` under "Universal E2E Playwright Web UX Adapter" so automation can resume the browser UX work without chat context.
