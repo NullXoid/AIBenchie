@@ -17,7 +17,7 @@ from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_c
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
-from aibenchie.deploy_addon import run_deploy_addon_check
+from aibenchie.deploy_addon import run_deploy_addon_check, verify_deploy_plan
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
@@ -286,6 +286,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--deploy-addon-plan-output",
         default="",
         help="Optional path to write the sanitized deploy plan when --deploy-addon passes.",
+    )
+    parser.add_argument(
+        "--verify-deploy-plan",
+        action="store_true",
+        help="Verify a saved provider-neutral deploy plan without publishing.",
+    )
+    parser.add_argument(
+        "--deploy-plan",
+        default="",
+        help="Deploy plan path for --verify-deploy-plan.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -777,6 +787,34 @@ def main(argv: list[str] | None = None) -> int:
             for name, check in result["echolabsStore"].items():
                 suffix = f" ({'; '.join(check.get('failures', []))})" if check.get("failures") else ""
                 print(f"{name}: {check['status'].upper()}{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.verify_deploy_plan:
+        if not args.deploy_plan:
+            result = {
+                "ok": False,
+                "plan_path": "",
+                "checks": [
+                    {
+                        "name": "deploy_plan_path",
+                        "ok": False,
+                        "failure": "deploy_plan_path_missing",
+                        "detail": {},
+                    }
+                ],
+                "deploy_plan": {},
+            }
+        else:
+            result = verify_deploy_plan(Path(args.deploy_plan)).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Deploy Plan Verifier")
+            print(f"Plan: {result['plan_path'] or '(missing)'}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

@@ -11,7 +11,9 @@ from aibenchie.release_artifacts import verify_release_artifacts_manifest
 
 
 DEPLOY_ADDON_SCHEMA = "aibenchie.deploy-addon.v1"
+DEPLOY_PLAN_SCHEMA = "aibenchie.deploy-plan.v1"
 CONFIG_ENV = "AIBENCHIE_DEPLOY_ADDON_CONFIG"
+REQUIRED_DEPLOY_ASSET_KINDS = ("wrapper", "android", "public")
 ALLOWED_PROVIDERS = {
     "forgejo",
     "gitea",
@@ -61,6 +63,22 @@ class DeployAddonResult:
             "repository": self.repository,
             "release_tag": self.release_tag,
             "dry_run": self.dry_run,
+            "checks": [check.as_dict() for check in self.checks],
+            "deploy_plan": self.deploy_plan,
+        }
+
+
+@dataclass(frozen=True)
+class DeployPlanVerification:
+    ok: bool
+    plan_path: str
+    checks: list[DeployAddonCheck]
+    deploy_plan: dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "plan_path": self.plan_path,
             "checks": [check.as_dict() for check in self.checks],
             "deploy_plan": self.deploy_plan,
         }
@@ -175,6 +193,76 @@ def _artifact_plan(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return plan
 
 
+def _is_sha256(value: Any) -> bool:
+    text = str(value or "").strip()
+    return len(text) == 64 and all(char in "0123456789abcdefABCDEF" for char in text)
+
+
+def verify_deploy_plan(plan_path: Path) -> DeployPlanVerification:
+    resolved_plan = plan_path.expanduser().resolve()
+    checks: list[DeployAddonCheck] = []
+    plan: dict[str, Any] = {}
+
+    if resolved_plan.exists():
+        try:
+            loaded = _load_json(resolved_plan)
+            plan = loaded if isinstance(loaded, dict) else {}
+            checks.append(_check("plan_json", isinstance(loaded, dict), "plan_not_object"))
+        except json.JSONDecodeError as exc:
+            checks.append(_check("plan_json", False, f"plan_invalid_json:{exc.lineno}"))
+    else:
+        checks.append(_check("plan_json", False, "plan_missing"))
+
+    checks.append(_check("schema", plan.get("schema") == DEPLOY_PLAN_SCHEMA, "schema_mismatch"))
+
+    secret_failures = _scan_secret_like_values(plan)
+    checks.append(_check("secret_boundary", not secret_failures, ";".join(secret_failures), scanned=True))
+
+    provider = plan.get("provider") if isinstance(plan.get("provider"), dict) else {}
+    provider_ok, provider_failure = _provider_ok(provider)
+    checks.append(
+        _check(
+            "provider",
+            provider_ok,
+            provider_failure,
+            provider=str(provider.get("type") or "").strip().lower(),
+            repository=str(provider.get("repository") or "").strip(),
+        )
+    )
+
+    release = plan.get("release") if isinstance(plan.get("release"), dict) else {}
+    release_tag = str(release.get("tag") or "").strip()
+    checks.append(_check("release_tag", bool(release_tag), "release_tag_missing", tag=release_tag))
+
+    assets = plan.get("assets") if isinstance(plan.get("assets"), list) else []
+    asset_kinds = {str(asset.get("kind") or "") for asset in assets if isinstance(asset, dict)}
+    missing_kinds = [kind for kind in REQUIRED_DEPLOY_ASSET_KINDS if kind not in asset_kinds]
+    checks.append(_check("required_assets", not missing_kinds, ";".join(f"asset_missing:{kind}" for kind in missing_kinds)))
+
+    asset_failures: list[str] = []
+    for index, asset in enumerate(assets):
+        if not isinstance(asset, dict):
+            asset_failures.append(f"asset_not_object:{index}")
+            continue
+        kind = str(asset.get("kind") or "").strip()
+        path = str(asset.get("path") or "").strip()
+        sha256 = str(asset.get("sha256") or "").strip()
+        if not kind:
+            asset_failures.append(f"asset_kind_missing:{index}")
+        if not path:
+            asset_failures.append(f"asset_path_missing:{kind or index}")
+        if not _is_sha256(sha256):
+            asset_failures.append(f"asset_sha256_invalid:{kind or index}")
+    checks.append(_check("assets", not asset_failures, ";".join(asset_failures), count=len(assets)))
+
+    return DeployPlanVerification(
+        ok=all(check.ok for check in checks),
+        plan_path=str(resolved_plan),
+        checks=checks,
+        deploy_plan=plan,
+    )
+
+
 def run_deploy_addon_check(
     *,
     config_path: Path | None = None,
@@ -250,7 +338,7 @@ def run_deploy_addon_check(
 
     dry_run = bool(config.get("dry_run", True))
     deploy_plan = {
-        "schema": "aibenchie.deploy-plan.v1",
+        "schema": DEPLOY_PLAN_SCHEMA,
         "dry_run": dry_run,
         "provider": {
             "type": provider_type,

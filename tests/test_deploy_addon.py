@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 import aibenchie_local
-from aibenchie.deploy_addon import run_deploy_addon_check
+from aibenchie.deploy_addon import run_deploy_addon_check, verify_deploy_plan
 from aibenchie.release_bundle import package_release_artifacts
 
 
@@ -188,3 +188,99 @@ def test_deploy_addon_cli_does_not_write_plan_when_gate_fails(tmp_path, capsys, 
     assert payload["ok"] is False
     assert payload["deploy_plan_written"] is False
     assert not plan_output.exists()
+
+
+def test_verify_deploy_plan_accepts_saved_sanitized_plan(tmp_path, capsys, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict)
+    plan_output = tmp_path / "local" / "deploy-plan.json"
+    assert (
+        aibenchie_local.main(
+            [
+                "--deploy-addon",
+                "--deploy-addon-config",
+                str(config_path),
+                "--deploy-addon-plan-output",
+                str(plan_output),
+                "--json",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    result = verify_deploy_plan(plan_output).as_dict()
+
+    assert result["ok"] is True
+    assert result["deploy_plan"]["schema"] == "aibenchie.deploy-plan.v1"
+    assert {check["name"]: check["ok"] for check in result["checks"]}["secret_boundary"] is True
+
+
+def test_verify_deploy_plan_blocks_secret_like_values(tmp_path):
+    plan = {
+        "schema": "aibenchie.deploy-plan.v1",
+        "dry_run": True,
+        "provider": {
+            "type": "github",
+            "base_url": "https://github.com",
+            "repository": "EchoLabs/NullXoid",
+        },
+        "release": {
+            "tag": "v1.2.3",
+            "name": "EchoLabs Suite v1.2.3",
+            "prerelease": True,
+        },
+        "assets": [
+            {"kind": "wrapper", "name": "wrapper", "path": "wrapper.zip", "sha256": "a" * 64},
+            {"kind": "android", "name": "android", "path": "app.apk", "sha256": "b" * 64},
+            {"kind": "public", "name": "public", "path": "site.zip", "sha256": "c" * 64},
+        ],
+        "provider_token": "ghp_committedsecret",
+    }
+    plan_path = tmp_path / "deploy-plan.json"
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+    result = verify_deploy_plan(plan_path).as_dict()
+    secret_check = next(check for check in result["checks"] if check["name"] == "secret_boundary")
+
+    assert result["ok"] is False
+    assert secret_check["ok"] is False
+    assert "secret_key_not_allowed" in secret_check["failure"]
+
+
+def test_verify_deploy_plan_cli(tmp_path, capsys):
+    plan = {
+        "schema": "aibenchie.deploy-plan.v1",
+        "dry_run": True,
+        "provider": {
+            "type": "forgejo",
+            "base_url": "https://git.example.test",
+            "repository": "EchoLabs/NullXoid",
+        },
+        "release": {
+            "tag": "v1.2.3",
+            "name": "EchoLabs Suite v1.2.3",
+            "prerelease": True,
+        },
+        "assets": [
+            {"kind": "wrapper", "name": "wrapper", "path": "wrapper.zip", "sha256": "a" * 64},
+            {"kind": "android", "name": "android", "path": "app.apk", "sha256": "b" * 64},
+            {"kind": "public", "name": "public", "path": "site.zip", "sha256": "c" * 64},
+        ],
+        "requires": [
+            "passing_suite_verdict",
+            "verified_release_artifact_attestation",
+            "runtime_provider_token",
+        ],
+    }
+    plan_path = tmp_path / "deploy-plan.json"
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+    exit_code = aibenchie_local.main(["--verify-deploy-plan", "--deploy-plan", str(plan_path), "--json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["ok"] is True
+    assert payload["plan_path"] == str(plan_path.resolve())

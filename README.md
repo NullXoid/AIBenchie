@@ -415,6 +415,9 @@ $env:AIBENCHIE_DEPLOY_ADDON_CONFIG=".suite/local/aibenchie/deploy-addon.json"
 python aibenchie_local.py --deploy-addon `
   --deploy-addon-plan-output .suite/local/aibenchie/deploy-plan.json `
   --json
+python aibenchie_local.py --verify-deploy-plan `
+  --deploy-plan .suite/local/aibenchie/deploy-plan.json `
+  --json
 ```
 
-Use `configs/aibenchie_deploy_addon.example.json` as the public template, then place the real config under an ignored runtime path such as `.suite/local/aibenchie/deploy-addon.json`. `--deploy-addon-plan-output` writes a sanitized deploy-plan artifact only after the deploy add-on gate passes; it does not publish anything or read provider token values. Use `--deploy-addon-require-token` only in a private runner where the configured provider token environment variable is present. Real provider URLs, repositories, verdict paths, artifact manifests, and tokens belong in ignored runtime config. This remains intentionally separate from package attestation: AIBenchie proves what is safe to ship first, then the deploy add-on decides where to publish it.
+Use `configs/aibenchie_deploy_addon.example.json` as the public template, then place the real config under an ignored runtime path such as `.suite/local/aibenchie/deploy-addon.json`. `--deploy-addon-plan-output` writes a sanitized deploy-plan artifact only after the deploy add-on gate passes; it does not publish anything or read provider token values. `--verify-deploy-plan` is read-only and validates a saved plan's schema, provider shape, release metadata, required assets, SHA-256 fields, and secret boundary. Use `--deploy-addon-require-token` only in a private runner where the configured provider token environment variable is present. Real provider URLs, repositories, verdict paths, artifact manifests, and tokens belong in ignored runtime config. This remains intentionally separate from package attestation: AIBenchie proves what is safe to ship first, then the deploy add-on decides where to publish it.
