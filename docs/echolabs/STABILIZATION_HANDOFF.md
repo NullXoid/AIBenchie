@@ -42,6 +42,7 @@ python aibenchie_local.py --verify-deploy-plan --deploy-plan .suite\local\aibenc
 - Universal E2E: `C:\Users\kasom\projects\_validation\aibenchie_universal_e2e_latest.json`
 - Hosted API E2E: `C:\Users\kasom\projects\_validation\aibenchie_hosted_api_e2e_latest.json`
 - Local release packages, deploy plan, and attestation: `AIBenchie\.suite\local\aibenchie\`
+- Optional real-device UX proof: `AIBenchie\.suite\local\aibenchie\android-real-device-ux.json`
 
 The `_validation` and `.suite/local` paths are runtime evidence paths and are intentionally ignored by Git.
 

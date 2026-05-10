@@ -7,9 +7,11 @@ param(
     [switch]$SkipUniversalE2E,
     [switch]$SkipDeployPlan,
     [switch]$SkipDockerSupport,
+    [switch]$SkipRealDeviceUX,
     [switch]$DesktopIncludeUi,
     [switch]$BridgeFull,
     [string]$DeployPlanPath = ".suite\local\aibenchie\deploy-plan.json",
+    [string]$RealDeviceUXProofPath = ".suite\local\aibenchie\android-real-device-ux.json",
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
     [string]$SuiteRoot = ""
 )
@@ -78,6 +80,7 @@ function Write-SuiteGateReport {
             skip_universal_e2e = [bool]$SkipUniversalE2E
             skip_deploy_plan = [bool]$SkipDeployPlan
             skip_docker_support = [bool]$SkipDockerSupport
+            skip_real_device_ux = [bool]$SkipRealDeviceUX
             desktop_include_ui = [bool]$DesktopIncludeUi
             bridge_full = [bool]$BridgeFull
         }
@@ -245,6 +248,30 @@ if (-not $SkipDockerSupport) {
             "--docker-support",
             "--json"
         )
+}
+
+$resolvedRealDeviceUXProofPath = if ([System.IO.Path]::IsPathRooted($RealDeviceUXProofPath)) {
+    [System.IO.Path]::GetFullPath($RealDeviceUXProofPath)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path $aibenchieRoot $RealDeviceUXProofPath))
+}
+
+if ((-not $SkipRealDeviceUX) -and (Test-Path -LiteralPath $resolvedRealDeviceUXProofPath)) {
+    Invoke-SuiteGate `
+        -Id "aibenchie_real_device_ux" `
+        -Name "AIBenchie real-device UX proof" `
+        -Owner "AIBenchie" `
+        -WorkingDirectory $aibenchieRoot `
+        -Command "python" `
+        -Arguments @(
+            "aibenchie_local.py",
+            "--real-device-ux-proof",
+            $resolvedRealDeviceUXProofPath,
+            "--json"
+        )
+} elseif (-not $SkipRealDeviceUX) {
+    Write-Host ""
+    Write-Host "[echolabs-suite-gate] AIBenchie real-device UX proof skipped (no proof at $resolvedRealDeviceUXProofPath)" -ForegroundColor DarkYellow
 }
 
 Write-Host ""
