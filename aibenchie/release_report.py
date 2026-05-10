@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from aibenchie.deploy_addon import verify_deploy_plan
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullprivacy import decrypt_blob, encrypt_blob, generate_key, run_e2ee_storage_proof
 from training.release_fabric import (
@@ -112,11 +114,45 @@ def _status_for(ok: Any) -> str:
     return "pass" if ok else "critical_block"
 
 
+def _deploy_addon_public_summary(env: dict[str, str] | None = None) -> dict[str, Any]:
+    source = env or os.environ
+    configured = (source.get("AIBENCHIE_DEPLOY_PLAN") or source.get("AIBENCHIE_DEPLOY_ADDON_PLAN") or "").strip()
+    if not configured:
+        return {
+            "ok": "skipped",
+            "status": "not_run",
+            "dry_run": True,
+            "provider": "",
+            "checks_total": 0,
+            "failed_checks": 0,
+            "asset_count": 0,
+        }
+    verification = verify_deploy_plan(Path(configured)).as_dict()
+    checks = verification.get("checks") if isinstance(verification.get("checks"), list) else []
+    failed = [check for check in checks if isinstance(check, dict) and check.get("ok") is False]
+    deploy_plan = verification.get("deploy_plan") if isinstance(verification.get("deploy_plan"), dict) else {}
+    provider = deploy_plan.get("provider") if isinstance(deploy_plan.get("provider"), dict) else {}
+    release = deploy_plan.get("release") if isinstance(deploy_plan.get("release"), dict) else {}
+    assets = deploy_plan.get("assets") if isinstance(deploy_plan.get("assets"), list) else []
+    ok = bool(verification.get("ok"))
+    return {
+        "ok": ok,
+        "status": "pass" if ok else "fail",
+        "dry_run": deploy_plan.get("dry_run") is not False,
+        "provider": str(provider.get("type") or ""),
+        "release_tag": str(release.get("tag") or ""),
+        "checks_total": len(checks),
+        "failed_checks": len(failed),
+        "asset_count": len(assets),
+    }
+
+
 def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
     tracks = summary.get("tracks") or {}
     trust_smoke = summary.get("trust_smoke") or {}
     notification_smoke = summary.get("notification_smoke") or {}
     privacy_proof = summary.get("privacy_proof") or {}
+    deploy_addon = summary.get("deploy_addon") or {}
     return [
         {
             "name": "NullBridge trust fabric",
@@ -147,6 +183,11 @@ def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
             "name": "Release manifest validation",
             "result": str(tracks.get("release_manifest_validation", "not_run")),
             "evidence": "policy:release_manifest_validation",
+        },
+        {
+            "name": "Deploy add-on plan",
+            "result": _status_for(deploy_addon.get("ok", "skipped")),
+            "evidence": "deploy_addon",
         },
     ]
 
@@ -529,7 +570,12 @@ def render_release_details_markdown(details: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def build_release_report(root: Path, *, run_trust_smoke: bool = True) -> tuple[dict[str, Any], dict[str, Any], bytes]:
+def build_release_report(
+    root: Path,
+    *,
+    run_trust_smoke: bool = True,
+    env: dict[str, str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any], bytes]:
     commit = git_commit(root)
     tracks = policy_track_results()
     privacy_proof = run_e2ee_storage_proof().as_dict()
@@ -560,6 +606,7 @@ def build_release_report(root: Path, *, run_trust_smoke: bool = True) -> tuple[d
             "secrets_persisted": bool(notification_result.get("secrets_persisted")),
         }
 
+    deploy_addon = _deploy_addon_public_summary(env)
     critical_blocks = sorted(track for track, status in tracks.items() if status == "critical_block")
     blocks_release = sorted(track for track, status in tracks.items() if status == "blocks_release")
     verdict = "ship_candidate" if not critical_blocks and not blocks_release else "critical_block"
@@ -580,6 +627,7 @@ def build_release_report(root: Path, *, run_trust_smoke: bool = True) -> tuple[d
             "plaintext_visible_in_blob": privacy_proof["plaintext_visible_in_blob"],
         },
         "notification_smoke": notification_smoke,
+        "deploy_addon": deploy_addon,
     }
     assert_public_safe(summary)
 
@@ -612,10 +660,11 @@ def write_release_report(
     operator: str = "",
     reviewer: str = "",
     artifacts: list[dict[str, Any]] | None = None,
+    env: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     output = output_dir or (root / "reports" / "aibenchie" / "latest")
     output.mkdir(parents=True, exist_ok=True)
-    summary, encrypted_full, key = build_release_report(root, run_trust_smoke=run_trust_smoke)
+    summary, encrypted_full, key = build_release_report(root, run_trust_smoke=run_trust_smoke, env=env)
     summary_path = output / "summary.json"
     encrypted_path = output / "full-report.json.encrypted"
     key_hint_path = output / "full-report.key.local"

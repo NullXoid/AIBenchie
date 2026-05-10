@@ -80,8 +80,10 @@ NullBridge owns service identity, route policy, deny-by-default routing, and aud
 
 This catches cross-repo regressions before publish, proves implementation and policy together, and gives every release a repeatable evidence trail.
 
-## Planned Deploy Add-On
+## Deploy Add-On
 
-AIBenchie can later grow a deploy add-on that publishes verified packages to a repo hub such as Forgejo, Gitea, GitHub, or another provider. The add-on should be provider-neutral, support open and closed source repos, keep credentials in runtime/local secret storage, and refuse to deploy unless the suite verdict and release artifact attestation pass.
+AIBenchie has a provider-neutral deploy add-on foundation for repo hubs such as Forgejo, Gitea, GitHub, or another provider. The current contract is a dry-run deploy plan gate plus a read-only deploy-plan verifier. It supports open and closed source repo targets, keeps credentials in runtime/local secret storage, and refuses to emit a plan unless the suite verdict and release artifact attestation pass.
 
-The deploy add-on is deliberately separate from release details. Release details prove what was built and verified. The deploy add-on can use that proof to publish to the selected repo hub.
+The deploy add-on is deliberately separate from release details. Release details prove what was built and verified. The deploy add-on can use that proof to prepare a sanitized deploy plan for the selected repo hub. A future provider executor must be added as its own explicit, gated capability before any assets are uploaded or releases are published.
+
+When a runner sets `AIBENCHIE_DEPLOY_PLAN` or `AIBENCHIE_DEPLOY_ADDON_PLAN`, the release summary includes only a public-safe deploy proof summary: pass/fail, dry-run state, provider type, release tag, check counts, and asset count. Raw provider configuration and token environment names stay out of public release evidence.

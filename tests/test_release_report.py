@@ -31,6 +31,50 @@ def test_build_release_report_emits_public_safe_summary_and_encrypted_full_repor
     assert full["privacy_proof"]["wrong_key_rejected"] is True
 
 
+def test_build_release_report_surfaces_public_safe_deploy_plan_summary(tmp_path):
+    plan = {
+        "schema": "aibenchie.deploy-plan.v1",
+        "dry_run": True,
+        "provider": {
+            "type": "forgejo",
+            "base_url": "https://git.example.test",
+            "repository": "EchoLabs/NullXoid",
+        },
+        "release": {
+            "tag": "v1.2.3",
+            "name": "EchoLabs Suite v1.2.3",
+            "prerelease": True,
+        },
+        "assets": [
+            {"kind": "wrapper", "name": "wrapper", "path": "wrapper.zip", "sha256": "a" * 64},
+            {"kind": "android", "name": "android", "path": "app.apk", "sha256": "b" * 64},
+            {"kind": "public", "name": "public", "path": "site.zip", "sha256": "c" * 64},
+        ],
+        "requires": [
+            "passing_suite_verdict",
+            "verified_release_artifact_attestation",
+            "runtime_provider_token",
+        ],
+    }
+    plan_path = tmp_path / "deploy-plan.json"
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+
+    summary, _, _ = build_release_report(ROOT, run_trust_smoke=False, env={"AIBENCHIE_DEPLOY_PLAN": str(plan_path)})
+
+    assert summary["deploy_addon"] == {
+        "ok": True,
+        "status": "pass",
+        "dry_run": True,
+        "provider": "forgejo",
+        "release_tag": "v1.2.3",
+        "checks_total": 7,
+        "failed_checks": 0,
+        "asset_count": 3,
+    }
+    assert "runtime_provider_token" not in json.dumps(summary)
+    assert_public_safe(summary)
+
+
 def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path):
     result = write_release_report(ROOT, tmp_path, run_trust_smoke=False)
 
