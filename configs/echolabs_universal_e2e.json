@@ -67,18 +67,161 @@
           "adapter": "web_browser",
           "required": true,
           "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
+          "env": {
+            "VITE_NULLXOID_EMBED_LOCAL_APP": "true"
+          },
           "build_command": ["npm", "run", "build"],
           "build_timeout_seconds": 240,
           "serve_dir": "dist",
           "path": "/nullxoid",
           "timeout_seconds": 30,
           "evidence_dir": "${ENV:AIBENCHIE_ECHOLABS_BROWSER_EVIDENCE:-../_validation/universal-e2e/web-browser-ux}",
+          "mock_routes": [
+            {
+              "method": "GET",
+              "path": "/auth/me",
+              "body": {
+                "authenticated": true,
+                "require_login": false,
+                "user": { "id": "aibenchie-user", "username": "AIBenchie", "role": "admin" },
+                "effective_features": {
+                  "addons": ["ccc.codex", "canvas.preview", "studioecho.media"],
+                  "admin": true,
+                  "chat": true,
+                  "media": true
+                },
+                "first_run_state": { "mode": "complete", "source": "aibenchie" }
+              }
+            },
+            {
+              "method": "GET",
+              "path": "/health/features",
+              "body": {
+                "ok": true,
+                "features": {
+                  "auth": true,
+                  "chat_stream": true,
+                  "settings_enabled": true,
+                  "runtimeecho_llms": true,
+                  "vault_artifacts": true
+                },
+                "endpoints": [
+                  "/auth/me",
+                  "/chat/stream",
+                  "/models",
+                  "/api/settings",
+                  "/api/workspaces",
+                  "/api/projects",
+                  "/api/chats",
+                  "/artifacts/recent"
+                ],
+                "first_run_state": { "mode": "complete", "source": "aibenchie" }
+              }
+            },
+            {
+              "method": "GET",
+              "path": "/models",
+              "body": { "models": [{ "id": "llama3.1:8b", "name": "llama3.1:8b", "provider": "ollama" }] }
+            },
+            {
+              "method": "GET",
+              "path": "/api/settings",
+              "body": {
+                "settings": {
+                  "general": { "assistant_name": "NullXoid" },
+                  "llm": {
+                    "default_model": "llama3.1:8b",
+                    "router_model": "llama3.1:8b",
+                    "heavy_model": "llama3.1:8b"
+                  },
+                  "voice": { "stt_provider": "browser", "tts_provider": "browser" }
+                },
+                "defaults": {
+                  "general": { "assistant_name": "NullXoid" },
+                  "llm": {
+                    "default_model": "llama3.1:8b",
+                    "router_model": "llama3.1:8b",
+                    "heavy_model": "llama3.1:8b"
+                  },
+                  "voice": { "stt_provider": "browser", "tts_provider": "browser" }
+                },
+                "meta": { "source": "aibenchie" }
+              }
+            },
+            {
+              "method": "GET",
+              "path": "/api/workspaces",
+              "body": {
+                "active_workspace_id": "lobby",
+                "workspaces": [
+                  { "workspace_id": "lobby", "name": "Lobby", "slug": "lobby", "is_system": true }
+                ]
+              }
+            },
+            {
+              "method": "GET",
+              "path": "/api/projects",
+              "body": {
+                "projects": [
+                  { "project_id": "general", "workspace_id": "lobby", "name": "General", "slug": "general", "is_system": true }
+                ]
+              }
+            },
+            {
+              "method": "GET",
+              "path": "/api/chats",
+              "body": { "chats": [] }
+            },
+            {
+              "method": "POST",
+              "path": "/api/chats",
+              "body": {
+                "chat": {
+                  "id": "aibenchie-chat",
+                  "chat_id": "aibenchie-chat",
+                  "title": "AIBenchie browser chat smoke",
+                  "workspace_id": "lobby",
+                  "project_id": "general",
+                  "messages": []
+                }
+              }
+            },
+            {
+              "method": "GET",
+              "path": "/artifacts/recent",
+              "body": { "artifacts": [] }
+            },
+            {
+              "method": "GET",
+              "path": "/api/jobs/active",
+              "body": { "jobs": [] }
+            },
+            {
+              "method": "GET",
+              "path": "/api/notifications",
+              "body": { "notifications": [] }
+            },
+            {
+              "method": "GET",
+              "path": "/api/workflows",
+              "body": { "workflows": [] }
+            },
+            {
+              "method": "POST",
+              "path": "/chat/stream",
+              "content_type": "text/event-stream",
+              "body": "event: status\ndata: {\"state\":\"started\"}\n\nevent: token\ndata: {\"delta\":\"AIBenchie browser mock response\"}\n\nevent: done\ndata: {\"ok\":true}\n\n"
+            }
+          ],
           "expect": [
             { "text": "NullXoid" },
-            { "text": "Ops" }
+            { "selector": "textarea[placeholder='Ask anything']", "timeout_ms": 30000 }
           ],
           "flow": [
-            { "action": "expect_text", "text": "NullXoid" },
+            { "action": "expect_selector", "selector": "textarea[placeholder='Ask anything']", "timeout_ms": 30000 },
+            { "action": "fill", "selector": "textarea[placeholder='Ask anything']", "value": "Run AIBenchie browser chat smoke.", "timeout_ms": 10000 },
+            { "action": "click_selector", "selector": "button[aria-label='Send']", "timeout_ms": 10000 },
+            { "action": "expect_text", "text": "AIBenchie browser mock response", "timeout_ms": 30000 },
             { "action": "goto", "path": "/aibenchie", "timeout_ms": 30000 },
             { "action": "expect_text", "text": "Release evidence" },
             { "action": "expect_text", "text": "Deploy add-on" },

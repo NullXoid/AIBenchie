@@ -39,7 +39,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Android/Companion remote profile | GREEN / GATED | Mobile/off-network profile uses the public HTTPS API route and passes AIBenchie remote backend checks. | Show as complete when `--companion-remote-backend` and Android unit tests pass. |
 | Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, backend auth capabilities are advertised as JSON, and configured Android passkey providers require valid Digital Asset Links. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
 | Passkey/OIDC provider config | BLUE / PROOF GATE READY | AIBenchie has a public-safe config contract, real-value enforcement, and an ignored physical Android device-proof gate for Credential Manager enrollment. | Show as green after real provider values and device proof pass `--auth-provider-config --auth-provider-config-require-real --auth-provider-config-require-device-proof`. |
-| Universal E2E real UX adapters | GREEN / BROWSER GATED | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop plus a release-blocking Playwright-style web browser target that captures screenshot/HTML/trace evidence. | Show as complete for the web UX adapter when runner setup installs Playwright and Chromium. |
+| Universal E2E real UX adapters | GREEN / BROWSER GATED | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop plus a release-blocking Playwright-style web browser target that sends a mocked NullXoid chat, verifies release evidence, and captures screenshot/HTML/trace evidence. | Show as complete for the web UX adapter when runner setup installs Playwright and Chromium. |
 | Resource bloat guardrails | BLUE / RUNTIME PROOF GATE READY | Budgets, generated-output policy, and a Resource Manager runtime evidence gate exist for leases, cleanup, retention, and pressure snapshots. | Show as green after real backend evidence passes `--resource-budget --resource-manager-require-runtime`. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
 
@@ -47,7 +47,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| 1 | Universal E2E Playwright web UX adapter | 470 | Browser gated | Required `web_browser` adapter builds EchoLabs, serves `/nullxoid`, verifies visible text, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict. |
+| 1 | Universal E2E Playwright web UX adapter | 470 | Browser gated | Required `web_browser` adapter builds EchoLabs, serves `/nullxoid`, sends a mocked chat, verifies release evidence, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict. |
 | 2 | Passkey/OIDC provider configuration | 455 | Proof gate ready | Configure real WebAuthn/OIDC provider settings, publish Android Digital Asset Links, and provide ignored physical Android Credential Manager proof. |
 | 3 | NullBridge trust fabric hardening | 440 | Hardened / gated | Signed backend identity, explicit deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 4 | Resource Manager v1 runtime enforcement | 420 | Runtime proof gate ready | Backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and no unbounded heavy work are enforceable through AIBenchie evidence. |
@@ -78,12 +78,11 @@ Current implementation:
 
 - `web_browser` adapter exists in `aibenchie/universal_e2e.py`.
 - `web-browser-ux` target exists in `configs/echolabs_universal_e2e.json` and is release-blocking.
-- The target builds EchoLabs, serves static output with SPA fallback, can serve target-scoped mock API/SSE routes, opens `/nullxoid`, verifies visible text, follows scripted browser flow steps, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
+- The target builds EchoLabs with the local embedded app flag, serves static output with SPA fallback, can serve target-scoped mock API/SSE routes, opens `/nullxoid`, verifies the chat composer, sends a mocked NullXoid chat through `/chat/stream`, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
 - Playwright is pinned in the Python requirements; runners must also run `python -m playwright install chromium`.
 
 Next implementation:
 
-- Wire the EchoLabs browser manifest to type/send a prompt through the new mocked or configured backend route, verify a visible assistant result, and capture evidence.
 - Keep existing command targets as compatibility gates; the Playwright target should add coverage rather than replacing the current build/contract gate immediately.
 
 Acceptance:

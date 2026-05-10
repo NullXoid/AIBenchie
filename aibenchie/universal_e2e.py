@@ -170,12 +170,14 @@ def _run_command_target(target: dict[str, Any], manifest_dir: Path, env: dict[st
     command_parts = [str(part) for part in command]
     if command_parts:
         command_parts[0] = _resolve_command_executable(command_parts[0])
+    target_env = target.get("env") if isinstance(target.get("env"), dict) else {}
+    merged_env = {**os.environ, **env, **{str(key): str(value) for key, value in target_env.items()}}
     started = time.monotonic()
     try:
         completed = subprocess.run(
             command_parts,
             cwd=cwd,
-            env={**os.environ, **env},
+            env=merged_env,
             text=True,
             capture_output=True,
             timeout=timeout_seconds,
@@ -230,6 +232,7 @@ def _artifact_dir(target: dict[str, Any], manifest_dir: Path) -> Path:
 
 class _QuietStaticHandler(SimpleHTTPRequestHandler):
     mock_routes: list[dict[str, Any]] = []
+    request_log: list[dict[str, Any]] = []
 
     def log_message(self, *_args):  # noqa: D401 - stdlib hook
         return
@@ -239,14 +242,24 @@ class _QuietStaticHandler(SimpleHTTPRequestHandler):
         candidate_paths = [request_path]
         if request_path.startswith("/nullxoid/"):
             candidate_paths.append(request_path[len("/nullxoid"):])
+        matched = None
         for route in self.mock_routes:
             if not isinstance(route, dict):
                 continue
             route_method = str(route.get("method") or "GET").strip().upper()
             route_path = str(route.get("path") or "").strip()
             if route_method == method.upper() and route_path in candidate_paths:
-                return route
-        return None
+                matched = route
+                break
+        self.request_log.append(
+            {
+                "method": method.upper(),
+                "path": request_path,
+                "normalized_path": candidate_paths[-1],
+                "mocked": matched is not None,
+            }
+        )
+        return matched
 
     def _send_mock_route(self, route: dict[str, Any]) -> None:
         body = route.get("body", "")
@@ -282,19 +295,22 @@ class _QuietStaticHandler(SimpleHTTPRequestHandler):
     def send_head(self):  # noqa: D401 - stdlib hook
         requested_path = Path(self.translate_path(urllib.parse.urlsplit(self.path).path))
         index_path = Path(self.directory) / "index.html"
-        if not requested_path.exists() and index_path.exists():
+        directory_without_index = requested_path.is_dir() and not (requested_path / "index.html").exists()
+        if index_path.exists() and (not requested_path.exists() or directory_without_index):
             self.path = "/index.html"
         return super().send_head()
 
 
 def _start_static_server(directory: Path, mock_routes: list[dict[str, Any]] | None = None) -> tuple[ThreadingHTTPServer, Thread, str]:
+    request_log: list[dict[str, Any]] = []
     handler_class = type(
         "UniversalE2EStaticHandler",
         (_QuietStaticHandler,),
-        {"mock_routes": mock_routes or []},
+        {"mock_routes": mock_routes or [], "request_log": request_log},
     )
     handler = partial(handler_class, directory=str(directory))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    server.request_log = request_log  # type: ignore[attr-defined]
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, thread, f"http://127.0.0.1:{server.server_port}"
@@ -400,6 +416,12 @@ def _run_browser_flow_steps(
                     raise ValueError("missing_text")
                 page.get_by_text(text, exact=bool(step.get("exact", False))).first.click(timeout=timeout_ms)
                 entry["text"] = text
+            elif action == "click_selector":
+                selector = str(step.get("selector") or "").strip()
+                if not selector:
+                    raise ValueError("missing_selector")
+                page.locator(selector).first.click(timeout=timeout_ms)
+                entry["selector"] = selector
             elif action == "fill":
                 selector = str(step.get("selector") or "").strip()
                 if not selector:
@@ -470,10 +492,25 @@ def _run_web_browser_target(target: dict[str, Any], manifest_dir: Path, env: dic
     try:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
-            context = browser.new_context(viewport=target.get("viewport") or {"width": 1280, "height": 720})
+            context = browser.new_context(
+                viewport=target.get("viewport") or {"width": 1280, "height": 720},
+                service_workers=str(target.get("service_workers") or "block"),
+            )
             if bool(target.get("trace", True)):
                 context.tracing.start(screenshots=True, snapshots=True)
             page = context.new_page()
+            browser_requests: list[dict[str, Any]] = []
+            if hasattr(page, "on"):
+                page.on(
+                    "request",
+                    lambda request: browser_requests.append(
+                        {
+                            "method": request.method,
+                            "url": sanitizePublicText(request.url) if "sanitizePublicText" in globals() else request.url,
+                            "resource_type": request.resource_type,
+                        }
+                    ),
+                )
             page.goto(url, wait_until=str(target.get("wait_until") or "networkidle"), timeout=timeout_ms)
             ok, failure, expectation_evidence = _check_page_expectations(page, expectations)
             evidence.extend(expectation_evidence)
@@ -485,12 +522,39 @@ def _run_web_browser_target(target: dict[str, Any], manifest_dir: Path, env: dic
             if bool(target.get("trace", True)):
                 context.tracing.stop(path=str(trace_path))
             browser.close()
+            if browser_requests:
+                evidence.append(
+                    {
+                        "kind": "browser_network_requests",
+                        "total": len(browser_requests),
+                        "requests": browser_requests[:40],
+                    }
+                )
     except Exception as exc:
         evidence.append({"kind": "browser", "url": url, "ok": False, "error": str(exc)[-1000:]})
         return _target_result(target, "fail", "browser_workflow_failed", evidence)
     finally:
         server.shutdown()
         thread.join(timeout=5)
+
+    request_log = getattr(server, "request_log", [])
+    if request_log:
+        evidence.append(
+            {
+                "kind": "browser_mock_requests",
+                "total": len(request_log),
+                "mocked": sum(1 for entry in request_log if entry.get("mocked")),
+                "unmatched": [
+                    {
+                        "method": entry.get("method", ""),
+                        "path": entry.get("path", ""),
+                        "normalized_path": entry.get("normalized_path", ""),
+                    }
+                    for entry in request_log
+                    if not entry.get("mocked")
+                ][:20],
+            }
+        )
 
     evidence.append(
         {

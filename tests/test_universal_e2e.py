@@ -128,6 +128,7 @@ def test_universal_e2e_command_adapter(monkeypatch, tmp_path):
                                 "adapter": "command",
                                 "command": ["npm", "run", "e2e"],
                                 "cwd": ".",
+                                "env": {"VITE_NULLXOID_EMBED_LOCAL_APP": "true"},
                             }
                         ]
                     }
@@ -140,6 +141,7 @@ def test_universal_e2e_command_adapter(monkeypatch, tmp_path):
     def fake_run(command, **kwargs):
         assert command == ["npm", "run", "e2e"]
         assert kwargs["cwd"] == tmp_path
+        assert kwargs["env"]["VITE_NULLXOID_EMBED_LOCAL_APP"] == "true"
         return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
 
     monkeypatch.setattr(universal_e2e, "_resolve_command_executable", lambda executable: executable)
@@ -326,6 +328,7 @@ def test_universal_e2e_web_browser_adapter_captures_artifacts(monkeypatch, tmp_p
 
     class FakeBrowser:
         def new_context(self, **_kwargs):
+            assert _kwargs["service_workers"] == "block"
             return FakeContext()
 
         def close(self):
@@ -386,6 +389,7 @@ def test_universal_e2e_web_browser_adapter_runs_scripted_flow(monkeypatch, tmp_p
                                 "flow": [
                                     {"action": "expect_text", "text": "NullXoid"},
                                     {"action": "click_text", "text": "Ops"},
+                                    {"action": "click_selector", "selector": "button[aria-label='Send']"},
                                     {"action": "fill", "selector": "textarea", "value": "hello benchie"},
                                     {"action": "press", "selector": "textarea", "key": "Enter"},
                                     {"action": "goto", "path": "/aibenchie"},
@@ -487,6 +491,7 @@ def test_universal_e2e_web_browser_adapter_runs_scripted_flow(monkeypatch, tmp_p
     assert [step["action"] for step in flow_steps] == [
         "expect_text",
         "click_text",
+        "click_selector",
         "fill",
         "press",
         "goto",
@@ -501,16 +506,22 @@ def test_universal_e2e_web_browser_adapter_runs_scripted_flow(monkeypatch, tmp_p
 def test_universal_e2e_static_server_supports_spa_fallback(tmp_path):
     site = tmp_path / "dist"
     site.mkdir()
+    public_route_dir = site / "aibenchie"
+    public_route_dir.mkdir()
+    (public_route_dir / "scoreboard.json").write_text("{}", encoding="utf-8")
     (site / "index.html").write_text("<main>NullXoid shell</main>", encoding="utf-8")
     server, thread, origin = universal_e2e._start_static_server(site)
     try:
         with urllib.request.urlopen(f"{origin}/nullxoid", timeout=5) as response:
             text = response.read().decode("utf-8")
+        with urllib.request.urlopen(f"{origin}/aibenchie", timeout=5) as response:
+            directory_route_text = response.read().decode("utf-8")
     finally:
         server.shutdown()
         thread.join(timeout=5)
 
     assert "NullXoid shell" in text
+    assert "NullXoid shell" in directory_route_text
 
 
 def test_universal_e2e_static_server_supports_mock_routes(tmp_path):
@@ -551,6 +562,104 @@ def test_universal_e2e_static_server_supports_mock_routes(tmp_path):
     assert "AIBenchie browser mock response" in mounted_stream_text
     assert stream_type == "text/event-stream"
     assert features["features"]["chat_stream"] is True
+    assert getattr(server, "request_log") == [
+        {"method": "POST", "path": "/chat/stream", "normalized_path": "/chat/stream", "mocked": True},
+        {"method": "POST", "path": "/nullxoid/chat/stream", "normalized_path": "/chat/stream", "mocked": True},
+        {"method": "GET", "path": "/health/features", "normalized_path": "/health/features", "mocked": True},
+    ]
+
+
+def test_universal_e2e_web_browser_adapter_reports_mock_request_summary(monkeypatch, tmp_path):
+    site = tmp_path / "dist"
+    site.mkdir()
+    (site / "index.html").write_text("<main>NullXoid</main>", encoding="utf-8")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "browser-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "web-browser",
+                                "adapter": "web_browser",
+                                "required": True,
+                                "cwd": ".",
+                                "serve_dir": "dist",
+                                "path": "/",
+                                "mock_routes": [{"method": "GET", "path": "/health/features", "body": {"ok": True}}],
+                                "flow": [{"action": "goto", "path": "/health/features"}],
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakePage:
+        def goto(self, url, **_kwargs):
+            after_host = url.split("://", 1)[-1].split("/", 1)
+            request_path = f"/{after_host[1]}" if len(after_host) > 1 else "/"
+            with urllib.request.urlopen(url, timeout=5) as response:
+                self.body = response.read().decode("utf-8")
+            assert request_path in {"/", "/health/features"}
+
+        def screenshot(self, path, **_kwargs):
+            Path(path).write_bytes(b"fake screenshot")
+
+        def content(self):
+            return getattr(self, "body", "<main>NullXoid</main>")
+
+    class FakeTracing:
+        def start(self, **_kwargs):
+            return None
+
+        def stop(self, path):
+            Path(path).write_bytes(b"fake trace")
+
+    class FakeContext:
+        tracing = FakeTracing()
+
+        def new_page(self):
+            return FakePage()
+
+    class FakeBrowser:
+        def new_context(self, **_kwargs):
+            return FakeContext()
+
+        def close(self):
+            return None
+
+    class FakeChromium:
+        def launch(self, **_kwargs):
+            return FakeBrowser()
+
+    class FakePlaywright:
+        chromium = FakeChromium()
+
+    class FakeSyncPlaywright:
+        def __call__(self):
+            return self
+
+        def __enter__(self):
+            return FakePlaywright()
+
+        def __exit__(self, *_args):
+            return False
+
+    monkeypatch.setattr(universal_e2e, "_load_playwright", lambda: FakeSyncPlaywright())
+
+    result = universal_e2e.run_universal_e2e(manifest, lanes=["ux"]).as_dict()
+    target = result["lanes"][0]["targets"][0]
+    request_summary = next(entry for entry in target["evidence"] if entry["kind"] == "browser_mock_requests")
+
+    assert result["ok"] is True
+    assert request_summary["total"] >= 2
+    assert request_summary["mocked"] == 1
+    assert any(entry["normalized_path"] == "/" for entry in request_summary["unmatched"])
 
 
 def test_universal_e2e_cli_outputs_json_and_optional_output_file(monkeypatch, capsys, tmp_path):
@@ -597,8 +706,11 @@ def test_echolabs_manifest_has_executable_ux_targets():
     assert targets["web-browser-ux"]["adapter"] == "web_browser"
     assert targets["web-browser-ux"]["required"] is True
     assert targets["web-browser-ux"]["path"] == "/nullxoid"
+    assert targets["web-browser-ux"]["env"]["VITE_NULLXOID_EMBED_LOCAL_APP"] == "true"
     assert targets["web-browser-ux"]["build_command"] == ["npm", "run", "build"]
-    assert targets["web-browser-ux"]["flow"][1]["path"] == "/aibenchie"
+    assert any(route["path"] == "/chat/stream" for route in targets["web-browser-ux"]["mock_routes"])
+    assert targets["web-browser-ux"]["flow"][0]["selector"] == "textarea[placeholder='Ask anything']"
+    assert targets["web-browser-ux"]["flow"][4]["path"] == "/aibenchie"
     assert targets["web-browser-ux"]["flow"][-1]["name"] == "release-evidence"
     assert targets["android-ux"]["adapter"] == "command"
     assert targets["android-ux"]["required"] is True
