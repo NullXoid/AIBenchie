@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
@@ -194,6 +195,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run one E2E lane from the manifest. Repeat for multiple lanes, or use all.",
     )
     parser.add_argument(
+        "--universal-e2e-output",
+        default="",
+        help="Optional JSON output path for the Universal E2E verdict.",
+    )
+    parser.add_argument(
         "--suite-test-target",
         action="append",
         default=[],
@@ -253,6 +259,10 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(failure, indent=2) if args.json else "Result: FAIL (missing universal E2E manifest)")
             return 1
         result = run_universal_e2e(args.universal_e2e_manifest, lanes=args.universal_e2e_lane).as_dict()
+        if args.universal_e2e_output:
+            output_path = Path(args.universal_e2e_output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
@@ -320,8 +330,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result["ok"] else 1
 
     if args.release_report:
-        from pathlib import Path
-
         from aibenchie.release_report import load_artifact_attestation_manifest, write_release_report
 
         artifacts = (
@@ -354,8 +362,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result["ok"] else 1
 
     if args.package_release_artifacts:
-        from pathlib import Path
-
         required = {
             "wrapper": args.wrapper_package,
             "android": args.android_package,
@@ -400,8 +406,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.emit_release_artifacts:
-        from pathlib import Path
-
         package_args = {
             "wrapper": args.wrapper_package,
             "android": args.android_package,
@@ -431,8 +435,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.verify_release_artifacts:
-        from pathlib import Path
-
         manifest_path = Path(args.release_artifacts or args.release_artifacts_output)
         result = verify_release_artifacts_manifest(manifest_path).as_dict()
         if args.json:
@@ -558,8 +560,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result["ok"] else 1
 
     if args.public_scoreboard:
-        from pathlib import Path
-
         result = write_public_scoreboard(output=Path(args.public_scoreboard_output) if args.public_scoreboard_output else None)
         payload = result.as_dict()
         if args.json:

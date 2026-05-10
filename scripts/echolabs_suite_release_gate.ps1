@@ -28,6 +28,7 @@ $resolvedReportPath = if ([System.IO.Path]::IsPathRooted($ReportPath)) {
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot $ReportPath))
 }
+$universalE2EReportPath = [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $resolvedReportPath) "aibenchie_universal_e2e_latest.json"))
 
 function Get-SuiteRelativePath {
     param(
@@ -196,6 +197,8 @@ if (-not $SkipUniversalE2E) {
             "configs\echolabs_universal_e2e.json",
             "--universal-e2e-lane",
             "all",
+            "--universal-e2e-output",
+            $universalE2EReportPath,
             "--json"
         )
 }

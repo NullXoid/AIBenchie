@@ -12,6 +12,12 @@ The default report is written to:
 _validation/echolabs_suite_gate_latest.json
 ```
 
+The Universal E2E verdict is written beside it:
+
+```text
+_validation/aibenchie_universal_e2e_latest.json
+```
+
 The script auto-detects the parent workspace when AIBenchie is checked out next to the EchoLabs repos. Use `-SuiteRoot` for a different layout:
 
 ```powershell

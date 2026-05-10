@@ -185,7 +185,7 @@ def test_universal_e2e_command_adapter_reports_missing_command(monkeypatch, tmp_
     assert result["lanes"][0]["targets"][0]["failure"] == "command_not_found"
 
 
-def test_universal_e2e_cli_outputs_json(monkeypatch, capsys):
+def test_universal_e2e_cli_outputs_json_and_optional_output_file(monkeypatch, capsys, tmp_path):
     class FakeResult:
         def as_dict(self):
             return {
@@ -198,18 +198,23 @@ def test_universal_e2e_cli_outputs_json(monkeypatch, capsys):
 
     monkeypatch.setattr(aibenchie_local, "run_universal_e2e", lambda *_args, **_kwargs: FakeResult())
 
+    output_path = tmp_path / "reports" / "universal.json"
     code = aibenchie_local.main(
         [
             "--universal-e2e",
             "--universal-e2e-manifest",
             "configs/echolabs_universal_e2e.json",
+            "--universal-e2e-output",
+            str(output_path),
             "--json",
         ]
     )
     payload = json.loads(capsys.readouterr().out)
+    file_payload = json.loads(output_path.read_text(encoding="utf-8"))
 
     assert code == 0
     assert payload["schema"] == "aibenchie.universal-e2e.verdict.v1"
+    assert file_payload == payload
 
 
 def test_echolabs_manifest_has_executable_ux_targets():
