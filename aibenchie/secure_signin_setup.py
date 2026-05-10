@@ -254,7 +254,7 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
             "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt",
             [
                 'Modifier.testTag("login-passkey")',
-                "Sign in with passkey",
+                "Use existing passkey",
                 'Modifier.testTag("login-oidc")',
                 "Continue with OIDC",
                 "Password fallback is for development or migration only.",
@@ -366,7 +366,7 @@ def _android_checks(android_repo: Path) -> list[SecureSigninSetupCheck]:
                 'Modifier.testTag("settings-passkey-add")',
                 'Modifier.testTag("settings-passkey-remove")',
                 "Add passkey",
-                "Passkey enrollment",
+                "Security",
                 "onRefreshPasskeys",
                 "onRevokePasskey",
             ],

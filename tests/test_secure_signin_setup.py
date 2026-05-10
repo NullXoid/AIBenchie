@@ -95,7 +95,7 @@ def write_android_fixture(root: Path) -> None:
         ),
         "app/src/main/java/com/nullxoid/android/ui/auth/LoginScreen.kt": (
             'Modifier.testTag("login-passkey")\n'
-            'Text("Sign in with passkey")\n'
+            'Text("Use existing passkey")\n'
             'Modifier.testTag("login-oidc")\n'
             'Text("Continue with OIDC")\n'
             'Text("Password fallback is for development or migration only.")\n'
@@ -104,7 +104,7 @@ def write_android_fixture(root: Path) -> None:
             'Modifier.testTag("settings-passkey-add")\n'
             'Modifier.testTag("settings-passkey-remove")\n'
             'Text("Add passkey")\n'
-            'Text("Passkey enrollment ready.")\n'
+            'Text("Security")\n'
             "onRefreshPasskeys\n"
             "onRevokePasskey\n"
         ),
