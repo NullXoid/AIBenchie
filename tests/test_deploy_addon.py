@@ -240,6 +240,8 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
                 "data_length": len(kwargs.get("data") or b""),
             }
         )
+        if method == "GET":
+            return 404, {"message": "not found"}
         if kwargs.get("payload"):
             return 201, {"id": 42, "upload_url": "https://uploads.example.test/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}"}
         return 201, {"ok": True}
@@ -252,12 +254,48 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
 
     assert result["ok"] is True
     assert result["published"] is True
-    assert requests[0]["method"] == "POST"
-    assert requests[0]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases"
-    assert requests[0]["payload"]["tag_name"] == "v1.2.3"
-    assert requests[0]["token"] == "runtime-token"
-    assert len(requests) == 4
-    assert all(request["data_length"] > 0 for request in requests[1:])
+    assert requests[0]["method"] == "GET"
+    assert requests[0]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/tags/v1.2.3"
+    assert requests[1]["method"] == "POST"
+    assert requests[1]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases"
+    assert requests[1]["payload"]["tag_name"] == "v1.2.3"
+    assert requests[1]["token"] == "runtime-token"
+    assert len(requests) == 5
+    assert all(request["data_length"] > 0 for request in requests[2:])
+
+
+def test_deploy_addon_executor_blocks_existing_release_tag(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict, overrides={"dry_run": False})
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+    requests = []
+
+    def fake_request(method, url, **kwargs):
+        requests.append({"method": method, "url": url, "payload": kwargs.get("payload")})
+        if method == "GET":
+            return 200, {"id": 42, "tag_name": "v1.2.3"}
+        raise AssertionError("release create should not run when tag already exists")
+
+    result = execute_deploy_addon(
+        config_path=config_path,
+        publish_confirm="v1.2.3",
+        request_json=fake_request,
+    ).as_dict()
+
+    assert result["ok"] is False
+    assert result["published"] is False
+    checks = {check["name"]: check for check in result["checks"]}
+    assert checks["provider_publish"]["failure"] == "release_tag_already_exists"
+    assert result["evidence"][0]["operation"] == "check_release_absent"
+    assert requests == [
+        {
+            "method": "GET",
+            "url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/tags/v1.2.3",
+            "payload": None,
+        }
+    ]
 
 
 def test_deploy_addon_executor_blocks_attestation_drift_before_publish(tmp_path, monkeypatch):

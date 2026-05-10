@@ -456,6 +456,10 @@ def _release_api_base(provider: dict[str, Any]) -> str:
     return f"{base_url}/api/v1/repos/{repository}/releases"
 
 
+def _release_tag_url(provider: dict[str, Any], tag: str) -> str:
+    return f"{_release_api_base(provider).rstrip('/')}/tags/{urllib.parse.quote(tag)}"
+
+
 def _release_payload(plan: dict[str, Any]) -> dict[str, Any]:
     release = plan.get("release") if isinstance(plan.get("release"), dict) else {}
     return {
@@ -496,9 +500,27 @@ def _publish_plan(
     request_json=_json_request,
 ) -> tuple[bool, str, list[dict[str, Any]]]:
     provider = plan.get("provider") if isinstance(plan.get("provider"), dict) else {}
+    release = plan.get("release") if isinstance(plan.get("release"), dict) else {}
+    release_tag = str(release.get("tag") or "").strip()
+    release_tag_url = _release_tag_url(provider, release_tag)
+    tag_status, _tag_response = request_json("GET", release_tag_url, token=token)
+    evidence = [
+        {
+            "kind": "provider_request",
+            "operation": "check_release_absent",
+            "status": tag_status,
+            "ok": tag_status == 404,
+            "url": release_tag_url,
+        }
+    ]
+    if tag_status == 200:
+        return False, "release_tag_already_exists", evidence
+    if tag_status != 404:
+        return False, f"release_tag_preflight_failed:{tag_status}", evidence
+
     release_url = _release_api_base(provider)
     release_status, release_response = request_json("POST", release_url, token=token, payload=_release_payload(plan))
-    evidence = [
+    evidence.append(
         {
             "kind": "provider_request",
             "operation": "create_release",
@@ -506,7 +528,7 @@ def _publish_plan(
             "ok": 200 <= release_status < 300,
             "url": release_url,
         }
-    ]
+    )
     if not 200 <= release_status < 300:
         return False, f"release_create_failed:{release_status}", evidence
 
