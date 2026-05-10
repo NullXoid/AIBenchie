@@ -47,6 +47,7 @@ The suite gate runs each surface-owned gate in order:
 | NullXoid Desktop | `.\scripts\desktop_release_gate.ps1` | Desktop model policy regression, unit tests, bridge tests, smoke tests. |
 | BridgeEcho / NullBridge backend | `.\scripts\nullbridge_release_gate.ps1` | Service bridge compliance, approval routing, trust fabric, signed envelopes, observability redaction. |
 | AIBenchie Universal API/UX E2E | `python aibenchie_local.py --universal-e2e ... --universal-e2e-lane all --json` | Standalone manifest-driven API and UX validation across BridgeEcho, web, Android, and desktop surfaces. |
+| AIBenchie deploy plan proof | `python aibenchie_local.py --verify-deploy-plan --deploy-plan <path> --json` | Optional local deploy-plan proof. Runs only when the ignored local deploy plan exists unless `-DeployPlanPath` points elsewhere. |
 
 Useful options:
 
@@ -54,14 +55,17 @@ Useful options:
 .\scripts\echolabs_suite_release_gate.ps1 -SkipAndroid
 .\scripts\echolabs_suite_release_gate.ps1 -SkipDesktop
 .\scripts\echolabs_suite_release_gate.ps1 -SkipUniversalE2E
+.\scripts\echolabs_suite_release_gate.ps1 -SkipDeployPlan
 .\scripts\echolabs_suite_release_gate.ps1 -DesktopIncludeUi
 .\scripts\echolabs_suite_release_gate.ps1 -BridgeFull
+.\scripts\echolabs_suite_release_gate.ps1 -DeployPlanPath .suite\local\aibenchie\deploy-plan.json
 ```
 
 Release interpretation:
 
 - All default gates pass: the suite is locally stable for handoff.
 - Optional UI/full backend gates pass: stronger local confidence before packaging.
+- Optional deploy-plan proof passes: ignored local deploy evidence is well-formed and public-safe enough to feed release evidence.
 - Any gate fails: fix that surface first, then rerun the failed surface gate before rerunning the suite gate.
 - Docker support is coming soon, but Docker is not a supported release target yet. A future Docker path must add its own AIBenchie gate before container images or Compose files are advertised as production-ready.
 - The JSON report uses schema `echolabs.suite-release-gate.v1` and is suitable for AIBenchie ingestion or EchoLabs readiness display.

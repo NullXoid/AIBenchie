@@ -5,8 +5,10 @@ param(
     [switch]$SkipDesktop,
     [switch]$SkipBridge,
     [switch]$SkipUniversalE2E,
+    [switch]$SkipDeployPlan,
     [switch]$DesktopIncludeUi,
     [switch]$BridgeFull,
+    [string]$DeployPlanPath = ".suite\local\aibenchie\deploy-plan.json",
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
     [string]$SuiteRoot = ""
 )
@@ -73,6 +75,7 @@ function Write-SuiteGateReport {
             skip_desktop = [bool]$SkipDesktop
             skip_bridge = [bool]$SkipBridge
             skip_universal_e2e = [bool]$SkipUniversalE2E
+            skip_deploy_plan = [bool]$SkipDeployPlan
             desktop_include_ui = [bool]$DesktopIncludeUi
             bridge_full = [bool]$BridgeFull
         }
@@ -201,6 +204,31 @@ if (-not $SkipUniversalE2E) {
             $universalE2EReportPath,
             "--json"
         )
+}
+
+$resolvedDeployPlanPath = if ([System.IO.Path]::IsPathRooted($DeployPlanPath)) {
+    [System.IO.Path]::GetFullPath($DeployPlanPath)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path $aibenchieRoot $DeployPlanPath))
+}
+
+if ((-not $SkipDeployPlan) -and (Test-Path -LiteralPath $resolvedDeployPlanPath)) {
+    Invoke-SuiteGate `
+        -Id "aibenchie_deploy_plan" `
+        -Name "AIBenchie deploy plan proof" `
+        -Owner "AIBenchie" `
+        -WorkingDirectory $aibenchieRoot `
+        -Command "python" `
+        -Arguments @(
+            "aibenchie_local.py",
+            "--verify-deploy-plan",
+            "--deploy-plan",
+            $resolvedDeployPlanPath,
+            "--json"
+        )
+} elseif (-not $SkipDeployPlan) {
+    Write-Host ""
+    Write-Host "[echolabs-suite-gate] AIBenchie deploy plan proof skipped (no deploy plan at $resolvedDeployPlanPath)" -ForegroundColor DarkYellow
 }
 
 Write-Host ""
