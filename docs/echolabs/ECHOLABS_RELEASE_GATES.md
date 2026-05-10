@@ -32,12 +32,14 @@ The suite gate runs each surface-owned gate in order:
 | NullXoid Android | `.\scripts\android_release_gate.ps1` | Model policy, chat/store contracts, 3D prerelease polish, E2EE, NullBridge adapter, product IA, debug APK build. |
 | NullXoid Desktop | `.\scripts\desktop_release_gate.ps1` | Desktop model policy regression, unit tests, bridge tests, smoke tests. |
 | BridgeEcho / NullBridge backend | `.\scripts\nullbridge_release_gate.ps1` | Service bridge compliance, approval routing, trust fabric, signed envelopes, observability redaction. |
+| AIBenchie Universal API/UX E2E | `python aibenchie_local.py --universal-e2e ... --universal-e2e-lane all --json` | Standalone manifest-driven API and UX validation across BridgeEcho, web, Android, and desktop surfaces. |
 
 Useful options:
 
 ```powershell
 .\scripts\echolabs_suite_release_gate.ps1 -SkipAndroid
 .\scripts\echolabs_suite_release_gate.ps1 -SkipDesktop
+.\scripts\echolabs_suite_release_gate.ps1 -SkipUniversalE2E
 .\scripts\echolabs_suite_release_gate.ps1 -DesktopIncludeUi
 .\scripts\echolabs_suite_release_gate.ps1 -BridgeFull
 ```

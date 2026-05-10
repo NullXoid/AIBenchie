@@ -4,6 +4,7 @@ param(
     [switch]$SkipAndroid,
     [switch]$SkipDesktop,
     [switch]$SkipBridge,
+    [switch]$SkipUniversalE2E,
     [switch]$DesktopIncludeUi,
     [switch]$BridgeFull,
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
@@ -70,6 +71,7 @@ function Write-SuiteGateReport {
             skip_android = [bool]$SkipAndroid
             skip_desktop = [bool]$SkipDesktop
             skip_bridge = [bool]$SkipBridge
+            skip_universal_e2e = [bool]$SkipUniversalE2E
             desktop_include_ui = [bool]$DesktopIncludeUi
             bridge_full = [bool]$BridgeFull
         }
@@ -178,6 +180,24 @@ if (-not $SkipBridge) {
         -WorkingDirectory (Join-Path $workspaceRoot "NullBridge\backend") `
         -Command ".\scripts\nullbridge_release_gate.ps1" `
         -Arguments $bridgeArgs
+}
+
+if (-not $SkipUniversalE2E) {
+    Invoke-SuiteGate `
+        -Id "aibenchie_universal_e2e" `
+        -Name "AIBenchie Universal API/UX E2E" `
+        -Owner "AIBenchie" `
+        -WorkingDirectory $aibenchieRoot `
+        -Command "python" `
+        -Arguments @(
+            "aibenchie_local.py",
+            "--universal-e2e",
+            "--universal-e2e-manifest",
+            "configs\echolabs_universal_e2e.json",
+            "--universal-e2e-lane",
+            "all",
+            "--json"
+        )
 }
 
 Write-Host ""
