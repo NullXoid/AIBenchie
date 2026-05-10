@@ -98,6 +98,12 @@ def _host(value: str) -> str:
     return urlparse(value).netloc.lower()
 
 
+def _host_matches_rp_id(origin: str, rp_id: str) -> bool:
+    host = _host(origin).rstrip(".")
+    rp = rp_id.lower().strip().rstrip(".")
+    return host == rp or host.endswith(f".{rp}")
+
+
 def _check_forbidden_secret_keys(payload: Any, path: str = "$") -> list[str]:
     found: list[str] = []
     if isinstance(payload, dict):
@@ -134,7 +140,7 @@ def _validate_passkey(config: dict[str, Any], *, template: bool, require_real: b
 
     if not _is_https_url(origin):
         checks.append(_fail("passkey.origin", "origin_must_be_https", value=origin))
-    elif isinstance(rp_id, str) and rp_id.strip() and not _is_placeholder(rp_id) and _host(origin) != rp_id.lower():
+    elif isinstance(rp_id, str) and rp_id.strip() and not _is_placeholder(rp_id) and not _host_matches_rp_id(origin, rp_id):
         checks.append(_fail("passkey.origin", "origin_host_must_match_rp_id", origin=origin, rp_id=rp_id))
     elif require_real and _is_placeholder(origin):
         checks.append(_fail("passkey.origin", "placeholder_not_allowed", value=origin))

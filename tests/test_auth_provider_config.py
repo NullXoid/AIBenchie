@@ -119,6 +119,19 @@ def test_real_auth_provider_config_passes(tmp_path):
     )
 
 
+def test_passkey_origin_can_be_rp_id_subdomain(tmp_path):
+    payload = json.loads(json.dumps(VALID_REAL_CONFIG))
+    payload["passkey"]["rp_id"] = "echolabs.diy"
+    payload["passkey"]["origin"] = "https://www.echolabs.diy"
+    payload["passkey"]["assetlinks_url"] = "https://www.echolabs.diy/.well-known/assetlinks.json"
+    path = write_config(tmp_path / "auth-provider.json", payload)
+
+    result = validate_auth_provider_config(path, require_real=True)
+
+    assert result.ok is True
+    assert result.readiness_stage == "provider_values_ready"
+
+
 def test_real_auth_provider_config_with_device_proof_passes(tmp_path):
     config_path = write_config(tmp_path / "auth-provider.json", VALID_REAL_CONFIG)
     proof_path = write_config(tmp_path / "device-proof.json", VALID_DEVICE_PROOF)
