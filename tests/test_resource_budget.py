@@ -98,3 +98,125 @@ def test_ct400_default_profile_blocks_heavy_venv_backup(monkeypatch, tmp_path):
     assert result.ok is False
     failures = {item.name: item.failure for item in result.items if not item.ok}
     assert failures == {"heavy_venv_backups": "budget_exceeded"}
+
+
+def valid_runtime_evidence() -> dict:
+    return {
+        "schema": "echolabs.resource-manager-runtime.v1",
+        "template": False,
+        "profiles": {
+            "ct400-wrapper": {
+                "max_parallel_jobs": 2,
+                "max_lease_seconds": 900,
+                "max_memory_mb": 4096,
+                "retention_seconds": 86400,
+            }
+        },
+        "leases": [
+            {
+                "id": "lease_test",
+                "capability": "model.inference",
+                "profile": "ct400-wrapper",
+                "approved": True,
+                "max_duration_seconds": 300,
+                "max_memory_mb": 2048,
+                "cleanup_after_seconds": 3600,
+            }
+        ],
+        "cleanup": {
+            "enabled": True,
+            "last_success_at": "2026-05-10T00:00:00Z",
+            "deleted_expired_leases": 1,
+        },
+        "pressure": {
+            "profile": "ct400-wrapper",
+            "level": "normal",
+            "active_leases": 1,
+            "queued_jobs": 0,
+        },
+    }
+
+
+def test_resource_budget_can_require_runtime_evidence(tmp_path):
+    proof = tmp_path / "resource-runtime.json"
+    proof.write_text(json.dumps(valid_runtime_evidence()), encoding="utf-8")
+    env = {
+        "AIBENCHIE_RESOURCE_PROFILE": "test",
+        "AIBENCHIE_RESOURCE_BUDGETS_JSON": "[]",
+        "AIBENCHIE_RESOURCE_DISK_ROOT": str(tmp_path),
+        "AIBENCHIE_RESOURCE_MIN_FREE_MB": "1",
+        "AIBENCHIE_RESOURCE_MAX_USED_PERCENT": "99.9",
+        "AIBENCHIE_RESOURCE_MANAGER_EVIDENCE": str(proof),
+        "AIBENCHIE_RESOURCE_MANAGER_REQUIRE_RUNTIME": "1",
+    }
+
+    result = resource_budget.run_resource_budget_check(env)
+
+    assert result.ok is True
+    assert result.runtime["ok"] is True
+    assert result.runtime["required"] is True
+
+
+def test_resource_budget_requires_explicit_runtime_evidence_path(tmp_path):
+    env = {
+        "AIBENCHIE_RESOURCE_PROFILE": "test",
+        "AIBENCHIE_RESOURCE_BUDGETS_JSON": "[]",
+        "AIBENCHIE_RESOURCE_DISK_ROOT": str(tmp_path),
+        "AIBENCHIE_RESOURCE_MIN_FREE_MB": "1",
+        "AIBENCHIE_RESOURCE_MAX_USED_PERCENT": "99.9",
+        "AIBENCHIE_RESOURCE_MANAGER_REQUIRE_RUNTIME": "1",
+    }
+
+    result = resource_budget.run_resource_budget_check(env)
+
+    assert result.ok is False
+    failures = {check["name"]: check["failure"] for check in result.runtime["checks"] if not check["ok"]}
+    assert failures["runtime.evidence_file"] == "missing_runtime_evidence_path"
+
+
+def test_resource_runtime_evidence_rejects_unbounded_leases(tmp_path):
+    payload = valid_runtime_evidence()
+    payload["leases"][0]["max_duration_seconds"] = 5000
+    payload["pressure"]["level"] = "critical"
+    proof = tmp_path / "resource-runtime.json"
+    proof.write_text(json.dumps(payload), encoding="utf-8")
+    env = {
+        "AIBENCHIE_RESOURCE_PROFILE": "test",
+        "AIBENCHIE_RESOURCE_BUDGETS_JSON": "[]",
+        "AIBENCHIE_RESOURCE_DISK_ROOT": str(tmp_path),
+        "AIBENCHIE_RESOURCE_MIN_FREE_MB": "1",
+        "AIBENCHIE_RESOURCE_MAX_USED_PERCENT": "99.9",
+        "AIBENCHIE_RESOURCE_MANAGER_EVIDENCE": str(proof),
+        "AIBENCHIE_RESOURCE_MANAGER_REQUIRE_RUNTIME": "1",
+    }
+
+    result = resource_budget.run_resource_budget_check(env)
+
+    assert result.ok is False
+    failures = {check["name"]: check["failure"] for check in result.runtime["checks"] if not check["ok"]}
+    assert failures["runtime.leases[0].duration"] == "lease_duration_unbounded"
+    assert failures["runtime.pressure.level"] == "pressure_not_safe"
+
+
+def test_resource_runtime_evidence_reports_malformed_numbers(tmp_path):
+    payload = valid_runtime_evidence()
+    payload["leases"][0]["max_memory_mb"] = "large"
+    payload["cleanup"]["deleted_expired_leases"] = "many"
+    proof = tmp_path / "resource-runtime.json"
+    proof.write_text(json.dumps(payload), encoding="utf-8")
+    env = {
+        "AIBENCHIE_RESOURCE_PROFILE": "test",
+        "AIBENCHIE_RESOURCE_BUDGETS_JSON": "[]",
+        "AIBENCHIE_RESOURCE_DISK_ROOT": str(tmp_path),
+        "AIBENCHIE_RESOURCE_MIN_FREE_MB": "1",
+        "AIBENCHIE_RESOURCE_MAX_USED_PERCENT": "99.9",
+        "AIBENCHIE_RESOURCE_MANAGER_EVIDENCE": str(proof),
+        "AIBENCHIE_RESOURCE_MANAGER_REQUIRE_RUNTIME": "1",
+    }
+
+    result = resource_budget.run_resource_budget_check(env)
+
+    assert result.ok is False
+    failures = {check["name"]: check["failure"] for check in result.runtime["checks"] if not check["ok"]}
+    assert failures["runtime.leases[0].memory"] == "lease_memory_unbounded"
+    assert failures["runtime.cleanup.deleted_expired_leases"] == "cleanup_deleted_count_invalid"

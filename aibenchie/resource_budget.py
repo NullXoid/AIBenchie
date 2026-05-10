@@ -10,6 +10,9 @@ from typing import Any
 
 
 MIB = 1024 * 1024
+EXPECTED_RUNTIME_SCHEMA = "echolabs.resource-manager-runtime.v1"
+DEFAULT_RUNTIME_EVIDENCE_PATH = Path("configs/echolabs_resource_manager_runtime.example.json")
+FORBIDDEN_KEYS = {"client_secret", "private_key", "password", "service_secret", "service_token", "api_key", "token"}
 
 
 @dataclass(frozen=True)
@@ -95,6 +98,7 @@ class ResourceBudgetResult:
     profile: str
     disk: DiskBudget
     items: list[ResourceBudgetItem] = field(default_factory=list)
+    runtime: dict[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -102,6 +106,7 @@ class ResourceBudgetResult:
             "profile": self.profile,
             "disk": self.disk.as_dict(),
             "items": [item.as_dict() for item in self.items],
+            "runtime": self.runtime,
         }
 
 
@@ -220,6 +225,118 @@ def check_disk_budget(
     )
 
 
+def _check(name: str, ok: bool, failure: str = "", **detail: Any) -> dict[str, Any]:
+    return {"name": name, "ok": ok, "failure": "" if ok else failure, "detail": detail}
+
+
+def _forbidden_secret_paths(payload: Any, path: str = "$") -> list[str]:
+    found: list[str] = []
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            lowered = str(key).lower()
+            if lowered in FORBIDDEN_KEYS or lowered.endswith("_secret") or lowered.endswith("_token"):
+                found.append(f"{path}.{key}")
+            found.extend(_forbidden_secret_paths(value, f"{path}.{key}"))
+    elif isinstance(payload, list):
+        for index, item in enumerate(payload):
+            found.extend(_forbidden_secret_paths(item, f"{path}[{index}]"))
+    return found
+
+
+def _resolve_runtime_evidence_path(path: str | Path | None) -> Path:
+    root = Path(__file__).resolve().parents[1]
+    resolved = Path(path or root / DEFAULT_RUNTIME_EVIDENCE_PATH)
+    if not resolved.is_absolute():
+        resolved = (root / resolved).resolve()
+    return resolved
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def validate_runtime_evidence(path: str | Path | None, *, require_runtime: bool = False) -> dict[str, Any]:
+    evidence_path = _resolve_runtime_evidence_path(path)
+    checks: list[dict[str, Any]] = []
+    if require_runtime and not path:
+        checks.append(_check("runtime.evidence_file", False, "missing_runtime_evidence_path", path=str(evidence_path)))
+        return {"ok": False, "required": require_runtime, "path": str(evidence_path), "checks": checks}
+    if not path:
+        return {"ok": True, "required": require_runtime, "path": str(evidence_path), "checks": []}
+    if not evidence_path.exists():
+        checks.append(_check("runtime.evidence_file", False, "missing_config_file", path=str(evidence_path)))
+        return {"ok": False, "required": require_runtime, "path": str(evidence_path), "checks": checks}
+
+    try:
+        payload = json.loads(evidence_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        checks.append(_check("runtime.evidence_file", False, f"invalid_json:{type(exc).__name__}", path=str(evidence_path)))
+        return {"ok": False, "required": require_runtime, "path": str(evidence_path), "checks": checks}
+    if not isinstance(payload, dict):
+        checks.append(_check("runtime.evidence_file", False, "config_must_be_object", path=str(evidence_path)))
+        return {"ok": False, "required": require_runtime, "path": str(evidence_path), "checks": checks}
+
+    checks.append(_check("runtime.evidence_file", True, path=str(evidence_path)))
+    checks.append(_check("runtime.schema", payload.get("schema") == EXPECTED_RUNTIME_SCHEMA, "schema_mismatch", expected=EXPECTED_RUNTIME_SCHEMA, actual=payload.get("schema")))
+    template = payload.get("template") is True
+    checks.append(_check("runtime.template", not (require_runtime and template), "template_runtime_evidence_not_allowed", value=template))
+    forbidden = _forbidden_secret_paths(payload)
+    checks.append(_check("runtime.secret_keys_absent", not forbidden, "forbidden_secret_keys_present", paths=forbidden))
+
+    profiles = payload.get("profiles") if isinstance(payload.get("profiles"), dict) else {}
+    leases = payload.get("leases")
+    if not isinstance(leases, list) or not leases:
+        checks.append(_check("runtime.leases", False, "missing_leases"))
+    else:
+        checks.append(_check("runtime.leases", True, count=len(leases)))
+        for index, lease in enumerate(leases):
+            if not isinstance(lease, dict):
+                checks.append(_check(f"runtime.leases[{index}]", False, "lease_must_be_object"))
+                continue
+            profile_name = str(lease.get("profile") or "")
+            profile = profiles.get(profile_name) if isinstance(profiles.get(profile_name), dict) else {}
+            max_profile_seconds = _int_or_none(profile.get("max_lease_seconds")) or 0
+            max_profile_memory = _int_or_none(profile.get("max_memory_mb")) or 0
+            retention_seconds = _int_or_none(profile.get("retention_seconds")) or 0
+            duration = _int_or_none(lease.get("max_duration_seconds"))
+            memory = _int_or_none(lease.get("max_memory_mb"))
+            cleanup_after = _int_or_none(lease.get("cleanup_after_seconds"))
+            checks.append(_check(f"runtime.leases[{index}].approved", lease.get("approved") is True, "lease_must_be_approved"))
+            checks.append(_check(f"runtime.leases[{index}].duration", duration is not None and duration > 0 and (not max_profile_seconds or duration <= max_profile_seconds), "lease_duration_unbounded", duration=duration, max=max_profile_seconds))
+            checks.append(_check(f"runtime.leases[{index}].memory", memory is not None and memory > 0 and (not max_profile_memory or memory <= max_profile_memory), "lease_memory_unbounded", memory=memory, max=max_profile_memory))
+            checks.append(_check(f"runtime.leases[{index}].cleanup_after", cleanup_after is not None and cleanup_after > 0 and (not retention_seconds or cleanup_after <= retention_seconds), "lease_cleanup_unbounded", cleanup_after=cleanup_after, retention=retention_seconds))
+
+    cleanup = payload.get("cleanup")
+    if not isinstance(cleanup, dict):
+        checks.append(_check("runtime.cleanup", False, "missing_cleanup"))
+    else:
+        checks.append(_check("runtime.cleanup.enabled", cleanup.get("enabled") is True, "cleanup_must_be_enabled"))
+        checks.append(_check("runtime.cleanup.last_success_at", bool(str(cleanup.get("last_success_at") or "").strip()), "cleanup_success_missing"))
+        deleted_expired = _int_or_none(cleanup.get("deleted_expired_leases"))
+        checks.append(_check("runtime.cleanup.deleted_expired_leases", deleted_expired is not None and deleted_expired >= 0, "cleanup_deleted_count_invalid"))
+
+    pressure = payload.get("pressure")
+    if not isinstance(pressure, dict):
+        checks.append(_check("runtime.pressure", False, "missing_pressure_snapshot"))
+    else:
+        level = str(pressure.get("level") or "").lower()
+        checks.append(_check("runtime.pressure.level", level in {"low", "normal", "ok", "ready"}, "pressure_not_safe", level=level))
+        active_leases = _int_or_none(pressure.get("active_leases"))
+        pressure_profile = profiles.get(str(pressure.get("profile") or "")) if isinstance(profiles.get(str(pressure.get("profile") or "")), dict) else {}
+        max_parallel = _int_or_none(pressure_profile.get("max_parallel_jobs")) or 0
+        checks.append(_check("runtime.pressure.active_leases", active_leases is not None and active_leases >= 0 and (not max_parallel or active_leases <= max_parallel), "active_leases_above_profile", active=active_leases, max=max_parallel))
+
+    return {
+        "ok": all(check["ok"] for check in checks),
+        "required": require_runtime,
+        "path": str(evidence_path),
+        "checks": checks,
+    }
+
+
 def run_resource_budget_check(env: dict[str, str] | None = None) -> ResourceBudgetResult:
     source = os.environ if env is None else env
     profile, budgets = load_budgets_from_env(source)
@@ -232,9 +349,14 @@ def run_resource_budget_check(env: dict[str, str] | None = None) -> ResourceBudg
         max_used_percent=max_used_percent,
     )
     items = [check_budget_item(budget) for budget in budgets]
+    runtime = validate_runtime_evidence(
+        source.get("AIBENCHIE_RESOURCE_MANAGER_EVIDENCE") or None,
+        require_runtime=source.get("AIBENCHIE_RESOURCE_MANAGER_REQUIRE_RUNTIME", "").strip().lower() in {"1", "true", "yes"},
+    )
     return ResourceBudgetResult(
-        ok=disk.ok and all(item.ok for item in items),
+        ok=disk.ok and all(item.ok for item in items) and bool(runtime.get("ok", True)),
         profile=profile,
         disk=disk,
         items=items,
+        runtime=runtime,
     )

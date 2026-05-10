@@ -151,6 +151,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run local storage/cache/log budget checks. Override with AIBENCHIE_RESOURCE_* environment variables.",
     )
     parser.add_argument(
+        "--resource-manager-evidence",
+        default="",
+        help="Optional Resource Manager runtime evidence JSON for --resource-budget.",
+    )
+    parser.add_argument(
+        "--resource-manager-require-runtime",
+        action="store_true",
+        help="Require Resource Manager runtime lease, cleanup, retention, and pressure evidence for --resource-budget.",
+    )
+    parser.add_argument(
         "--generated-output-policy",
         action="store_true",
         help="Run repo generated-output hygiene checks for reports/data paths.",
@@ -555,6 +565,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if result["ok"] else 1
 
     if args.resource_budget:
+        if args.resource_manager_evidence:
+            import os
+
+            os.environ["AIBENCHIE_RESOURCE_MANAGER_EVIDENCE"] = args.resource_manager_evidence
+        if args.resource_manager_require_runtime:
+            import os
+
+            os.environ["AIBENCHIE_RESOURCE_MANAGER_REQUIRE_RUNTIME"] = "1"
         result = run_resource_budget_check().as_dict()
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
@@ -569,6 +587,10 @@ def main(argv: list[str] | None = None) -> int:
             for item in result["items"]:
                 status = "PASS" if item["ok"] else f"FAIL ({item['failure']})"
                 print(f"{item['name']}: {item['mb_used']} MiB / {item['max_mb']} MiB: {status}")
+            runtime = result.get("runtime") or {}
+            if runtime.get("required") or runtime.get("checks"):
+                runtime_status = "PASS" if runtime.get("ok") else "FAIL"
+                print(f"Runtime evidence: {runtime_status} ({runtime.get('path', '')})")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

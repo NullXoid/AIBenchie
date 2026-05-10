@@ -299,6 +299,12 @@ $env:AIBENCHIE_RESOURCE_BUDGETS_JSON='[{"name":"cache","pattern":"/srv/app/.cach
 python aibenchie_local.py --resource-budget --json
 ```
 
+To make Resource Manager runtime enforcement release-blocking, provide ignored runtime evidence for approved bounded leases, cleanup, retention, and pressure snapshots:
+
+```powershell
+python aibenchie_local.py --resource-budget --resource-manager-evidence "path\to\ignored-resource-runtime.json" --resource-manager-require-runtime --json
+```
+
 Run the generated-output policy gate:
 
 ```powershell

@@ -59,3 +59,32 @@ The canonical policy lives in:
 ```text
 .suite/policies/resource-policy.json
 ```
+
+## AIBenchie Evidence Gate
+
+The budget gate checks disk/path growth by default:
+
+```text
+python aibenchie_local.py --resource-budget --json
+```
+
+Runtime enforcement evidence is supplied separately from ignored local or deployment output. Start from:
+
+```text
+configs/echolabs_resource_manager_runtime.example.json
+```
+
+Then require the runtime proof:
+
+```text
+python aibenchie_local.py --resource-budget --resource-manager-evidence path/to/ignored-resource-runtime.json --resource-manager-require-runtime --json
+```
+
+The runtime evidence must prove:
+
+- leases are approved and bounded by duration, memory, cleanup, and profile caps
+- cleanup is enabled and has recent success evidence
+- expired leases and temporary artifacts are cleaned up
+- pressure snapshots are low/normal/ready, not high/critical/blocked
+- active leases do not exceed profile parallelism
+- no tokens, client secrets, private keys, or service credentials are present

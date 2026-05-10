@@ -1,0 +1,39 @@
+{
+  "schema": "echolabs.resource-manager-runtime.v1",
+  "template": true,
+  "profiles": {
+    "ct400-wrapper": {
+      "max_parallel_jobs": 2,
+      "max_lease_seconds": 900,
+      "max_memory_mb": 4096,
+      "retention_seconds": 86400
+    }
+  },
+  "leases": [
+    {
+      "id": "lease_example",
+      "capability": "model.inference",
+      "profile": "ct400-wrapper",
+      "approved": true,
+      "max_duration_seconds": 300,
+      "max_memory_mb": 2048,
+      "cleanup_after_seconds": 3600,
+      "trace_id": "trace_example"
+    }
+  ],
+  "cleanup": {
+    "enabled": true,
+    "last_success_at": "REPLACE_WITH_ISO8601_TIME",
+    "deleted_expired_leases": 0,
+    "deleted_temp_artifacts": 0
+  },
+  "pressure": {
+    "profile": "ct400-wrapper",
+    "level": "normal",
+    "sampled_at": "REPLACE_WITH_ISO8601_TIME",
+    "active_leases": 0,
+    "queued_jobs": 0,
+    "disk_used_percent": 50,
+    "memory_used_percent": 50
+  }
+}
