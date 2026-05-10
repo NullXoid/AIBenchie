@@ -63,7 +63,7 @@ Current state: all ranked stabilization work above is implemented and covered by
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| F1 | Real-device UX proof gate | 360 | Foundation ready | Public-safe proof verifier validates physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; Android proofs require sign-in and chat workflows before they can count as release evidence. |
+| F1 | Real-device UX proof gate | 360 | Generator gated | Public-safe proof verifier and Android adb generator validate physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; Android proofs require operator-confirmed sign-in and chat workflows before they can count as release evidence. |
 
 ## Paused Automation Pickup
 

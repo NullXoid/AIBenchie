@@ -8,10 +8,16 @@ param(
     [switch]$SkipDeployPlan,
     [switch]$SkipDockerSupport,
     [switch]$SkipRealDeviceUX,
+    [switch]$GenerateAndroidRealDeviceUXProof,
+    [switch]$AndroidRealDeviceUXSigninPassed,
+    [switch]$AndroidRealDeviceUXChatPassed,
     [switch]$DesktopIncludeUi,
     [switch]$BridgeFull,
     [string]$DeployPlanPath = ".suite\local\aibenchie\deploy-plan.json",
     [string]$RealDeviceUXProofPath = ".suite\local\aibenchie\android-real-device-ux.json",
+    [string]$RealDeviceUXAdb = "adb",
+    [string]$RealDeviceUXPackage = "com.nullxoid.android",
+    [string]$RealDeviceUXBaseUrl = "https://api.echolabs.diy/nullxoid",
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
     [string]$SuiteRoot = ""
 )
@@ -81,6 +87,7 @@ function Write-SuiteGateReport {
             skip_deploy_plan = [bool]$SkipDeployPlan
             skip_docker_support = [bool]$SkipDockerSupport
             skip_real_device_ux = [bool]$SkipRealDeviceUX
+            generate_android_real_device_ux_proof = [bool]$GenerateAndroidRealDeviceUXProof
             desktop_include_ui = [bool]$DesktopIncludeUi
             bridge_full = [bool]$BridgeFull
         }
@@ -254,6 +261,36 @@ $resolvedRealDeviceUXProofPath = if ([System.IO.Path]::IsPathRooted($RealDeviceU
     [System.IO.Path]::GetFullPath($RealDeviceUXProofPath)
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $aibenchieRoot $RealDeviceUXProofPath))
+}
+
+if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {
+    $androidProofArgs = @(
+        "aibenchie_local.py",
+        "--emit-android-real-device-ux-proof",
+        "--real-device-ux-output",
+        $resolvedRealDeviceUXProofPath,
+        "--real-device-ux-adb",
+        $RealDeviceUXAdb,
+        "--real-device-ux-package",
+        $RealDeviceUXPackage,
+        "--real-device-ux-base-url",
+        $RealDeviceUXBaseUrl,
+        "--json"
+    )
+    if ($AndroidRealDeviceUXSigninPassed) {
+        $androidProofArgs += "--real-device-ux-signin-passed"
+    }
+    if ($AndroidRealDeviceUXChatPassed) {
+        $androidProofArgs += "--real-device-ux-chat-passed"
+    }
+
+    Invoke-SuiteGate `
+        -Id "aibenchie_android_real_device_ux_proof_generation" `
+        -Name "AIBenchie Android real-device UX proof generation" `
+        -Owner "AIBenchie" `
+        -WorkingDirectory $aibenchieRoot `
+        -Command "python" `
+        -Arguments $androidProofArgs
 }
 
 if ((-not $SkipRealDeviceUX) -and (Test-Path -LiteralPath $resolvedRealDeviceUXProofPath)) {
