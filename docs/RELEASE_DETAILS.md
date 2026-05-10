@@ -92,6 +92,6 @@ When a runner sets `AIBENCHIE_DEPLOY_PLAN` or `AIBENCHIE_DEPLOY_ADDON_PLAN`, the
 
 Real-device UX proof is optional release evidence for physical device runs. Keep the actual proof JSON under an ignored runtime path such as `.suite/local/aibenchie/android-real-device-ux.json`.
 
-Generate Android proof from a connected adb device with `python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --json`. The generator hashes the adb device handle and does not write raw device identifiers; omit the pass flags until the physical sign-in and chat workflows have actually passed.
+Generate Android proof from a connected adb device with `python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --real-device-ux-capture-screenshot --json`. The generator hashes the adb device handle and does not write raw device identifiers; omit the pass flags until the physical sign-in and chat workflows have actually passed. Screenshot capture writes only ignored local artifact files and records a digest in the proof.
 
 When a runner sets `AIBENCHIE_REAL_DEVICE_UX_PROOF` or `AIBENCHIE_ANDROID_REAL_DEVICE_UX_PROOF`, the release summary includes only a public-safe proof summary: pass/fail, platform, proof id, workflow count, check count, and failed-check count. Raw device identifiers, session material, screenshots, local paths, and detailed workflow notes stay out of public release evidence.

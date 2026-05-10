@@ -358,6 +358,16 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Mark the generated Android chat workflow as passed after operator confirmation.",
     )
+    parser.add_argument(
+        "--real-device-ux-capture-screenshot",
+        action="store_true",
+        help="Capture an ignored adb screenshot artifact and record only its hash in the generated Android proof.",
+    )
+    parser.add_argument(
+        "--real-device-ux-artifact-dir",
+        default="",
+        help="Optional ignored artifact directory for generated Android proof screenshots.",
+    )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
 
@@ -923,6 +933,8 @@ def main(argv: list[str] | None = None) -> int:
                 proof_id=args.real_device_ux_proof_id,
                 signin_passed=args.real_device_ux_signin_passed,
                 chat_passed=args.real_device_ux_chat_passed,
+                capture_screenshot=args.real_device_ux_capture_screenshot,
+                artifact_dir=args.real_device_ux_artifact_dir or None,
             )
         except Exception as exc:
             result = {"ok": False, "output": args.real_device_ux_output, "failure": str(exc)}

@@ -11,10 +11,12 @@ param(
     [switch]$GenerateAndroidRealDeviceUXProof,
     [switch]$AndroidRealDeviceUXSigninPassed,
     [switch]$AndroidRealDeviceUXChatPassed,
+    [switch]$CaptureAndroidRealDeviceUXScreenshot,
     [switch]$DesktopIncludeUi,
     [switch]$BridgeFull,
     [string]$DeployPlanPath = ".suite\local\aibenchie\deploy-plan.json",
     [string]$RealDeviceUXProofPath = ".suite\local\aibenchie\android-real-device-ux.json",
+    [string]$RealDeviceUXArtifactDir = ".suite\local\aibenchie\artifacts",
     [string]$RealDeviceUXAdb = "adb",
     [string]$RealDeviceUXPackage = "com.nullxoid.android",
     [string]$RealDeviceUXBaseUrl = "https://api.echolabs.diy/nullxoid",
@@ -88,6 +90,7 @@ function Write-SuiteGateReport {
             skip_docker_support = [bool]$SkipDockerSupport
             skip_real_device_ux = [bool]$SkipRealDeviceUX
             generate_android_real_device_ux_proof = [bool]$GenerateAndroidRealDeviceUXProof
+            capture_android_real_device_ux_screenshot = [bool]$CaptureAndroidRealDeviceUXScreenshot
             desktop_include_ui = [bool]$DesktopIncludeUi
             bridge_full = [bool]$BridgeFull
         }
@@ -262,6 +265,11 @@ $resolvedRealDeviceUXProofPath = if ([System.IO.Path]::IsPathRooted($RealDeviceU
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $aibenchieRoot $RealDeviceUXProofPath))
 }
+$resolvedRealDeviceUXArtifactDir = if ([System.IO.Path]::IsPathRooted($RealDeviceUXArtifactDir)) {
+    [System.IO.Path]::GetFullPath($RealDeviceUXArtifactDir)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path $aibenchieRoot $RealDeviceUXArtifactDir))
+}
 
 if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {
     $androidProofArgs = @(
@@ -282,6 +290,11 @@ if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {
     }
     if ($AndroidRealDeviceUXChatPassed) {
         $androidProofArgs += "--real-device-ux-chat-passed"
+    }
+    if ($CaptureAndroidRealDeviceUXScreenshot) {
+        $androidProofArgs += "--real-device-ux-capture-screenshot"
+        $androidProofArgs += "--real-device-ux-artifact-dir"
+        $androidProofArgs += $resolvedRealDeviceUXArtifactDir
     }
 
     Invoke-SuiteGate `

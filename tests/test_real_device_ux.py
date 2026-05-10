@@ -145,6 +145,51 @@ def test_emit_android_real_device_ux_proof_hashes_device_identifier(tmp_path):
     assert validate_real_device_ux_proof(output).ok is True
 
 
+def test_emit_android_real_device_ux_proof_can_capture_ignored_screenshot(tmp_path):
+    def fake_adb(args):
+        command = " ".join(args)
+        if command == "get-serialno":
+            return "RAW-DEVICE-123"
+        if command == "shell getprop ro.product.manufacturer":
+            return "Google"
+        if command == "shell getprop ro.product.model":
+            return "Pixel 9"
+        if command == "shell getprop ro.build.version.release":
+            return "16"
+        if command == "shell getprop ro.build.version.sdk":
+            return "36"
+        if command == "shell dumpsys package com.nullxoid.android":
+            return "Package [com.nullxoid.android]\n  versionName=1.2.3\n"
+        raise AssertionError(f"unexpected adb command: {command}")
+
+    output = tmp_path / "proof.json"
+    artifact_dir = tmp_path / "artifacts"
+    screenshot = b"\x89PNG\r\n\x1a\nfake"
+    result = emit_android_real_device_ux_proof(
+        output,
+        signin_passed=True,
+        chat_passed=True,
+        proof_id="android-real-device-screen-test",
+        capture_screenshot=True,
+        artifact_dir=artifact_dir,
+        adb_reader=fake_adb,
+        adb_binary_reader=lambda args: screenshot if args == ["exec-out", "screencap", "-p"] else b"",
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+
+    assert result["ok"] is True
+    assert payload["artifacts"] == [
+        {
+            "kind": "screenshot",
+            "name": "android-current-screen",
+            "sha256": "68ee4598e64cd28eed508c333dfb14c745677f41e2b012e6256c9b138b304270",
+            "byte_size": len(screenshot),
+            "path": "android-real-device-screen-test-screen.png",
+        }
+    ]
+    assert (artifact_dir / "android-real-device-screen-test-screen.png").read_bytes() == screenshot
+
+
 def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
     output = tmp_path / "proof.json"
 
@@ -152,6 +197,8 @@ def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
         assert output_path == str(output)
         assert kwargs["signin_passed"] is True
         assert kwargs["chat_passed"] is True
+        assert kwargs["capture_screenshot"] is True
+        assert kwargs["artifact_dir"] == str(tmp_path / "artifacts")
         return {
             "ok": True,
             "output": str(output),
@@ -169,6 +216,9 @@ def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
             str(output),
             "--real-device-ux-signin-passed",
             "--real-device-ux-chat-passed",
+            "--real-device-ux-capture-screenshot",
+            "--real-device-ux-artifact-dir",
+            str(tmp_path / "artifacts"),
             "--json",
         ]
     )

@@ -275,11 +275,11 @@ See `docs/AUTH_PROVIDER_CONFIGURATION.md` for the passkey RP, Android Digital As
 Run a public-safe physical-device UX proof:
 
 ```powershell
-python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --json
+python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --real-device-ux-capture-screenshot --json
 python aibenchie_local.py --real-device-ux-proof .suite/local/aibenchie/android-real-device-ux.json --json
 ```
 
-The Android generator reads public-safe metadata from the connected `adb` device, hashes the adb device handle, and writes the ignored proof file at `.suite/local/aibenchie/android-real-device-ux.json`. Only pass `--real-device-ux-signin-passed` and `--real-device-ux-chat-passed` after those physical workflows were completed on the device. Use `configs/aibenchie_real_device_ux.example.json` as the manual template for ignored runtime evidence. The verifier rejects template proofs, raw device identifiers, token/session fields, unsafe artifact paths, failing workflows, and Android proofs that do not include both sign-in and chat workflows.
+The Android generator reads public-safe metadata from the connected `adb` device, hashes the adb device handle, and writes the ignored proof file at `.suite/local/aibenchie/android-real-device-ux.json`. Optional screenshot capture stores the image only under ignored local evidence and records its hash in the proof. Only pass `--real-device-ux-signin-passed` and `--real-device-ux-chat-passed` after those physical workflows were completed on the device. Use `configs/aibenchie_real_device_ux.example.json` as the manual template for ignored runtime evidence. The verifier rejects template proofs, raw device identifiers, token/session fields, unsafe artifact paths, failing workflows, and Android proofs that do not include both sign-in and chat workflows.
 
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 

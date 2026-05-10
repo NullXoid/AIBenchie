@@ -82,6 +82,14 @@ def _adb_value(adb: str, args: list[str]) -> str:
     ).strip()
 
 
+def _adb_bytes(adb: str, args: list[str]) -> bytes:
+    return subprocess.check_output(
+        [adb, *args],
+        stderr=subprocess.STDOUT,
+        timeout=15,
+    )
+
+
 def _android_package_version(adb_reader: Callable[[list[str]], str], package_name: str) -> str:
     try:
         package_dump = adb_reader(["shell", "dumpsys", "package", package_name])
@@ -106,6 +114,14 @@ def _workflow_status(passed: bool) -> str:
     return "pass" if passed else "pending"
 
 
+def _public_artifact_path(path: Path) -> str:
+    resolved = path.expanduser().resolve()
+    try:
+        return resolved.relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return resolved.name
+
+
 def emit_android_real_device_ux_proof(
     output_path: str | Path = DEFAULT_ANDROID_PROOF_OUTPUT,
     *,
@@ -117,9 +133,13 @@ def emit_android_real_device_ux_proof(
     signin_passed: bool = False,
     chat_passed: bool = False,
     network: str = "real-device",
+    capture_screenshot: bool = False,
+    artifact_dir: str | Path | None = None,
     adb_reader: Callable[[list[str]], str] | None = None,
+    adb_binary_reader: Callable[[list[str]], bytes] | None = None,
 ) -> dict[str, Any]:
     reader = adb_reader or (lambda args: _adb_value(adb, args))
+    binary_reader = adb_binary_reader or (lambda args: _adb_bytes(adb, args))
     raw_device_handle = reader(["get-serialno"]).strip()
     if not raw_device_handle:
         raise RuntimeError("adb_device_missing")
@@ -131,6 +151,26 @@ def emit_android_real_device_ux_proof(
     resolved_version = app_version.strip() or _android_package_version(reader, package_name) or "unknown"
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     resolved_proof_id = proof_id.strip() or f"android-real-device-ux-{timestamp}"
+    output = Path(output_path).expanduser()
+    artifacts: list[dict[str, Any]] = []
+
+    if capture_screenshot:
+        screenshot = binary_reader(["exec-out", "screencap", "-p"])
+        if not screenshot:
+            raise RuntimeError("adb_screenshot_empty")
+        selected_artifact_dir = Path(artifact_dir).expanduser() if artifact_dir else output.parent / "artifacts"
+        selected_artifact_dir.mkdir(parents=True, exist_ok=True)
+        screenshot_path = selected_artifact_dir / f"{resolved_proof_id}-screen.png"
+        screenshot_path.write_bytes(screenshot)
+        artifacts.append(
+            {
+                "kind": "screenshot",
+                "name": "android-current-screen",
+                "sha256": sha256(screenshot).hexdigest(),
+                "byte_size": len(screenshot),
+                "path": _public_artifact_path(screenshot_path),
+            }
+        )
 
     payload = {
         "schema": REAL_DEVICE_UX_SCHEMA,
@@ -177,10 +217,9 @@ def emit_android_real_device_ux_proof(
                 ],
             },
         ],
-        "artifacts": [],
+        "artifacts": artifacts,
     }
 
-    output = Path(output_path).expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     validation = validate_real_device_ux_proof(output).as_dict()
