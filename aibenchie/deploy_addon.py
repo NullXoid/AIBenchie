@@ -461,13 +461,13 @@ def _release_tag_url(provider: dict[str, Any], tag: str) -> str:
     return f"{_release_api_base(provider).rstrip('/')}/tags/{urllib.parse.quote(tag)}"
 
 
-def _release_payload(plan: dict[str, Any]) -> dict[str, Any]:
+def _release_payload(plan: dict[str, Any], *, draft: bool = False) -> dict[str, Any]:
     release = plan.get("release") if isinstance(plan.get("release"), dict) else {}
     return {
         "tag_name": str(release.get("tag") or "").strip(),
         "name": str(release.get("name") or release.get("tag") or "").strip(),
         "prerelease": bool(release.get("prerelease", True)),
-        "draft": False,
+        "draft": draft,
         "body": "Published by AIBenchie deploy add-on after suite verdict and release attestation verification.",
     }
 
@@ -491,6 +491,16 @@ def _upload_url(provider: dict[str, Any], release_response: dict[str, Any], asse
     repository = urllib.parse.quote(str(provider.get("repository") or "").strip(), safe="/")
     release_id = str(release_response.get("id") or "").strip()
     return f"{base_url}/api/v1/repos/{repository}/releases/{release_id}/assets?name={urllib.parse.quote(asset_name)}"
+
+
+def _release_instance_url(provider: dict[str, Any], release_response: dict[str, Any]) -> str:
+    provider_type = str(provider.get("type") or "").strip().lower()
+    if provider_type in {"github", "github_enterprise"}:
+        response_url = str(release_response.get("url") or "").strip()
+        if response_url:
+            return response_url
+    release_id = str(release_response.get("id") or "").strip()
+    return f"{_release_api_base(provider).rstrip('/')}/{urllib.parse.quote(release_id)}"
 
 
 def _upload_url_trusted(provider: dict[str, Any], upload_url: str) -> bool:
@@ -555,11 +565,11 @@ def _publish_plan(
         return False, f"release_tag_preflight_failed:{tag_status}", evidence
 
     release_url = _release_api_base(provider)
-    release_status, release_response = request_json("POST", release_url, token=token, payload=_release_payload(plan))
+    release_status, release_response = request_json("POST", release_url, token=token, payload=_release_payload(plan, draft=True))
     evidence.append(
         {
             "kind": "provider_request",
-            "operation": "create_release",
+            "operation": "create_draft_release",
             "status": release_status,
             "ok": 200 <= release_status < 300,
             "url": release_url,
@@ -632,6 +642,25 @@ def _publish_plan(
         )
         if not 200 <= status < 300:
             return False, f"asset_upload_failed:{asset_name}:{status}", evidence
+
+    finalize_url = _release_instance_url(provider, release_response)
+    finalize_status, _finalize_payload = request_json(
+        "PATCH",
+        finalize_url,
+        token=token,
+        payload=_release_payload(plan, draft=False),
+    )
+    evidence.append(
+        {
+            "kind": "provider_request",
+            "operation": "finalize_release",
+            "status": finalize_status,
+            "ok": 200 <= finalize_status < 300,
+            "url": finalize_url,
+        }
+    )
+    if not 200 <= finalize_status < 300:
+        return False, f"release_finalize_failed:{finalize_status}", evidence
 
     return True, "", evidence
 

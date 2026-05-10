@@ -244,8 +244,14 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
         )
         if method == "GET":
             return 404, {"message": "not found"}
+        if method == "PATCH":
+            return 200, {"ok": True}
         if kwargs.get("payload"):
-            return 201, {"id": 42, "upload_url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}"}
+            return 201, {
+                "id": 42,
+                "url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42",
+                "upload_url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}",
+            }
         return 201, {"ok": True}
 
     result = execute_deploy_addon(
@@ -261,11 +267,15 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
     assert requests[1]["method"] == "POST"
     assert requests[1]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases"
     assert requests[1]["payload"]["tag_name"] == "v1.2.3"
+    assert requests[1]["payload"]["draft"] is True
     assert requests[1]["token"] == "runtime-token"
-    assert len(requests) == 5
-    assert all(request["data_length"] > 0 for request in requests[2:])
-    assert all(request["content_type"].startswith("multipart/form-data; boundary=") for request in requests[2:])
-    assert all(b'name="attachment"; filename="' in request["data"] for request in requests[2:])
+    assert len(requests) == 6
+    assert all(request["data_length"] > 0 for request in requests[2:5])
+    assert all(request["content_type"].startswith("multipart/form-data; boundary=") for request in requests[2:5])
+    assert all(b'name="attachment"; filename="' in request["data"] for request in requests[2:5])
+    assert requests[-1]["method"] == "PATCH"
+    assert requests[-1]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42"
+    assert requests[-1]["payload"]["draft"] is False
 
 
 def test_deploy_addon_executor_uses_raw_asset_upload_for_github(tmp_path, monkeypatch):
@@ -291,8 +301,14 @@ def test_deploy_addon_executor_uses_raw_asset_upload_for_github(tmp_path, monkey
     def fake_request(method, url, **kwargs):
         if method == "GET":
             return 404, {"message": "not found"}
+        if method == "PATCH":
+            return 200, {"ok": True}
         if kwargs.get("payload"):
-            return 201, {"id": 42, "upload_url": "https://uploads.github.com/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}"}
+            return 201, {
+                "id": 42,
+                "url": "https://api.github.com/repos/EchoLabs/NullXoid/releases/42",
+                "upload_url": "https://uploads.github.com/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}",
+            }
         uploads.append({"url": url, "content_type": kwargs.get("content_type"), "data": kwargs.get("data") or b""})
         return 201, {"ok": True}
 
@@ -348,6 +364,45 @@ def test_deploy_addon_executor_blocks_untrusted_provider_upload_url(tmp_path, mo
     assert checks["provider_publish"]["failure"] == "asset_upload_url_untrusted:wrapper-package"
     assert requests[-1]["payload"]["tag_name"] == "v1.2.3"
     assert all(request.get("data") is None for request in requests)
+
+
+def test_deploy_addon_executor_reports_finalize_failure_after_uploads(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict, overrides={"dry_run": False})
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+    requests = []
+
+    def fake_request(method, url, **kwargs):
+        requests.append({"method": method, "url": url, "payload": kwargs.get("payload"), "data": kwargs.get("data")})
+        if method == "GET":
+            return 404, {"message": "not found"}
+        if method == "PATCH":
+            return 500, {"message": "finalize failed"}
+        if kwargs.get("payload"):
+            return 201, {
+                "id": 42,
+                "url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42",
+                "upload_url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}",
+            }
+        return 201, {"ok": True}
+
+    result = execute_deploy_addon(
+        config_path=config_path,
+        publish_confirm="v1.2.3",
+        request_json=fake_request,
+    ).as_dict()
+
+    assert result["ok"] is False
+    assert result["published"] is False
+    checks = {check["name"]: check for check in result["checks"]}
+    assert checks["provider_publish"]["failure"] == "release_finalize_failed:500"
+    assert result["evidence"][-1]["operation"] == "finalize_release"
+    assert requests[1]["payload"]["draft"] is True
+    assert requests[-1]["method"] == "PATCH"
+    assert requests[-1]["payload"]["draft"] is False
+    assert len([request for request in requests if request.get("data")]) == 3
 
 
 def test_deploy_addon_executor_blocks_existing_release_tag(tmp_path, monkeypatch):
