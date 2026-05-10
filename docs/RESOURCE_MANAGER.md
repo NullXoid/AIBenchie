@@ -80,6 +80,12 @@ Then require the runtime proof:
 python aibenchie_local.py --resource-budget --resource-manager-evidence path/to/ignored-resource-runtime.json --resource-manager-require-runtime --json
 ```
 
+NullBridge can generate this evidence from its Resource Manager enforcement logic:
+
+```text
+python scripts/nullbridge_resource_manager_evidence.py --output path/to/ignored-resource-runtime.json
+```
+
 The runtime evidence must prove:
 
 - leases are approved and bounded by duration, memory, cleanup, and profile caps

@@ -19,13 +19,13 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Hosted wrapper E2E gates | Done | stack gate, ephemeral chat gate, resource budget gate |
 | Release package attestation | Done | package manifest, digest, SBOM, signature, manifest hash checks |
 | Release packager/verifier boundary | Done | `docs/DECISION_LEDGER.md` |
-| Resource bloat guardrails | Partial | resource budget gate and generated-output policy |
+| Resource bloat guardrails | Done | resource budget gate, generated-output policy, strict runtime evidence validation, and NullBridge-generated Resource Manager proof |
 | NullPrivacy E2EE readiness gate | Done | local proof plus evidence for saved chats, private artifacts, CCC memory, workspace notes, private uploads, offline cache, sync blobs, and private AIBenchie reports |
 | Zero-knowledge device lifecycle proof | Done | AIBenchie proof plus wrapper frontend helper for device enrollment, recovery-secret restore, wrong-secret rejection, revocation/key rotation, backend key absence, and redacted audit |
 | Zero-knowledge setup UI v1 | Done | Wrapper Privacy/Security panel can initialize a device, show a recovery kit, approve a Companion device, recover, revoke, rotate the recovery kit, and expose redacted audit evidence |
 | Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.echolabs.diy/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
 | Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, hosted JSON route behavior, and configured-provider Android Digital Asset Links |
-| Passkey/OIDC provider configuration foundation | Done | Public-safe provider config template, validation gate, and real-value enforcement mode exist without committing secrets |
+| Passkey/OIDC provider configuration and physical Android proof | Done | Public-safe provider config template, real-value enforcement mode, live Digital Asset Links, and physical Android Credential Manager enrollment proof passed without committing secrets |
 
 ## Visual Status Tracks
 
@@ -38,9 +38,9 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Zero-knowledge setup UI | GREEN / V1 GATED | Guided browser UI exists for approving devices, exporting recovery kits, recovery unlock, revocation, and redacted audit evidence. | Show as complete for v1 when wrapper `npm run test:e2ee` and AIBenchie suite tests pass. |
 | Android/Companion remote profile | GREEN / GATED | Mobile/off-network profile uses the public HTTPS API route and passes AIBenchie remote backend checks. | Show as complete when `--companion-remote-backend` and Android unit tests pass. |
 | Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, backend auth capabilities are advertised as JSON, and configured Android passkey providers require valid Digital Asset Links. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
-| Passkey/OIDC provider config | BLUE / PROOF GATE READY | AIBenchie has a public-safe config contract, real-value enforcement, generated Digital Asset Links evidence, readiness-stage output, and an ignored physical Android device-proof gate for Credential Manager enrollment. | Show as green after real provider values and device proof pass `--auth-provider-config --auth-provider-config-require-real --auth-provider-config-require-device-proof`. |
+| Passkey/OIDC provider config | GREEN / PRODUCTION PROOF | AIBenchie has real provider values, live Digital Asset Links, readiness-stage output, and ignored physical Android Credential Manager enrollment proof. | Show as complete when `--auth-provider-config --auth-provider-config-require-real --auth-provider-config-require-device-proof` passes with `readiness_stage=production_ready`. |
 | Universal E2E real UX adapters | GREEN / BROWSER GATED | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop plus a release-blocking Playwright-style web browser target that sends a mocked NullXoid chat, verifies release evidence, and captures screenshot/HTML/trace evidence. | Show as complete for the web UX adapter when runner setup installs Playwright and Chromium. |
-| Resource bloat guardrails | BLUE / RUNTIME PROOF GATE READY | Budgets, generated-output policy, and a Resource Manager runtime evidence gate exist for leases, cleanup, retention, and pressure snapshots. | Show as green after real backend evidence passes `--resource-budget --resource-manager-require-runtime`. |
+| Resource bloat guardrails | GREEN / BACKEND PROOF | Budgets, generated-output policy, strict runtime evidence validation, and NullBridge-generated Resource Manager evidence prove leases, cleanup, retention, and pressure snapshots. | Show as complete when backend-generated evidence passes `--resource-budget --resource-manager-require-runtime`. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, unknown-service rejection, JWT audience binding, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
 
 ## Ranked Next Work
@@ -48,9 +48,9 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
 | 1 | Universal E2E Playwright web UX adapter | 470 | Browser gated | Required `web_browser` adapter builds EchoLabs, serves `/nullxoid`, sends a mocked chat, verifies release evidence, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict. |
-| 2 | Passkey/OIDC provider configuration | 455 | Proof gate ready | Configure real WebAuthn/OIDC provider settings, publish Android Digital Asset Links, and provide ignored physical Android Credential Manager proof. |
+| 2 | Passkey/OIDC provider configuration | 455 | Production proof complete | Real WebAuthn provider settings, live Android Digital Asset Links, and ignored physical Android Credential Manager proof are validated by AIBenchie. |
 | 3 | NullBridge trust fabric hardening | 440 | Hardened / gated | Signed backend identity, JWT audience binding, unknown-service rejection, explicit deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
-| 4 | Resource Manager v1 runtime enforcement | 420 | Runtime proof gate ready | Backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and no unbounded heavy work are enforceable through AIBenchie evidence. |
+| 4 | Resource Manager v1 runtime enforcement | 420 | Backend proof complete | NullBridge emits AIBenchie-compatible evidence for backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and bounded heavy work. |
 | 5 | Backend Operations UI v1 | 390 | Resource proof aware | EchoLabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, Resource Manager runtime proof, runtime status, and notifications without exposing secrets. |
 | 6 | AIBenchie website scoreboard and release evidence display | 365 | Evidence cards ready | Website consumes public-safe scoreboard and release evidence exports, then shows latest valid score per class/test, overall score, release details, progress bars, and trust/privacy/notification/resource evidence cards. |
 | 7 | Notification system through NullBridge | 345 | Proof aware | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; EchoLabs Ops/readiness now consume notification proof, flag private-material persistence, and keep route-only installs in warning state. |
@@ -105,7 +105,7 @@ Encryption usually adds CPU overhead. It can still improve whole-system efficien
 
 ## Immediate Next Recommendation
 
-Native passkey/OIDC ceremony wiring is now implemented and gated. The next auth gap is configuring real providers behind those endpoints without moving tokens into frontend-accessible storage.
+Native passkey/OIDC ceremony wiring is implemented and gated. Real provider values and physical Android Credential Manager enrollment proof have passed through AIBenchie without moving tokens into frontend-accessible storage.
 
 Foundation now exists:
 
@@ -115,6 +115,15 @@ Foundation now exists:
 - `python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --json` enforces non-template deployment values from `AIBENCHIE_AUTH_PROVIDER_CONFIG`.
 - The gate emits `readiness_stage`, `missing_requirements`, and a public-safe `public_assetlinks_statement` so release dashboards can show exactly what remains without exposing secrets.
 - `python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --auth-provider-config-device-proof <ignored-proof.json> --auth-provider-config-require-device-proof --json` enforces the real provider plus device proof boundary.
+
+Current production proof:
+
+- Physical Android device: Samsung SM-A176U.
+- Installed package: `com.nullxoid.android`.
+- RP ID: `echolabs.diy`.
+- Origin and Digital Asset Links host: `https://www.echolabs.diy`.
+- Credential Manager provider: Samsung Pass.
+- Result: `readiness_stage=production_ready` with no missing requirements.
 
 Acceptance:
 
