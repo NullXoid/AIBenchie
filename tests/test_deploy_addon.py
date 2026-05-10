@@ -238,6 +238,8 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
                 "token": kwargs["token"],
                 "payload": kwargs.get("payload"),
                 "data_length": len(kwargs.get("data") or b""),
+                "content_type": kwargs.get("content_type"),
+                "data": kwargs.get("data") or b"",
             }
         )
         if method == "GET":
@@ -262,6 +264,48 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
     assert requests[1]["token"] == "runtime-token"
     assert len(requests) == 5
     assert all(request["data_length"] > 0 for request in requests[2:])
+    assert all(request["content_type"].startswith("multipart/form-data; boundary=") for request in requests[2:])
+    assert all(b'name="attachment"; filename="' in request["data"] for request in requests[2:])
+
+
+def test_deploy_addon_executor_uses_raw_asset_upload_for_github(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(
+        tmp_path,
+        release_artifacts,
+        suite_verdict,
+        overrides={
+            "dry_run": False,
+            "provider": {
+                "type": "github",
+                "base_url": "https://github.com",
+                "repository": "EchoLabs/NullXoid",
+            },
+        },
+    )
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+    uploads = []
+
+    def fake_request(method, url, **kwargs):
+        if method == "GET":
+            return 404, {"message": "not found"}
+        if kwargs.get("payload"):
+            return 201, {"id": 42, "upload_url": "https://uploads.github.test/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}"}
+        uploads.append({"url": url, "content_type": kwargs.get("content_type"), "data": kwargs.get("data") or b""})
+        return 201, {"ok": True}
+
+    result = execute_deploy_addon(
+        config_path=config_path,
+        publish_confirm="v1.2.3",
+        request_json=fake_request,
+    ).as_dict()
+
+    assert result["ok"] is True
+    assert len(uploads) == 3
+    assert all(upload["content_type"] == "application/octet-stream" for upload in uploads)
+    assert all(b'name="attachment"; filename="' not in upload["data"] for upload in uploads)
 
 
 def test_deploy_addon_executor_blocks_existing_release_tag(tmp_path, monkeypatch):

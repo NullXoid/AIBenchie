@@ -6,6 +6,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -492,6 +493,30 @@ def _upload_url(provider: dict[str, Any], release_response: dict[str, Any], asse
     return f"{base_url}/api/v1/repos/{repository}/releases/{release_id}/assets?name={urllib.parse.quote(asset_name)}"
 
 
+def _multipart_file_payload(
+    *,
+    field_name: str,
+    filename: str,
+    data: bytes,
+    content_type: str = "application/octet-stream",
+) -> tuple[bytes, str]:
+    boundary = f"aibenchie-{sha256(filename.encode('utf-8') + data).hexdigest()[:24]}"
+    header = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
+        f"Content-Type: {content_type}\r\n\r\n"
+    ).encode("utf-8")
+    footer = f"\r\n--{boundary}--\r\n".encode("utf-8")
+    return header + data + footer, f"multipart/form-data; boundary={boundary}"
+
+
+def _asset_upload_body(provider: dict[str, Any], asset_name: str, asset_bytes: bytes) -> tuple[bytes, str]:
+    provider_type = str(provider.get("type") or "").strip().lower()
+    if provider_type in {"github", "github_enterprise"}:
+        return asset_bytes, "application/octet-stream"
+    return _multipart_file_payload(field_name="attachment", filename=asset_name, data=asset_bytes)
+
+
 def _publish_plan(
     *,
     plan: dict[str, Any],
@@ -564,12 +589,13 @@ def _publish_plan(
             )
             return False, f"asset_sha256_mismatch:{asset_name}", evidence
         upload_url = _upload_url(provider, release_response, asset_name)
+        upload_body, upload_content_type = _asset_upload_body(provider, asset_name, asset_file.read_bytes())
         status, _payload = request_json(
             "POST",
             upload_url,
             token=token,
-            data=asset_file.read_bytes(),
-            content_type="application/octet-stream",
+            data=upload_body,
+            content_type=upload_content_type,
         )
         evidence.append(
             {
