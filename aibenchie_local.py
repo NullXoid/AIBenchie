@@ -17,7 +17,7 @@ from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_c
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
-from aibenchie.deploy_addon import run_deploy_addon_check, verify_deploy_plan
+from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check, verify_deploy_plan
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
@@ -291,6 +291,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--verify-deploy-plan",
         action="store_true",
         help="Verify a saved provider-neutral deploy plan without publishing.",
+    )
+    parser.add_argument(
+        "--execute-deploy-addon",
+        action="store_true",
+        help="Publish a verified deploy add-on release. Requires dry_run=false, token env, and exact tag confirmation.",
+    )
+    parser.add_argument(
+        "--deploy-publish-confirm",
+        default="",
+        help="Exact release tag required for --execute-deploy-addon. May also be set with AIBENCHIE_DEPLOY_PUBLISH_CONFIRM.",
     )
     parser.add_argument(
         "--deploy-plan",
@@ -812,6 +822,26 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("AIBenchie Deploy Plan Verifier")
             print(f"Plan: {result['plan_path'] or '(missing)'}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.execute_deploy_addon:
+        result = execute_deploy_addon(
+            config_path=Path(args.deploy_addon_config) if args.deploy_addon_config else None,
+            publish_confirm=args.deploy_publish_confirm,
+        ).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Deploy Add-on Executor")
+            print(f"Config: {result['config_path']}")
+            print(f"Provider: {result['provider']}")
+            print(f"Repository: {result['repository']}")
+            print(f"Release tag: {result['release_tag']}")
+            print(f"Published: {result['published']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")

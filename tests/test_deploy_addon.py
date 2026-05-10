@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 import aibenchie_local
-from aibenchie.deploy_addon import run_deploy_addon_check, verify_deploy_plan
+from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check, verify_deploy_plan
 from aibenchie.release_bundle import package_release_artifacts
 
 
@@ -84,6 +84,7 @@ def test_deploy_addon_accepts_verified_attested_release(tmp_path, monkeypatch):
     assert result["ok"] is True
     assert result["provider"] == "forgejo"
     assert result["deploy_plan"]["dry_run"] is True
+    assert result["deploy_plan"]["asset_root"] == str(release_artifacts.parent.resolve())
     assert {asset["kind"] for asset in result["deploy_plan"]["assets"]} == {"wrapper", "android", "public"}
 
 
@@ -188,6 +189,124 @@ def test_deploy_addon_cli_does_not_write_plan_when_gate_fails(tmp_path, capsys, 
     assert payload["ok"] is False
     assert payload["deploy_plan_written"] is False
     assert not plan_output.exists()
+
+
+def test_deploy_addon_executor_blocks_without_exact_confirmation(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict, overrides={"dry_run": False})
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+
+    result = execute_deploy_addon(config_path=config_path, publish_confirm="wrong-tag").as_dict()
+
+    assert result["ok"] is False
+    assert result["published"] is False
+    checks = {check["name"]: check for check in result["checks"]}
+    assert checks["publish_confirmation"]["ok"] is False
+    assert checks["runtime_token"]["ok"] is True
+
+
+def test_deploy_addon_executor_blocks_dry_run_plan(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict)
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+
+    result = execute_deploy_addon(config_path=config_path, publish_confirm="v1.2.3").as_dict()
+
+    assert result["ok"] is False
+    assert result["published"] is False
+    checks = {check["name"]: check for check in result["checks"]}
+    assert checks["plan_is_not_dry_run"]["failure"] == "plan_is_dry_run"
+
+
+def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict, overrides={"dry_run": False})
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+    requests = []
+
+    def fake_request(method, url, **kwargs):
+        requests.append(
+            {
+                "method": method,
+                "url": url,
+                "token": kwargs["token"],
+                "payload": kwargs.get("payload"),
+                "data_length": len(kwargs.get("data") or b""),
+            }
+        )
+        if kwargs.get("payload"):
+            return 201, {"id": 42, "upload_url": "https://uploads.example.test/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}"}
+        return 201, {"ok": True}
+
+    result = execute_deploy_addon(
+        config_path=config_path,
+        publish_confirm="v1.2.3",
+        request_json=fake_request,
+    ).as_dict()
+
+    assert result["ok"] is True
+    assert result["published"] is True
+    assert requests[0]["method"] == "POST"
+    assert requests[0]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases"
+    assert requests[0]["payload"]["tag_name"] == "v1.2.3"
+    assert requests[0]["token"] == "runtime-token"
+    assert len(requests) == 4
+    assert all(request["data_length"] > 0 for request in requests[1:])
+
+
+def test_deploy_addon_executor_blocks_attestation_drift_before_publish(tmp_path, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict, overrides={"dry_run": False})
+    monkeypatch.setenv("AIBENCHIE_DEPLOY_PROVIDER_TOKEN", "runtime-token")
+    package = release_artifacts.parent / "nullxoid-wrapper.zip"
+    package.write_bytes(b"modified after attestation")
+
+    def fake_request(_method, _url, **_kwargs):
+        raise AssertionError("provider request should not run after attestation drift")
+
+    result = execute_deploy_addon(
+        config_path=config_path,
+        publish_confirm="v1.2.3",
+        request_json=fake_request,
+    ).as_dict()
+
+    assert result["ok"] is False
+    assert result["published"] is False
+    checks = {check["name"]: check for check in result["checks"]}
+    assert checks["release_attestation"]["ok"] is False
+    assert checks["publish_gate_passed"]["ok"] is False
+
+
+def test_deploy_addon_executor_cli(tmp_path, capsys, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict)
+
+    exit_code = aibenchie_local.main(
+        [
+            "--execute-deploy-addon",
+            "--deploy-addon-config",
+            str(config_path),
+            "--deploy-publish-confirm",
+            "v1.2.3",
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    assert payload["ok"] is False
+    assert payload["published"] is False
+    assert any(check["name"] == "runtime_token" for check in payload["checks"])
 
 
 def test_verify_deploy_plan_accepts_saved_sanitized_plan(tmp_path, capsys, monkeypatch):

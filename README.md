@@ -407,7 +407,7 @@ Cross-repo priorities are scored in [docs/SUITE_PRIORITY_BACKLOG.md](docs/SUITE_
 
 ## Deploy Add-On Foundation
 
-AIBenchie has a provider-neutral deploy add-on contract for repo hubs such as Forgejo, Gitea, GitHub, and compatible hosted variants. The current foundation is a dry-run deploy plan gate: it validates provider configuration, rejects committed provider secrets, requires a passing suite verdict, verifies release artifact attestation, and records which release assets would be published. Provider tokens stay in runtime environment variables or private local secret storage.
+AIBenchie has a provider-neutral deploy add-on contract for repo hubs such as Forgejo, Gitea, GitHub, and compatible hosted variants. The default foundation is a dry-run deploy plan gate: it validates provider configuration, rejects committed provider secrets, requires a passing suite verdict, verifies release artifact attestation, and records which release assets would be published. Provider tokens stay in runtime environment variables or private local secret storage.
 
 ```powershell
 $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runner>"
@@ -420,4 +420,16 @@ python aibenchie_local.py --verify-deploy-plan `
   --json
 ```
 
-Use `configs/aibenchie_deploy_addon.example.json` as the public template, then place the real config under an ignored runtime path such as `.suite/local/aibenchie/deploy-addon.json`. `--deploy-addon-plan-output` writes a sanitized deploy-plan artifact only after the deploy add-on gate passes; it does not publish anything or read provider token values. `--verify-deploy-plan` is read-only and validates a saved plan's schema, provider shape, release metadata, required assets, SHA-256 fields, and secret boundary. Use `--deploy-addon-require-token` only in a private runner where the configured provider token environment variable is present. Real provider URLs, repositories, verdict paths, artifact manifests, and tokens belong in ignored runtime config. This remains intentionally separate from package attestation: AIBenchie proves what is safe to ship first, then the deploy add-on decides where to publish it.
+Use `configs/aibenchie_deploy_addon.example.json` as the public template, then place the real config under an ignored runtime path such as `.suite/local/aibenchie/deploy-addon.json`. `--deploy-addon-plan-output` writes a sanitized deploy-plan artifact only after the deploy add-on gate passes; it does not publish anything or read provider token values. `--verify-deploy-plan` is read-only and validates a saved plan's schema, provider shape, release metadata, required assets, SHA-256 fields, and secret boundary. Use `--deploy-addon-require-token` only in a private runner where the configured provider token environment variable is present.
+
+Real publishing is a separate executor path and is intentionally hard to trigger accidentally:
+
+```powershell
+$env:AIBENCHIE_DEPLOY_PROVIDER_TOKEN="<runtime-provider-token>"
+python aibenchie_local.py --execute-deploy-addon `
+  --deploy-addon-config .suite/local/aibenchie/deploy-addon.json `
+  --deploy-publish-confirm v1.2.3 `
+  --json
+```
+
+The executor re-runs the deploy gate with token required, blocks when the config still has `dry_run: true`, and requires `--deploy-publish-confirm` or `AIBENCHIE_DEPLOY_PUBLISH_CONFIRM` to exactly match the release tag before it creates a release and uploads assets. Real provider URLs, repositories, verdict paths, artifact manifests, and tokens belong in ignored runtime config. This remains intentionally separate from package attestation: AIBenchie proves what is safe to ship first, then the deploy add-on decides where to publish it.

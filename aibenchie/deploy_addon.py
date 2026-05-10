@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from aibenchie.release_artifacts import verify_release_artifacts_manifest
+from aibenchie.release_artifacts import sha256_file, verify_release_artifacts_manifest
 
 
 DEPLOY_ADDON_SCHEMA = "aibenchie.deploy-addon.v1"
@@ -26,6 +29,7 @@ PASS_VALUES = {"pass", "passed", "green", "ready", "gated", "success", "ok", "sh
 FAIL_VALUES = {"fail", "failed", "red", "blocked", "error", "no-go", "nogo"}
 SECRET_KEY_PARTS = ("token", "secret", "password", "credential", "private_key", "apikey", "api_key")
 SECRET_VALUE_PREFIXES = ("ghp_", "github_pat_", "gitea_", "forgejo_", "glpat-", "xoxb-", "sk-")
+PUBLISH_CONFIRM_ENV = "AIBENCHIE_DEPLOY_PUBLISH_CONFIRM"
 
 
 @dataclass(frozen=True)
@@ -81,6 +85,32 @@ class DeployPlanVerification:
             "plan_path": self.plan_path,
             "checks": [check.as_dict() for check in self.checks],
             "deploy_plan": self.deploy_plan,
+        }
+
+
+@dataclass(frozen=True)
+class DeployExecutionResult:
+    ok: bool
+    config_path: str
+    provider: str
+    repository: str
+    release_tag: str
+    dry_run: bool
+    published: bool
+    checks: list[DeployAddonCheck]
+    evidence: list[dict[str, Any]] = field(default_factory=list)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "config_path": self.config_path,
+            "provider": self.provider,
+            "repository": self.repository,
+            "release_tag": self.release_tag,
+            "dry_run": self.dry_run,
+            "published": self.published,
+            "checks": [check.as_dict() for check in self.checks],
+            "evidence": self.evidence,
         }
 
 
@@ -191,6 +221,10 @@ def _artifact_plan(artifacts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             }
         )
     return plan
+
+
+def _asset_root(path: Path) -> str:
+    return str(path.expanduser().resolve().parent)
 
 
 def _is_sha256(value: Any) -> bool:
@@ -350,6 +384,7 @@ def run_deploy_addon_check(
             "name": str(release.get("name") or release_tag).strip(),
             "prerelease": bool(release.get("prerelease", True)),
         },
+        "asset_root": _asset_root(release_artifacts_path) if release_artifacts_ref else "",
         "assets": _artifact_plan(artifact_summaries),
         "requires": [
             "passing_suite_verdict",
@@ -374,3 +409,221 @@ def run_from_env() -> DeployAddonResult:
     config = os.environ.get(CONFIG_ENV, "").strip()
     require_token = os.environ.get("AIBENCHIE_DEPLOY_ADDON_REQUIRE_TOKEN", "").strip().lower() in {"1", "true", "yes"}
     return run_deploy_addon_check(config_path=Path(config) if config else None, require_token=require_token)
+
+
+def _json_request(
+    method: str,
+    url: str,
+    *,
+    token: str,
+    payload: dict[str, Any] | None = None,
+    data: bytes | None = None,
+    content_type: str = "application/json",
+    timeout: int = 30,
+) -> tuple[int, dict[str, Any]]:
+    body = data
+    if payload is not None:
+        body = json.dumps(payload).encode("utf-8")
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "AIBenchie-Deploy-Addon",
+    }
+    if body is not None:
+        headers["Content-Type"] = content_type
+    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            text = response.read().decode("utf-8-sig", errors="replace")
+            return response.status, json.loads(text) if text else {}
+    except urllib.error.HTTPError as exc:
+        text = exc.read().decode("utf-8-sig", errors="replace")
+        try:
+            payload = json.loads(text) if text else {}
+        except json.JSONDecodeError:
+            payload = {"error": text[:500]}
+        return exc.code, payload
+
+
+def _release_api_base(provider: dict[str, Any]) -> str:
+    provider_type = str(provider.get("type") or "").strip().lower()
+    base_url = str(provider.get("base_url") or "").strip().rstrip("/")
+    repository = urllib.parse.quote(str(provider.get("repository") or "").strip(), safe="/")
+    if provider_type == "github" and base_url in {"https://github.com", "http://github.com"}:
+        return f"https://api.github.com/repos/{repository}/releases"
+    if provider_type in {"github", "github_enterprise"}:
+        return f"{base_url}/api/v3/repos/{repository}/releases"
+    return f"{base_url}/api/v1/repos/{repository}/releases"
+
+
+def _release_payload(plan: dict[str, Any]) -> dict[str, Any]:
+    release = plan.get("release") if isinstance(plan.get("release"), dict) else {}
+    return {
+        "tag_name": str(release.get("tag") or "").strip(),
+        "name": str(release.get("name") or release.get("tag") or "").strip(),
+        "prerelease": bool(release.get("prerelease", True)),
+        "draft": False,
+        "body": "Published by AIBenchie deploy add-on after suite verdict and release attestation verification.",
+    }
+
+
+def _asset_path(plan: dict[str, Any], asset: dict[str, Any], config_dir: Path) -> Path:
+    path = Path(str(asset.get("path") or "")).expanduser()
+    if path.is_absolute():
+        return path
+    asset_root = str(plan.get("asset_root") or "").strip()
+    if asset_root:
+        return (Path(asset_root).expanduser() / path).resolve()
+    return (config_dir / path).resolve()
+
+
+def _upload_url(provider: dict[str, Any], release_response: dict[str, Any], asset_name: str) -> str:
+    provider_type = str(provider.get("type") or "").strip().lower()
+    if provider_type in {"github", "github_enterprise"}:
+        template = str(release_response.get("upload_url") or "").split("{", 1)[0]
+        return f"{template}?name={urllib.parse.quote(asset_name)}"
+    base_url = str(provider.get("base_url") or "").strip().rstrip("/")
+    repository = urllib.parse.quote(str(provider.get("repository") or "").strip(), safe="/")
+    release_id = str(release_response.get("id") or "").strip()
+    return f"{base_url}/api/v1/repos/{repository}/releases/{release_id}/assets?name={urllib.parse.quote(asset_name)}"
+
+
+def _publish_plan(
+    *,
+    plan: dict[str, Any],
+    config_dir: Path,
+    token: str,
+    request_json=_json_request,
+) -> tuple[bool, str, list[dict[str, Any]]]:
+    provider = plan.get("provider") if isinstance(plan.get("provider"), dict) else {}
+    release_url = _release_api_base(provider)
+    release_status, release_response = request_json("POST", release_url, token=token, payload=_release_payload(plan))
+    evidence = [
+        {
+            "kind": "provider_request",
+            "operation": "create_release",
+            "status": release_status,
+            "ok": 200 <= release_status < 300,
+            "url": release_url,
+        }
+    ]
+    if not 200 <= release_status < 300:
+        return False, f"release_create_failed:{release_status}", evidence
+
+    for asset in plan.get("assets") if isinstance(plan.get("assets"), list) else []:
+        if not isinstance(asset, dict):
+            continue
+        asset_name = str(asset.get("name") or asset.get("kind") or "asset").strip()
+        asset_file = _asset_path(plan, asset, config_dir)
+        if not asset_file.exists() or not asset_file.is_file():
+            evidence.append(
+                {
+                    "kind": "provider_request",
+                    "operation": "upload_asset",
+                    "asset": asset_name,
+                    "ok": False,
+                    "failure": "asset_file_missing",
+                    "path": str(asset_file),
+                }
+            )
+            return False, f"asset_file_missing:{asset_name}", evidence
+        expected_sha256 = str(asset.get("sha256") or "").strip().lower()
+        actual_sha256 = sha256_file(asset_file).lower()
+        if expected_sha256 and actual_sha256 != expected_sha256:
+            evidence.append(
+                {
+                    "kind": "provider_request",
+                    "operation": "upload_asset",
+                    "asset": asset_name,
+                    "ok": False,
+                    "failure": "asset_sha256_mismatch",
+                    "path": str(asset_file),
+                }
+            )
+            return False, f"asset_sha256_mismatch:{asset_name}", evidence
+        upload_url = _upload_url(provider, release_response, asset_name)
+        status, _payload = request_json(
+            "POST",
+            upload_url,
+            token=token,
+            data=asset_file.read_bytes(),
+            content_type="application/octet-stream",
+        )
+        evidence.append(
+            {
+                "kind": "provider_request",
+                "operation": "upload_asset",
+                "asset": asset_name,
+                "status": status,
+                "ok": 200 <= status < 300,
+                "url": upload_url,
+            }
+        )
+        if not 200 <= status < 300:
+            return False, f"asset_upload_failed:{asset_name}:{status}", evidence
+
+    return True, "", evidence
+
+
+def execute_deploy_addon(
+    *,
+    config_path: Path | None = None,
+    publish_confirm: str = "",
+    request_json=_json_request,
+) -> DeployExecutionResult:
+    gate = run_deploy_addon_check(config_path=config_path, require_token=True)
+    checks = list(gate.checks)
+    config_file = Path(gate.config_path)
+    try:
+        loaded_config = _load_json(config_file) if config_file.exists() else {}
+        config = loaded_config if isinstance(loaded_config, dict) else {}
+    except json.JSONDecodeError:
+        config = {}
+    auth = config.get("auth") if isinstance(config, dict) and isinstance(config.get("auth"), dict) else {}
+    token_env = str(auth.get("token_env") or "").strip()
+    token = os.environ.get(token_env, "") if token_env else ""
+    confirmation = publish_confirm.strip() or os.environ.get(PUBLISH_CONFIRM_ENV, "").strip()
+    release_tag = gate.release_tag
+
+    checks.append(_check("publish_gate_passed", gate.ok, "deploy_gate_failed"))
+    checks.append(_check("plan_is_not_dry_run", not gate.dry_run, "plan_is_dry_run", dry_run=gate.dry_run))
+    checks.append(
+        _check(
+            "publish_confirmation",
+            bool(release_tag) and confirmation == release_tag,
+            "publish_confirmation_mismatch",
+            expected=release_tag,
+        )
+    )
+    checks.append(_check("runtime_token", bool(token), "runtime_token_missing", token_env=token_env))
+
+    if not all(check.ok for check in checks):
+        return DeployExecutionResult(
+            ok=False,
+            config_path=gate.config_path,
+            provider=gate.provider,
+            repository=gate.repository,
+            release_tag=release_tag,
+            dry_run=gate.dry_run,
+            published=False,
+            checks=checks,
+        )
+
+    publish_ok, publish_failure, evidence = _publish_plan(
+        plan=gate.deploy_plan,
+        config_dir=config_file.parent,
+        token=token,
+        request_json=request_json,
+    )
+    checks.append(_check("provider_publish", publish_ok, publish_failure))
+    return DeployExecutionResult(
+        ok=publish_ok,
+        config_path=gate.config_path,
+        provider=gate.provider,
+        repository=gate.repository,
+        release_tag=release_tag,
+        dry_run=gate.dry_run,
+        published=publish_ok,
+        checks=checks,
+        evidence=evidence,
+    )
