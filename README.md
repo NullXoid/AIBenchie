@@ -135,6 +135,13 @@ python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echol
 
 Universal E2E separates API contract checks from UX workflow checks while keeping one manifest and one verdict format. See [docs/UNIVERSAL_E2E.md](docs/UNIVERSAL_E2E.md).
 
+EchoLabs suite architecture docs and the cross-repo release gate live under [docs/echolabs](docs/echolabs):
+
+- [Naming glossary](docs/echolabs/ECHOLABS_NAMING_GLOSSARY.md)
+- [Service and pipeline map](docs/echolabs/NULLXOID_SERVICE_MAP.md)
+- [Pipeline ownership](docs/echolabs/PIPELINE_OWNERSHIP.md)
+- [Release gates](docs/echolabs/ECHOLABS_RELEASE_GATES.md)
+
 Run the release-blocking NullPrivacy E2EE readiness gate:
 
 ```powershell

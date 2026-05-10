@@ -1,0 +1,65 @@
+# EchoLabs Suite Release Gates
+
+Run this from the AIBenchie repo before a release handoff:
+
+```powershell
+.\scripts\echolabs_suite_release_gate.ps1
+```
+
+The default report is written to:
+
+```text
+_validation/echolabs_suite_gate_latest.json
+```
+
+The script auto-detects the parent workspace when AIBenchie is checked out next to the EchoLabs repos. Use `-SuiteRoot` for a different layout:
+
+```powershell
+.\scripts\echolabs_suite_release_gate.ps1 -SuiteRoot C:\Users\kasom\projects
+```
+
+Use `-ReportPath` to write a separate handoff artifact:
+
+```powershell
+.\scripts\echolabs_suite_release_gate.ps1 -ReportPath _validation/echolabs_suite_gate_2026-05-09.json
+```
+
+The suite gate runs each surface-owned gate in order:
+
+| Surface | Command | Purpose |
+| --- | --- | --- |
+| EchoLabs web shell | `npm run release:gate` | Add-on manifests, readiness policy, AIBenchie security gates, NullXoid UI verification, build, dependency audit. |
+| NullXoid Android | `.\scripts\android_release_gate.ps1` | Model policy, chat/store contracts, 3D prerelease polish, E2EE, NullBridge adapter, product IA, debug APK build. |
+| NullXoid Desktop | `.\scripts\desktop_release_gate.ps1` | Desktop model policy regression, unit tests, bridge tests, smoke tests. |
+| BridgeEcho / NullBridge backend | `.\scripts\nullbridge_release_gate.ps1` | Service bridge compliance, approval routing, trust fabric, signed envelopes, observability redaction. |
+
+Useful options:
+
+```powershell
+.\scripts\echolabs_suite_release_gate.ps1 -SkipAndroid
+.\scripts\echolabs_suite_release_gate.ps1 -SkipDesktop
+.\scripts\echolabs_suite_release_gate.ps1 -DesktopIncludeUi
+.\scripts\echolabs_suite_release_gate.ps1 -BridgeFull
+```
+
+Release interpretation:
+
+- All default gates pass: the suite is locally stable for handoff.
+- Optional UI/full backend gates pass: stronger local confidence before packaging.
+- Any gate fails: fix that surface first, then rerun the failed surface gate before rerunning the suite gate.
+- The JSON report uses schema `echolabs.suite-release-gate.v1` and is suitable for AIBenchie ingestion or EchoLabs readiness display.
+- Each surface entry includes stable machine fields for dashboards and AIBenchie ingestion:
+
+```json
+{
+  "id": "echolabs_web",
+  "name": "EchoLabs web shell",
+  "owner": "EchoLabs / NullXoid Chat",
+  "status": "PASS",
+  "duration_ms": 12000,
+  "command": "npm run release:gate",
+  "working_directory": "NullXoid-live"
+}
+```
+
+EchoLabs' AIBenchie verdict exporter accepts both this lowercase shape and older reports that used `Name`, `Status`, and `DurationMs`.
