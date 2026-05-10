@@ -46,6 +46,9 @@ class AuthProviderConfigResult:
     template: bool
     require_real: bool
     require_device_proof: bool
+    readiness_stage: str
+    missing_requirements: list[str]
+    public_assetlinks_statement: list[dict[str, Any]]
     checks: list[AuthProviderConfigCheck]
     next_steps: list[str]
 
@@ -57,6 +60,9 @@ class AuthProviderConfigResult:
             "template": self.template,
             "require_real": self.require_real,
             "require_device_proof": self.require_device_proof,
+            "readiness_stage": self.readiness_stage,
+            "missing_requirements": self.missing_requirements,
+            "public_assetlinks_statement": self.public_assetlinks_statement,
             "checks": [check.as_dict() for check in self.checks],
             "next_steps": self.next_steps,
         }
@@ -355,6 +361,45 @@ def _validate_device_proof(
     return checks
 
 
+def _public_assetlinks_statement(config: dict[str, Any]) -> list[dict[str, Any]]:
+    passkey = config.get("passkey") if isinstance(config.get("passkey"), dict) else {}
+    fingerprints = passkey.get("android_sha256_fingerprints")
+    safe_fingerprints = [
+        value.strip()
+        for value in fingerprints
+        if isinstance(value, str) and SHA256_FINGERPRINT.fullmatch(value.strip())
+    ] if isinstance(fingerprints, list) else []
+    return [
+        {
+            "relation": [EXPECTED_ASSETLINKS_RELATION],
+            "target": {
+                "namespace": "android_app",
+                "package_name": EXPECTED_ANDROID_PACKAGE,
+                "sha256_cert_fingerprints": safe_fingerprints,
+            },
+        }
+    ]
+
+
+def _readiness(checks: list[AuthProviderConfigCheck], *, template: bool, require_real: bool, require_device_proof: bool) -> tuple[str, list[str]]:
+    failures = {check.name: check.failure for check in checks if not check.ok}
+    if failures:
+        return "blocked", [f"{name}:{failure}" for name, failure in failures.items()]
+    missing: list[str] = []
+    if template:
+        missing.append("replace_template_provider_values")
+    if not require_real:
+        missing.append("run_with_auth_provider_config_require_real")
+    if not require_device_proof:
+        missing.append("record_physical_android_credential_manager_proof")
+        missing.append("run_with_auth_provider_config_require_device_proof")
+    if missing:
+        if template:
+            return "template_contract_ready", missing
+        return "provider_values_ready", missing
+    return "production_ready", []
+
+
 def validate_auth_provider_config(
     path: str | Path | None = None,
     *,
@@ -376,7 +421,25 @@ def validate_auth_provider_config(
 
     payload, load_error = _load_json_file(config_path, "config_file")
     if load_error:
-        return AuthProviderConfigResult(False, str(config_path), str(proof_path), False, require_real, require_device_proof, [load_error], next_steps)
+        readiness_stage, missing_requirements = _readiness(
+            [load_error],
+            template=False,
+            require_real=require_real,
+            require_device_proof=require_device_proof,
+        )
+        return AuthProviderConfigResult(
+            False,
+            str(config_path),
+            str(proof_path),
+            False,
+            require_real,
+            require_device_proof,
+            readiness_stage,
+            missing_requirements,
+            [],
+            [load_error],
+            next_steps,
+        )
     assert payload is not None
 
     template = payload.get("template") is True
@@ -423,6 +486,13 @@ def validate_auth_provider_config(
             checks.append(_pass("device_proof_file", path=str(proof_path)))
             checks.extend(_validate_device_proof(proof, payload, require_device_proof=require_device_proof))
 
+    readiness_stage, missing_requirements = _readiness(
+        checks,
+        template=template,
+        require_real=require_real,
+        require_device_proof=require_device_proof,
+    )
+
     return AuthProviderConfigResult(
         ok=all(check.ok for check in checks),
         config_path=str(config_path),
@@ -430,6 +500,9 @@ def validate_auth_provider_config(
         template=template,
         require_real=require_real,
         require_device_proof=require_device_proof,
+        readiness_stage=readiness_stage,
+        missing_requirements=missing_requirements,
+        public_assetlinks_statement=_public_assetlinks_statement(payload),
         checks=checks,
         next_steps=next_steps,
     )

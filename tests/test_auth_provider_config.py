@@ -80,6 +80,18 @@ def test_template_auth_provider_config_passes_contract():
     assert result.ok is True
     assert result.template is True
     assert result.require_real is False
+    assert result.readiness_stage == "template_contract_ready"
+    assert "replace_template_provider_values" in result.missing_requirements
+    assert result.public_assetlinks_statement == [
+        {
+            "relation": ["delegate_permission/common.get_login_creds"],
+            "target": {
+                "namespace": "android_app",
+                "package_name": "com.nullxoid.android",
+                "sha256_cert_fingerprints": [],
+            },
+        }
+    ]
 
 
 def test_template_fails_when_real_config_required():
@@ -89,6 +101,8 @@ def test_template_fails_when_real_config_required():
     failures = {check.name: check.failure for check in result.checks if not check.ok}
     assert failures["template"] == "template_config_not_allowed_when_real_required"
     assert failures["passkey.android_sha256_fingerprints"] == "real_release_fingerprint_required"
+    assert result.readiness_stage == "blocked"
+    assert "template:template_config_not_allowed_when_real_required" in result.missing_requirements
 
 
 def test_real_auth_provider_config_passes(tmp_path):
@@ -98,6 +112,11 @@ def test_real_auth_provider_config_passes(tmp_path):
 
     assert result.ok is True
     assert result.template is False
+    assert result.readiness_stage == "provider_values_ready"
+    assert "record_physical_android_credential_manager_proof" in result.missing_requirements
+    assert result.public_assetlinks_statement[0]["target"]["sha256_cert_fingerprints"] == (
+        VALID_REAL_CONFIG["passkey"]["android_sha256_fingerprints"]
+    )
 
 
 def test_real_auth_provider_config_with_device_proof_passes(tmp_path):
@@ -113,6 +132,8 @@ def test_real_auth_provider_config_with_device_proof_passes(tmp_path):
 
     assert result.ok is True
     assert result.require_device_proof is True
+    assert result.readiness_stage == "production_ready"
+    assert result.missing_requirements == []
 
 
 def test_auth_provider_config_requires_device_proof_file(tmp_path):
