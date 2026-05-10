@@ -1,0 +1,21 @@
+{
+  "schema": "aibenchie.deploy-addon.v1",
+  "dry_run": true,
+  "provider": {
+    "type": "forgejo",
+    "base_url": "https://git.example.test",
+    "repository": "EchoLabs/NullXoid"
+  },
+  "auth": {
+    "token_env": "AIBENCHIE_DEPLOY_PROVIDER_TOKEN"
+  },
+  "release": {
+    "tag": "v0.0.0-example",
+    "name": "EchoLabs Suite example release",
+    "prerelease": true
+  },
+  "evidence": {
+    "suite_verdict": "../.suite/local/aibenchie/latest-suite-verdict.json",
+    "release_artifacts": "../.suite/local/aibenchie/release-artifacts.json"
+  }
+}

@@ -17,6 +17,7 @@ from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_c
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
+from aibenchie.deploy_addon import run_deploy_addon_check
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
@@ -245,6 +246,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--echolabs-store",
         action="store_true",
         help="Run the EchoLabs Store + Creative Workflows Alpha source/integration gate.",
+    )
+    parser.add_argument(
+        "--deploy-addon",
+        action="store_true",
+        help="Run the provider-neutral AIBenchie deploy add-on contract gate.",
+    )
+    parser.add_argument(
+        "--deploy-addon-config",
+        default="",
+        help="Deploy add-on config path. Defaults to AIBENCHIE_DEPLOY_ADDON_CONFIG or the public-safe example.",
+    )
+    parser.add_argument(
+        "--deploy-addon-require-token",
+        action="store_true",
+        help="Require the configured provider token environment variable to be populated.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -714,6 +730,26 @@ def main(argv: list[str] | None = None) -> int:
             for name, check in result["echolabsStore"].items():
                 suffix = f" ({'; '.join(check.get('failures', []))})" if check.get("failures") else ""
                 print(f"{name}: {check['status'].upper()}{suffix}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.deploy_addon:
+        result = run_deploy_addon_check(
+            config_path=Path(args.deploy_addon_config) if args.deploy_addon_config else None,
+            require_token=args.deploy_addon_require_token,
+        ).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Deploy Add-on Gate")
+            print(f"Config: {result['config_path']}")
+            print(f"Provider: {result['provider']}")
+            print(f"Repository: {result['repository']}")
+            print(f"Release tag: {result['release_tag']}")
+            print(f"Dry run: {result['dry_run']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

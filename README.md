@@ -386,6 +386,15 @@ Use [docs/RELEASE_DETAILS.md](docs/RELEASE_DETAILS.md) and [templates/release-de
 Architecture decisions that affect release trust and deploy boundaries are recorded in [docs/DECISION_LEDGER.md](docs/DECISION_LEDGER.md).
 Cross-repo priorities are scored in [docs/SUITE_PRIORITY_BACKLOG.md](docs/SUITE_PRIORITY_BACKLOG.md).
 
-## Planned Deploy Add-On
+## Deploy Add-On Foundation
 
-A future AIBenchie deploy add-on can publish verified packages to a repo hub such as Forgejo, Gitea, GitHub, or another open/closed source provider. That add-on should consume the suite verdict and release artifact manifest before deploy, keep provider credentials in runtime/local secret storage, and support guided setup so users do not need to drop into the CLI for normal releases. It is intentionally separate from the current package attestation gate: AIBenchie proves what is safe to ship first, then a deploy add-on can decide where to publish it.
+AIBenchie has a provider-neutral deploy add-on contract for repo hubs such as Forgejo, Gitea, GitHub, and compatible hosted variants. The current foundation is a dry-run deploy plan gate: it validates provider configuration, rejects committed provider secrets, requires a passing suite verdict, verifies release artifact attestation, and records which release assets would be published. Provider tokens stay in runtime environment variables or private local secret storage.
+
+```powershell
+$env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runner>"
+$env:AIBENCHIE_DEPLOY_ADDON_CONFIG=".suite/local/aibenchie/deploy-addon.json"
+python aibenchie_local.py --deploy-addon `
+  --json
+```
+
+Use `configs/aibenchie_deploy_addon.example.json` as the public template, then place the real config under an ignored runtime path such as `.suite/local/aibenchie/deploy-addon.json`. Use `--deploy-addon-require-token` only in a private runner where the configured provider token environment variable is present. Real provider URLs, repositories, verdict paths, artifact manifests, and tokens belong in ignored runtime config. This remains intentionally separate from package attestation: AIBenchie proves what is safe to ship first, then the deploy add-on decides where to publish it.

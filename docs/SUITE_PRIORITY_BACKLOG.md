@@ -54,7 +54,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | 5 | Backend Operations UI v1 | 390 | Foundation ready | EchoLabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
 | 6 | AIBenchie website scoreboard and release evidence display | 365 | Foundation ready | Website consumes public-safe scoreboard and release evidence exports, then shows latest valid score per class/test, overall score, release details, and progress bars. |
 | 7 | Notification system through NullBridge | 345 | Foundation ready | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; EchoLabs Ops now shows a read-only notification center and toast highlight without raw service payloads. |
-| 8 | AIBenchie deploy add-on | 295 | Planned | Provider-neutral deploy flow for Forgejo/Gitea/GitHub-style hubs, gated by suite verdict and release attestation. |
+| 8 | AIBenchie deploy add-on | 295 | Foundation ready | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; EchoLabs exposes it as an admin-only add-on manifest. |
 | 9 | Docker support documentation | 210 | Planned | Website/docs mark Docker as coming soon, with constraints and no false support claim. |
 
 ## Paused Automation Pickup
