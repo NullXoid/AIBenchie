@@ -493,6 +493,17 @@ def _upload_url(provider: dict[str, Any], release_response: dict[str, Any], asse
     return f"{base_url}/api/v1/repos/{repository}/releases/{release_id}/assets?name={urllib.parse.quote(asset_name)}"
 
 
+def _upload_url_trusted(provider: dict[str, Any], upload_url: str) -> bool:
+    parsed_upload = urllib.parse.urlparse(upload_url)
+    parsed_base = urllib.parse.urlparse(str(provider.get("base_url") or "").strip())
+    if parsed_upload.scheme not in {"http", "https"} or not parsed_upload.netloc:
+        return False
+    provider_type = str(provider.get("type") or "").strip().lower()
+    if provider_type == "github" and parsed_base.netloc.lower() == "github.com":
+        return parsed_upload.netloc.lower() in {"uploads.github.com", "api.github.com"}
+    return parsed_upload.netloc.lower() == parsed_base.netloc.lower()
+
+
 def _multipart_file_payload(
     *,
     field_name: str,
@@ -589,6 +600,18 @@ def _publish_plan(
             )
             return False, f"asset_sha256_mismatch:{asset_name}", evidence
         upload_url = _upload_url(provider, release_response, asset_name)
+        if not _upload_url_trusted(provider, upload_url):
+            evidence.append(
+                {
+                    "kind": "provider_request",
+                    "operation": "upload_asset",
+                    "asset": asset_name,
+                    "ok": False,
+                    "failure": "asset_upload_url_untrusted",
+                    "url": upload_url,
+                }
+            )
+            return False, f"asset_upload_url_untrusted:{asset_name}", evidence
         upload_body, upload_content_type = _asset_upload_body(provider, asset_name, asset_file.read_bytes())
         status, _payload = request_json(
             "POST",
