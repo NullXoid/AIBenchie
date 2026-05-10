@@ -61,7 +61,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 ### Universal E2E Playwright Web UX Adapter
 
-Status: browser proof complete.
+Status: full UX lane proof complete.
 
 Owner: AIBenchie.
 
@@ -72,18 +72,18 @@ Current foundation:
 - `configs/echolabs_universal_e2e.json` runs API and UX lanes.
 - `npm run aibenchie:e2e` in EchoLabs delegates to standalone AIBenchie and runs all lanes by default.
 - `scripts/echolabs_suite_release_gate.ps1` runs Universal E2E and persists `_validation/aibenchie_universal_e2e_latest.json`.
-- UX command targets currently cover web build/UI contracts, Android release gate, and desktop release gate.
+- UX command targets cover web build/UI contracts, Android release gate, and desktop release gate.
 
 Current implementation:
 
 - `web_browser` adapter exists in `aibenchie/universal_e2e.py`.
 - `web-browser-ux` target exists in `configs/echolabs_universal_e2e.json` and is release-blocking.
 - The target builds EchoLabs with the local embedded app flag, serves static output with SPA fallback, can serve target-scoped mock API/SSE routes, opens `/nullxoid`, verifies the chat composer, sends a mocked NullXoid chat through `/chat/stream`, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
-- Playwright is pinned in the Python requirements; the configured runner has executed the browser target and captured screenshot, HTML, and trace evidence.
+- Playwright is pinned in the Python requirements; the configured runner has executed the full UX lane with web command, browser, Android, and desktop targets passing while capturing screenshot, HTML, and trace evidence.
 
 Next implementation:
 
-- Keep existing command targets as compatibility gates; desktop currently remains a separate UX lane blocker when its release gate fails.
+- Keep existing command targets as compatibility gates; the browser target adds real user-flow coverage without replacing platform release gates.
 
 Acceptance:
 
