@@ -59,6 +59,17 @@
           "command": ["powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/android_release_gate.ps1"],
           "timeout_seconds": 420,
           "notes": "Runs Android unit contracts and debug APK build until the ADB/instrumentation user workflow is promoted."
+        },
+        {
+          "id": "desktop-ux",
+          "name": "Desktop user workflow",
+          "type": "desktop",
+          "adapter": "command",
+          "required": true,
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_DESKTOP_ROOT:-../../AiAssistant}",
+          "command": ["powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/desktop_release_gate.ps1"],
+          "timeout_seconds": 900,
+          "notes": "Runs desktop model-policy, unit, bridge, and smoke gates until native desktop automation is promoted."
         }
       ]
     }

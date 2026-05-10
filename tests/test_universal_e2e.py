@@ -230,3 +230,12 @@ def test_echolabs_manifest_has_executable_ux_targets():
         "-File",
         "scripts/android_release_gate.ps1",
     ]
+    assert targets["desktop-ux"]["adapter"] == "command"
+    assert targets["desktop-ux"]["required"] is True
+    assert targets["desktop-ux"]["command"] == [
+        "powershell",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/desktop_release_gate.ps1",
+    ]

@@ -44,6 +44,8 @@ The current EchoLabs UX lane runs the web shell build and NullXoid UI contract c
 
 The same UX lane also runs the Android release gate through `scripts/android_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_ANDROID_ROOT` when the Android checkout is outside the default sibling `NullXoidAndroid` path.
 
+It also runs the desktop release gate through `scripts/desktop_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_DESKTOP_ROOT` when the desktop checkout is outside the default sibling `AiAssistant` path.
+
 ## Manifest Shape
 
 ```json
@@ -86,6 +88,7 @@ Implemented now:
 - UX lane command/manual target foundation.
 - EchoLabs web UX command target.
 - EchoLabs Android UX command target.
+- EchoLabs desktop UX command target.
 - Unified verdict with lane, target, evidence, and summary data.
 
 Next adapters should add Playwright, ADB, desktop automation, SSE/WebSocket streams, artifact capture, screenshot capture, and JUnit/HTML reporters without changing the manifest or verdict contract.
