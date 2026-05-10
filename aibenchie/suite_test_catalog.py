@@ -314,12 +314,13 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
         ),
         SuiteTestTarget(
             name="nullbridge_trust_fabric",
-            description="NullBridge signed service identity, deny-by-default routing, notification policy, redacted audit, release-fabric, and cleanup contracts",
+            description="NullBridge signed service identity, deny-by-default routing, notification policy, redacted audit, resource leases, release-fabric, and cleanup contracts",
             repo_env="AIBENCHIE_NULLBRIDGE_REPO",
             repo_candidates=("../NullBridge", "NullBridge"),
             required_paths=(
                 "backend/tests/test_service_bridge_compliance.py",
                 "backend/tests/test_suite_trust_release_fabric.py",
+                "backend/tests/test_nullbridge_resource_manager.py",
                 "backend/tests/test_nullbridge_runtime_cleanup.py",
             ),
             command=(
@@ -328,6 +329,7 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "pytest",
                 "backend/tests/test_service_bridge_compliance.py",
                 "backend/tests/test_suite_trust_release_fabric.py",
+                "backend/tests/test_nullbridge_resource_manager.py",
                 "backend/tests/test_nullbridge_runtime_cleanup.py",
             ),
             timeout_seconds=180,

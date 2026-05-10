@@ -124,6 +124,35 @@ def route_check(
     payload: dict[str, Any] | None = None,
 ) -> tuple[int, dict[str, Any]]:
     request_id = request_id or f"aibenchie-live-{caller}-{capability.replace('.', '-')}-{int(time.time())}"
+    acting_user = {
+        "userId": user_id,
+        "roles": ["user"],
+        "workspaceId": "aibenchie_live_workspace",
+        "platform": platform,
+    }
+    resource_lease_id = ""
+    if include_acting_user and jwt_capability is None and jwt_target_role is None:
+        lease_token = service_jwt(
+            secret=secret,
+            caller=caller,
+            capability="resource.lease.request",
+            target_role="resource_manager",
+        )
+        lease_status, lease_body = request_json(
+            "POST",
+            f"{base_url.rstrip('/')}/bridge/resource/leases",
+            headers={
+                "X-NullBridge-Service": caller,
+                "Authorization": f"Bearer {lease_token}",
+            },
+            body={
+                "requestId": f"{request_id}-lease",
+                "capability": capability,
+                "actingUser": acting_user,
+            },
+        )
+        if lease_status in {200, 201} and lease_body.get("leaseId"):
+            resource_lease_id = str(lease_body["leaseId"])
     token = service_jwt(
         secret=secret,
         caller=caller,
@@ -137,12 +166,9 @@ def route_check(
         "payload": payload or {"source": "aibenchie_live_trust_path"},
     }
     if include_acting_user:
-        body["actingUser"] = {
-            "userId": user_id,
-            "roles": ["user"],
-            "workspaceId": "aibenchie_live_workspace",
-            "platform": platform,
-        }
+        body["actingUser"] = acting_user
+    if resource_lease_id:
+        body["resourceLeaseId"] = resource_lease_id
     return request_json(
         "POST",
         f"{base_url.rstrip('/')}/bridge/requests",
