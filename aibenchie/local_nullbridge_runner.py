@@ -95,9 +95,19 @@ def audit_summary(entries: list[dict[str, Any]], secrets_map: dict[str, str]) ->
             "nullbridge.notification_delivery",
         }
     ]
+    auth_denials = [
+        {
+            "caller": item.get("caller"),
+            "allowed": item.get("allowed"),
+            "reason": item.get("reason"),
+        }
+        for item in entries
+        if item.get("allowed") is False and item.get("reason")
+    ]
     return {
         "entry_count": len(entries),
         "route_decisions": route_decisions,
+        "auth_denials": auth_denials,
         "secret_leaks": secret_leaks,
         "ok": bool(entries) and not secret_leaks,
     }
@@ -313,6 +323,59 @@ def run_local_trust_path() -> dict[str, Any]:
             invalid_signature_status == 401
             and invalid_signature_body.get("errorCode") == "service.jwt_invalid_signature"
         )
+        wrong_audience_token = live_trust_path.service_jwt(
+            secret=bridge.service_secrets["android_backend"],
+            caller="android_backend",
+            capability="chat.stream",
+            target_role="primary_api",
+            audience="wrong-audience",
+        )
+        wrong_audience_status, wrong_audience_body = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/requests",
+            headers={
+                "X-NullBridge-Service": "android_backend",
+                "Authorization": f"Bearer {wrong_audience_token}",
+            },
+            body={
+                "requestId": "aibenchie-local-wrong-audience",
+                "targetRole": "primary_api",
+                "capability": "chat.stream",
+                "actingUser": {
+                    "userId": "aibenchie_live_user",
+                    "roles": ["user"],
+                    "workspaceId": "aibenchie_live_workspace",
+                    "platform": "android",
+                },
+                "payload": {"source": "aibenchie_live_trust_path"},
+            },
+        )
+        checks["wrong_audience_rejected"] = (
+            wrong_audience_status == 401 and wrong_audience_body.get("errorCode") == "service.jwt_wrong_audience"
+        )
+        unknown_caller_token = live_trust_path.service_jwt(
+            secret=bridge.service_secrets["android_backend"],
+            caller="unknown_backend",
+            capability="chat.stream",
+            target_role="primary_api",
+        )
+        unknown_caller_status, unknown_caller_body = live_trust_path.request_json(
+            "POST",
+            f"{bridge.base_url}/bridge/requests",
+            headers={
+                "X-NullBridge-Service": "unknown_backend",
+                "Authorization": f"Bearer {unknown_caller_token}",
+            },
+            body={
+                "requestId": "aibenchie-local-unknown-caller",
+                "targetRole": "primary_api",
+                "capability": "chat.stream",
+                "payload": {"source": "aibenchie_live_trust_path"},
+            },
+        )
+        checks["unknown_service_rejected"] = (
+            unknown_caller_status == 403 and unknown_caller_body.get("errorCode") == "service.unknown_identity"
+        )
         audit = audit_summary(read_service_audit_entries(bridge.temp_root), bridge.service_secrets)
         checks["audit_events_recorded"] = audit["ok"]
         ok = all(checks.values())
@@ -326,6 +389,8 @@ def run_local_trust_path() -> dict[str, Any]:
             "capability_claim_deny": {"status": capability_claim_status, "body": capability_claim_body},
             "target_claim_deny": {"status": target_claim_status, "body": target_claim_body},
             "invalid_signature": {"status": invalid_signature_status, "body": invalid_signature_body},
+            "wrong_audience": {"status": wrong_audience_status, "body": wrong_audience_body},
+            "unknown_caller": {"status": unknown_caller_status, "body": unknown_caller_body},
             "checks": checks,
             "audit": audit,
             "secrets_persisted": False,

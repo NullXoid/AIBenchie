@@ -46,6 +46,8 @@ def test_local_nullbridge_runner_proves_allow_and_deny_without_persisting_secret
     assert result["capability_claim_deny"]["status"] == 403
     assert result["target_claim_deny"]["status"] == 403
     assert result["invalid_signature"]["status"] == 401
+    assert result["wrong_audience"]["status"] == 401
+    assert result["unknown_caller"]["status"] == 403
     assert all(result["checks"].values())
     assert result["audit"]["ok"] is True
     assert result["audit"]["entry_count"] >= 4
@@ -55,6 +57,9 @@ def test_local_nullbridge_runner_proves_allow_and_deny_without_persisting_secret
     assert "missing_user_context" in reasons
     assert "service.jwt_capability_mismatch" in reasons
     assert "service.jwt_target_mismatch" in reasons
+    auth_denial_reasons = {item["reason"] for item in result["audit"]["auth_denials"]}
+    assert "service.jwt_wrong_audience" in auth_denial_reasons
+    assert "unknown_service" in auth_denial_reasons
     assert result["secrets_persisted"] is False
 
 
