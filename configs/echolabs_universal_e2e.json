@@ -52,10 +52,13 @@
         {
           "id": "android-ux",
           "name": "Android user workflow",
-          "type": "adb",
-          "adapter": "manual",
-          "required": false,
-          "notes": "Foundation placeholder. Replace with an ADB/instrumentation target when the Android UX workflow is promoted."
+          "type": "android",
+          "adapter": "command",
+          "required": true,
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_ANDROID_ROOT:-../../NullXoidAndroid}",
+          "command": ["powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/android_release_gate.ps1"],
+          "timeout_seconds": 420,
+          "notes": "Runs Android unit contracts and debug APK build until the ADB/instrumentation user workflow is promoted."
         }
       ]
     }

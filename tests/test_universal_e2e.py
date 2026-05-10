@@ -210,3 +210,23 @@ def test_universal_e2e_cli_outputs_json(monkeypatch, capsys):
 
     assert code == 0
     assert payload["schema"] == "aibenchie.universal-e2e.verdict.v1"
+
+
+def test_echolabs_manifest_has_executable_ux_targets():
+    manifest_path = Path("configs/echolabs_universal_e2e.json")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    targets = {target["id"]: target for target in manifest["lanes"]["ux"]["targets"]}
+
+    assert targets["web-ux"]["adapter"] == "command"
+    assert targets["web-ux"]["required"] is True
+    assert targets["web-ux"]["command"] == ["npm", "run", "verify:nullxoid"]
+    assert targets["android-ux"]["adapter"] == "command"
+    assert targets["android-ux"]["required"] is True
+    assert targets["android-ux"]["command"] == [
+        "powershell",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/android_release_gate.ps1",
+    ]

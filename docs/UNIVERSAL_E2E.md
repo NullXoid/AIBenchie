@@ -42,6 +42,8 @@ python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echol
 
 The current EchoLabs UX lane runs the web shell build and NullXoid UI contract checks through `npm run verify:nullxoid`. This gives the standalone runner an executable user-surface gate before the browser-driven Playwright adapter is promoted.
 
+The same UX lane also runs the Android release gate through `scripts/android_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_ANDROID_ROOT` when the Android checkout is outside the default sibling `NullXoidAndroid` path.
+
 ## Manifest Shape
 
 ```json
@@ -83,6 +85,7 @@ Implemented now:
 - API lane HTTP checks.
 - UX lane command/manual target foundation.
 - EchoLabs web UX command target.
+- EchoLabs Android UX command target.
 - Unified verdict with lane, target, evidence, and summary data.
 
 Next adapters should add Playwright, ADB, desktop automation, SSE/WebSocket streams, artifact capture, screenshot capture, and JUnit/HTML reporters without changing the manifest or verdict contract.
