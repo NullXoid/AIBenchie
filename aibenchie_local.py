@@ -282,6 +282,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Require the configured provider token environment variable to be populated.",
     )
+    parser.add_argument(
+        "--deploy-addon-plan-output",
+        default="",
+        help="Optional path to write the sanitized deploy plan when --deploy-addon passes.",
+    )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
 
@@ -780,6 +785,16 @@ def main(argv: list[str] | None = None) -> int:
             config_path=Path(args.deploy_addon_config) if args.deploy_addon_config else None,
             require_token=args.deploy_addon_require_token,
         ).as_dict()
+        plan_output = args.deploy_addon_plan_output.strip()
+        if plan_output:
+            result["deploy_plan_output"] = ""
+            result["deploy_plan_written"] = False
+            if result["ok"]:
+                output_path = Path(plan_output)
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(json.dumps(result["deploy_plan"], indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                result["deploy_plan_output"] = str(output_path.resolve())
+                result["deploy_plan_written"] = True
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
@@ -792,6 +807,8 @@ def main(argv: list[str] | None = None) -> int:
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")
+            if result.get("deploy_plan_written"):
+                print(f"Deploy plan: {result['deploy_plan_output']}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

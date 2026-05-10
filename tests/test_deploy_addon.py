@@ -131,3 +131,60 @@ def test_deploy_addon_cli(tmp_path, capsys, monkeypatch):
     assert exit_code == 0
     assert payload["ok"] is True
     assert payload["release_tag"] == "v1.2.3"
+
+
+def test_deploy_addon_cli_writes_sanitized_plan_output(tmp_path, capsys, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": True, "verdict": "green"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict)
+    plan_output = tmp_path / "local" / "deploy-plan.json"
+
+    exit_code = aibenchie_local.main(
+        [
+            "--deploy-addon",
+            "--deploy-addon-config",
+            str(config_path),
+            "--deploy-addon-plan-output",
+            str(plan_output),
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+    plan = json.loads(plan_output.read_text(encoding="utf-8"))
+
+    assert exit_code == 0
+    assert payload["ok"] is True
+    assert payload["deploy_plan_written"] is True
+    assert payload["deploy_plan_output"] == str(plan_output.resolve())
+    assert plan["schema"] == "aibenchie.deploy-plan.v1"
+    assert plan["provider"]["repository"] == "EchoLabs/NullXoid"
+    assert {asset["kind"] for asset in plan["assets"]} == {"wrapper", "android", "public"}
+    plan_text = json.dumps(plan).lower()
+    assert "aibenchie_deploy_provider_token" not in plan_text
+    assert "ghp_" not in plan_text
+
+
+def test_deploy_addon_cli_does_not_write_plan_when_gate_fails(tmp_path, capsys, monkeypatch):
+    release_artifacts = _write_release_artifacts(tmp_path, monkeypatch)
+    suite_verdict = tmp_path / "suite-verdict.json"
+    suite_verdict.write_text(json.dumps({"ok": False, "verdict": "blocked"}), encoding="utf-8")
+    config_path = _write_config(tmp_path, release_artifacts, suite_verdict)
+    plan_output = tmp_path / "local" / "deploy-plan.json"
+
+    exit_code = aibenchie_local.main(
+        [
+            "--deploy-addon",
+            "--deploy-addon-config",
+            str(config_path),
+            "--deploy-addon-plan-output",
+            str(plan_output),
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    assert payload["ok"] is False
+    assert payload["deploy_plan_written"] is False
+    assert not plan_output.exists()
