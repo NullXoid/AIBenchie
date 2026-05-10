@@ -65,7 +65,7 @@
           "name": "Web browser workflow",
           "type": "web",
           "adapter": "web_browser",
-          "required": false,
+          "required": true,
           "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
           "build_command": ["npm", "run", "build"],
           "build_timeout_seconds": 240,
@@ -77,7 +77,7 @@
             { "text": "NullXoid" },
             { "text": "Ops" }
           ],
-          "notes": "Optional Playwright-style browser workflow. Captures screenshot, HTML, and trace evidence when Playwright is installed; skips cleanly on runners without the browser dependency."
+          "notes": "Release-blocking Playwright-style browser workflow. Captures screenshot, HTML, and trace evidence. Runner setup must install the Playwright Python package and Chromium browser."
         },
         {
           "id": "android-ux",

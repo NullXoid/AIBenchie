@@ -221,6 +221,41 @@ def test_universal_e2e_web_browser_adapter_skips_without_playwright(monkeypatch,
     assert target["failure"] == "playwright_not_installed"
 
 
+def test_universal_e2e_web_browser_adapter_fails_required_without_playwright(monkeypatch, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "browser-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "web-browser",
+                                "adapter": "web_browser",
+                                "required": True,
+                                "cwd": ".",
+                                "serve_dir": "dist",
+                                "path": "/",
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(universal_e2e, "_load_playwright", lambda: None)
+
+    result = universal_e2e.run_universal_e2e(manifest, lanes=["ux"]).as_dict()
+    target = result["lanes"][0]["targets"][0]
+
+    assert result["ok"] is False
+    assert target["status"] == "fail"
+    assert target["failure"] == "playwright_not_installed"
+
+
 def test_universal_e2e_web_browser_adapter_captures_artifacts(monkeypatch, tmp_path):
     site = tmp_path / "dist"
     site.mkdir()
@@ -384,7 +419,7 @@ def test_echolabs_manifest_has_executable_ux_targets():
     assert targets["web-ux"]["required"] is True
     assert targets["web-ux"]["command"] == ["npm", "run", "verify:nullxoid"]
     assert targets["web-browser-ux"]["adapter"] == "web_browser"
-    assert targets["web-browser-ux"]["required"] is False
+    assert targets["web-browser-ux"]["required"] is True
     assert targets["web-browser-ux"]["path"] == "/nullxoid"
     assert targets["web-browser-ux"]["build_command"] == ["npm", "run", "build"]
     assert targets["android-ux"]["adapter"] == "command"

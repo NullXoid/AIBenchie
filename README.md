@@ -90,6 +90,7 @@ Install dependencies:
 ```powershell
 python -m pip install -r requirements.txt
 python -m pip install -r requirements-dev.txt
+python -m playwright install chromium
 ```
 
 Run the local UI:
@@ -138,6 +139,8 @@ python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echol
 ```
 
 Universal E2E separates API contract checks from UX workflow checks while keeping one manifest and one verdict format. See [docs/UNIVERSAL_E2E.md](docs/UNIVERSAL_E2E.md).
+
+The EchoLabs UX lane includes a release-blocking browser workflow. Runner machines must have the pinned Playwright package from `requirements.txt` and the Chromium browser installed with `python -m playwright install chromium`.
 
 EchoLabs suite architecture docs and the cross-repo release gate live under [docs/echolabs](docs/echolabs):
 
