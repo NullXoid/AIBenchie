@@ -67,7 +67,7 @@ Release interpretation:
 - Optional UI/full backend gates pass: stronger local confidence before packaging.
 - Optional deploy-plan proof passes: ignored local deploy evidence is well-formed and public-safe enough to feed release evidence.
 - Any gate fails: fix that surface first, then rerun the failed surface gate before rerunning the suite gate.
-- Docker support is coming soon, but Docker is not a supported release target yet. A future Docker path must add its own AIBenchie gate before container images or Compose files are advertised as production-ready.
+- Docker support is coming soon, but Docker is not a supported release target yet. The current AIBenchie `--docker-support` gate enforces that guarded boundary and blocks tracked Docker entrypoints before supported-mode Docker exists. A future Docker path must evolve that gate before container images or Compose files are advertised as production-ready.
 - The JSON report uses schema `echolabs.suite-release-gate.v1` and is suitable for AIBenchie ingestion or EchoLabs readiness display.
 - Each surface entry includes stable machine fields for dashboards and AIBenchie ingestion:
 

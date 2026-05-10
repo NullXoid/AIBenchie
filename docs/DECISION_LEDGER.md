@@ -42,7 +42,7 @@ Durable engineering decisions live here when they affect release trust, deploy c
 - Decision: treat the EchoLabs stabilization backlog as complete and require future suite work to enter as new scoped backlog rows, not by reopening completed stabilization rows.
 - Context: Web, Android, Desktop, BridgeEcho/NullBridge, Universal API/UX E2E, release artifact attestation, suite-security, generated-output policy, deploy add-on dry run, deploy-plan verification, and hosted API E2E all passed in the current workspace.
 - Rationale: the suite now has enough release evidence that old "next work" labels create confusion and duplicate effort. A handoff record should distinguish completed stabilization from new product/release lanes.
-- Consequences: future work should start from a clean lane such as provider-backed deployment, Docker gate support, broader real-device UX coverage, or the paused standalone AIBenchie expansion.
+- Consequences: future work should start from a clean lane such as broader provider-backed deployment, supported-mode Docker gate support, broader real-device UX coverage, or the paused standalone AIBenchie expansion. Docker is currently guarded by a `--docker-support` boundary gate, but it is still not a supported deployment path.
 - Revisit trigger: revisit only if a default suite release gate regresses or a completed gate is intentionally replaced.
 - Related files: `docs/SUITE_PRIORITY_BACKLOG.md`, `docs/echolabs/ECHOLABS_RELEASE_GATES.md`, `docs/echolabs/STABILIZATION_HANDOFF.md`.
 - Validation commands:

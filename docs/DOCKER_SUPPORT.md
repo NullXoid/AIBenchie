@@ -19,7 +19,7 @@ The current release path is still repo-native: each surface runs its own local r
 - GPU/runtime profiles for Ollama, llama.cpp, ComfyUI, image/video/3D generation, and CPU-only fallback behavior.
 - Network policy for local-only services, public API routes, CORS, HTTPS, websocket/SSE streaming, and Android/Companion remote access.
 - Passkey/OIDC setup guidance for containerized callback URLs and Android Digital Asset Links.
-- AIBenchie Docker gate that builds the stack, runs health/features, chat stream, notification, E2EE, release evidence, and no-secret checks.
+- AIBenchie Docker gate. The current `--docker-support` gate only enforces the guarded "not supported yet" boundary; the future supported-mode gate must build the stack, run health/features, chat stream, notification, E2EE, release evidence, and no-secret checks.
 - Release attestation for container images, including image digest, SBOM, signature evidence, and provenance.
 
 ## Non-Goals For v1
@@ -34,7 +34,7 @@ The current release path is still repo-native: each surface runs its own local r
 Docker support can move from coming soon to supported only when:
 
 - `docker compose up` or an equivalent documented command starts the supported local stack from a clean checkout.
-- The container stack passes the normal suite release gate plus the Docker-specific AIBenchie gate.
+- The container stack passes the normal suite release gate plus the Docker-specific AIBenchie gate in supported mode.
 - Secrets are supplied only through documented runtime secret paths.
 - Persistent data survives container recreation.
 - The docs clearly separate local development, private deployment, and public release-image use.

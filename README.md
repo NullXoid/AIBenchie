@@ -107,7 +107,7 @@ python -m pytest
 
 ## Docker
 
-Docker support is coming soon, but it is not a supported deployment path yet. Do not treat Docker, Docker Compose, or container images as release-ready until the Docker-specific AIBenchie gate exists and passes. See [docs/DOCKER_SUPPORT.md](docs/DOCKER_SUPPORT.md) for the current constraints and acceptance criteria.
+Docker support is coming soon, but it is not a supported deployment path yet. Do not treat Docker, Docker Compose, or container images as release-ready until the Docker-specific AIBenchie gate exists and passes in supported mode. The current `--docker-support` gate enforces that guarded boundary. See [docs/DOCKER_SUPPORT.md](docs/DOCKER_SUPPORT.md) for the current constraints and acceptance criteria.
 
 Default pytest runs the current deterministic gate set. Historical milestone replay tests that need frozen local
 adapter/runtime artifacts are marked `archival` and skipped by default, because they can mutate tracked

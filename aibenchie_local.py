@@ -18,6 +18,7 @@ from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
 from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check, verify_deploy_plan
+from aibenchie.docker_support import run_docker_support_gate
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
@@ -306,6 +307,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--deploy-plan",
         default="",
         help="Deploy plan path for --verify-deploy-plan.",
+    )
+    parser.add_argument(
+        "--docker-support",
+        action="store_true",
+        help="Run the Docker support boundary gate. Docker remains unsupported until this gate evolves and passes in supported mode.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -842,6 +848,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Repository: {result['repository']}")
             print(f"Release tag: {result['release_tag']}")
             print(f"Published: {result['published']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.docker_support:
+        result = run_docker_support_gate().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Docker Support Boundary Gate")
+            print(f"Status: {result['status']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import aibenchie_local
+from aibenchie.docker_support import run_docker_support_gate
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITE_ROOT = ROOT.parent
@@ -71,5 +74,27 @@ def test_tracked_docker_entrypoints_do_not_exist_before_gate_is_ready():
 def test_docker_backlog_status_matches_guarded_boundary():
     backlog = _read(ROOT / "docs" / "SUITE_PRIORITY_BACKLOG.md")
 
-    assert "| 9 | Docker support documentation | 210 | Guarded |" in backlog
+    assert "| 9 | Docker support boundary | 210 | Guarded gate |" in backlog
     assert "explicitly not supported yet" in backlog
+    assert "`--docker-support` gate" in backlog
+
+
+def test_docker_support_gate_enforces_guarded_boundary():
+    result = run_docker_support_gate(ROOT).as_dict()
+    checks = {check["name"]: check for check in result["checks"]}
+
+    assert result["ok"] is True
+    assert result["status"] == "coming_soon"
+    assert checks["status_guard"]["ok"] is True
+    assert checks["not_supported_disclaimer"]["ok"] is True
+    assert checks["secret_boundary"]["ok"] is True
+    assert checks["acceptance_criteria"]["ok"] is True
+    assert checks["no_tracked_docker_entrypoints"]["ok"] is True
+    assert checks["no_known_suite_docker_entrypoints"]["ok"] is True
+
+
+def test_docker_support_cli_outputs_boundary_verdict(capsys):
+    exit_code = aibenchie_local.main(["--docker-support", "--json"])
+
+    assert exit_code == 0
+    assert '"status": "coming_soon"' in capsys.readouterr().out

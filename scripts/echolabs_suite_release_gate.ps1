@@ -6,6 +6,7 @@ param(
     [switch]$SkipBridge,
     [switch]$SkipUniversalE2E,
     [switch]$SkipDeployPlan,
+    [switch]$SkipDockerSupport,
     [switch]$DesktopIncludeUi,
     [switch]$BridgeFull,
     [string]$DeployPlanPath = ".suite\local\aibenchie\deploy-plan.json",
@@ -76,6 +77,7 @@ function Write-SuiteGateReport {
             skip_bridge = [bool]$SkipBridge
             skip_universal_e2e = [bool]$SkipUniversalE2E
             skip_deploy_plan = [bool]$SkipDeployPlan
+            skip_docker_support = [bool]$SkipDockerSupport
             desktop_include_ui = [bool]$DesktopIncludeUi
             bridge_full = [bool]$BridgeFull
         }
@@ -229,6 +231,20 @@ if ((-not $SkipDeployPlan) -and (Test-Path -LiteralPath $resolvedDeployPlanPath)
 } elseif (-not $SkipDeployPlan) {
     Write-Host ""
     Write-Host "[echolabs-suite-gate] AIBenchie deploy plan proof skipped (no deploy plan at $resolvedDeployPlanPath)" -ForegroundColor DarkYellow
+}
+
+if (-not $SkipDockerSupport) {
+    Invoke-SuiteGate `
+        -Id "aibenchie_docker_support" `
+        -Name "AIBenchie Docker support boundary" `
+        -Owner "AIBenchie" `
+        -WorkingDirectory $aibenchieRoot `
+        -Command "python" `
+        -Arguments @(
+            "aibenchie_local.py",
+            "--docker-support",
+            "--json"
+        )
 }
 
 Write-Host ""
