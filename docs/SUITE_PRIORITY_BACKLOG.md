@@ -51,7 +51,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | 2 | Passkey/OIDC provider configuration | 455 | Foundation ready | Configure real WebAuthn/OIDC provider settings and publish Android Digital Asset Links for the passkey RP domain. |
 | 3 | NullBridge trust fabric hardening | 440 | Hardened / gated | Signed backend identity, explicit deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 4 | Resource Manager v1 runtime enforcement | 420 | Runtime leases gated | Backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and no unbounded heavy work. |
-| 5 | Backend Operations UI v1 | 390 | Planned | Read-only UI shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
+| 5 | Backend Operations UI v1 | 390 | Foundation ready | EchoLabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
 | 6 | AIBenchie website scoreboard and release evidence display | 365 | Partial | Website shows latest valid score per class/test, overall score, release details, and progress bars from public-safe exports. |
 | 7 | Notification system through NullBridge | 345 | Planned | Backend emits operational events, NullBridge applies policy, frontend shows notification center/toasts. |
 | 8 | AIBenchie deploy add-on | 295 | Planned | Provider-neutral deploy flow for Forgejo/Gitea/GitHub-style hubs, gated by suite verdict and release attestation. |
