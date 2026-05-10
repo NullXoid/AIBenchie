@@ -78,12 +78,12 @@ Current implementation:
 
 - `web_browser` adapter exists in `aibenchie/universal_e2e.py`.
 - `web-browser-ux` target exists in `configs/echolabs_universal_e2e.json` and is release-blocking.
-- The target builds EchoLabs, serves static output with SPA fallback, opens `/nullxoid`, verifies visible text, and captures screenshot, HTML, and trace evidence when Playwright is installed.
+- The target builds EchoLabs, serves static output with SPA fallback, opens `/nullxoid`, verifies visible text, follows scripted browser flow steps, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
 - Playwright is pinned in the Python requirements; runners must also run `python -m playwright install chromium`.
 
 Next implementation:
 
-- Exercise a deeper real user flow: type/send a prompt through a mocked or configured backend, verify a visible assistant result, open Canvas/CCC or release dashboard, and capture evidence.
+- Exercise a deeper chat-specific flow: type/send a prompt through a mocked or configured backend, verify a visible assistant result, and capture evidence.
 - Keep existing command targets as compatibility gates; the Playwright target should add coverage rather than replacing the current build/contract gate immediately.
 
 Acceptance:

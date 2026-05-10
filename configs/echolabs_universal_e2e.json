@@ -77,6 +77,13 @@
             { "text": "NullXoid" },
             { "text": "Ops" }
           ],
+          "flow": [
+            { "action": "expect_text", "text": "NullXoid" },
+            { "action": "goto", "path": "/aibenchie", "timeout_ms": 30000 },
+            { "action": "expect_text", "text": "Release evidence" },
+            { "action": "expect_text", "text": "Deploy add-on" },
+            { "action": "screenshot", "name": "release-evidence" }
+          ],
           "notes": "Release-blocking Playwright-style browser workflow. Captures screenshot, HTML, and trace evidence. Runner setup must install the Playwright Python package and Chromium browser."
         },
         {

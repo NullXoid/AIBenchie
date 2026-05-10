@@ -362,6 +362,142 @@ def test_universal_e2e_web_browser_adapter_captures_artifacts(monkeypatch, tmp_p
     assert Path(artifact["trace"]).exists()
 
 
+def test_universal_e2e_web_browser_adapter_runs_scripted_flow(monkeypatch, tmp_path):
+    site = tmp_path / "dist"
+    site.mkdir()
+    (site / "index.html").write_text("<main>NullXoid <button>Ops</button></main>", encoding="utf-8")
+    manifest = tmp_path / "manifest.json"
+    evidence_dir = tmp_path / "evidence"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "browser-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "web-browser",
+                                "adapter": "web_browser",
+                                "required": True,
+                                "cwd": ".",
+                                "serve_dir": "dist",
+                                "path": "/",
+                                "evidence_dir": str(evidence_dir),
+                                "flow": [
+                                    {"action": "expect_text", "text": "NullXoid"},
+                                    {"action": "click_text", "text": "Ops"},
+                                    {"action": "fill", "selector": "textarea", "value": "hello benchie"},
+                                    {"action": "press", "selector": "textarea", "key": "Enter"},
+                                    {"action": "goto", "path": "/aibenchie"},
+                                    {"action": "expect_text", "text": "Release evidence"},
+                                    {"action": "screenshot", "name": "release-evidence"},
+                                ],
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeLocator:
+        def wait_for(self, **_kwargs):
+            return None
+
+        def click(self, **_kwargs):
+            return None
+
+        def fill(self, *_args, **_kwargs):
+            return None
+
+        def press(self, *_args, **_kwargs):
+            return None
+
+        @property
+        def first(self):
+            return self
+
+    class FakePage:
+        def __init__(self):
+            self.urls = []
+
+        def goto(self, url, **_kwargs):
+            self.urls.append(url)
+
+        def get_by_text(self, *_args, **_kwargs):
+            return FakeLocator()
+
+        def locator(self, *_args, **_kwargs):
+            return FakeLocator()
+
+        def screenshot(self, path, **_kwargs):
+            Path(path).write_bytes(b"fake screenshot")
+
+        def content(self):
+            return "<main>Release evidence Deploy add-on</main>"
+
+    fake_page = FakePage()
+
+    class FakeTracing:
+        def start(self, **_kwargs):
+            return None
+
+        def stop(self, path):
+            Path(path).write_bytes(b"fake trace")
+
+    class FakeContext:
+        tracing = FakeTracing()
+
+        def new_page(self):
+            return fake_page
+
+    class FakeBrowser:
+        def new_context(self, **_kwargs):
+            return FakeContext()
+
+        def close(self):
+            return None
+
+    class FakeChromium:
+        def launch(self, **_kwargs):
+            return FakeBrowser()
+
+    class FakePlaywright:
+        chromium = FakeChromium()
+
+    class FakeSyncPlaywright:
+        def __call__(self):
+            return self
+
+        def __enter__(self):
+            return FakePlaywright()
+
+        def __exit__(self, *_args):
+            return False
+
+    monkeypatch.setattr(universal_e2e, "_load_playwright", lambda: FakeSyncPlaywright())
+
+    result = universal_e2e.run_universal_e2e(manifest, lanes=["ux"]).as_dict()
+    target = result["lanes"][0]["targets"][0]
+    flow_steps = [entry for entry in target["evidence"] if entry["kind"] == "browser_step"]
+
+    assert result["ok"] is True
+    assert target["status"] == "pass"
+    assert [step["action"] for step in flow_steps] == [
+        "expect_text",
+        "click_text",
+        "fill",
+        "press",
+        "goto",
+        "expect_text",
+        "screenshot",
+    ]
+    assert flow_steps[-1]["screenshot"].endswith("release-evidence.png")
+    assert Path(flow_steps[-1]["screenshot"]).exists()
+    assert fake_page.urls[-1].endswith("/aibenchie")
+
+
 def test_universal_e2e_static_server_supports_spa_fallback(tmp_path):
     site = tmp_path / "dist"
     site.mkdir()
@@ -422,6 +558,8 @@ def test_echolabs_manifest_has_executable_ux_targets():
     assert targets["web-browser-ux"]["required"] is True
     assert targets["web-browser-ux"]["path"] == "/nullxoid"
     assert targets["web-browser-ux"]["build_command"] == ["npm", "run", "build"]
+    assert targets["web-browser-ux"]["flow"][1]["path"] == "/aibenchie"
+    assert targets["web-browser-ux"]["flow"][-1]["name"] == "release-evidence"
     assert targets["android-ux"]["adapter"] == "command"
     assert targets["android-ux"]["required"] is True
     assert targets["android-ux"]["command"] == [

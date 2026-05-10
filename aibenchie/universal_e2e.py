@@ -305,6 +305,78 @@ def _check_page_expectations(page: Any, expectations: list[dict[str, Any]]) -> t
     return True, "", evidence
 
 
+def _safe_artifact_name(value: str, fallback: str) -> str:
+    name = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip()).strip(".-")
+    return name or fallback
+
+
+def _run_browser_flow_steps(
+    page: Any,
+    *,
+    origin: str,
+    steps: list[dict[str, Any]],
+    evidence_dir: Path,
+) -> tuple[bool, str, list[dict[str, Any]]]:
+    evidence: list[dict[str, Any]] = []
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict):
+            continue
+        action = str(step.get("action") or step.get("type") or "").strip().lower()
+        timeout_ms = int(step.get("timeout_ms") or 5000)
+        entry: dict[str, Any] = {"kind": "browser_step", "index": index, "action": action, "ok": True}
+        try:
+            if action == "goto":
+                target_path = str(step.get("path") or "/").strip() or "/"
+                url = _join_url(origin, target_path)
+                page.goto(url, wait_until=str(step.get("wait_until") or "networkidle"), timeout=timeout_ms)
+                entry.update({"path": target_path, "url": url})
+            elif action in {"expect_text", "expect"}:
+                text = str(step.get("text") or "").strip()
+                if not text:
+                    raise ValueError("missing_text")
+                page.get_by_text(text, exact=bool(step.get("exact", False))).first.wait_for(timeout=timeout_ms)
+                entry["text"] = text
+            elif action == "expect_selector":
+                selector = str(step.get("selector") or "").strip()
+                if not selector:
+                    raise ValueError("missing_selector")
+                page.locator(selector).first.wait_for(timeout=timeout_ms)
+                entry["selector"] = selector
+            elif action == "click_text":
+                text = str(step.get("text") or "").strip()
+                if not text:
+                    raise ValueError("missing_text")
+                page.get_by_text(text, exact=bool(step.get("exact", False))).first.click(timeout=timeout_ms)
+                entry["text"] = text
+            elif action == "fill":
+                selector = str(step.get("selector") or "").strip()
+                if not selector:
+                    raise ValueError("missing_selector")
+                page.locator(selector).first.fill(str(step.get("value") or ""), timeout=timeout_ms)
+                entry["selector"] = selector
+            elif action == "press":
+                selector = str(step.get("selector") or "body").strip() or "body"
+                key = str(step.get("key") or "").strip()
+                if not key:
+                    raise ValueError("missing_key")
+                page.locator(selector).first.press(key, timeout=timeout_ms)
+                entry.update({"selector": selector, "key": key})
+            elif action == "screenshot":
+                name = _safe_artifact_name(str(step.get("name") or f"step-{index}"), f"step-{index}")
+                screenshot_path = evidence_dir / f"{name}.png"
+                page.screenshot(path=str(screenshot_path), full_page=bool(step.get("full_page", True)))
+                entry["screenshot"] = str(screenshot_path)
+            else:
+                raise ValueError(f"unknown_browser_step:{action or 'missing'}")
+        except Exception as exc:
+            failure = f"browser_step_failed:{index}:{action or 'missing'}"
+            entry.update({"ok": False, "failure": failure, "error": str(exc)[-500:]})
+            evidence.append(entry)
+            return False, failure, evidence
+        evidence.append(entry)
+    return True, "", evidence
+
+
 def _run_web_browser_target(target: dict[str, Any], manifest_dir: Path, env: dict[str, str]) -> dict[str, Any]:
     required = bool(target.get("required", True))
     sync_playwright = _load_playwright()
@@ -339,6 +411,7 @@ def _run_web_browser_target(target: dict[str, Any], manifest_dir: Path, env: dic
     html_path = evidence_dir / "page.html"
     trace_path = evidence_dir / "trace.zip"
     expectations = target.get("expect") if isinstance(target.get("expect"), list) else []
+    flow_steps = target.get("flow") if isinstance(target.get("flow"), list) else []
     timeout_ms = int(target.get("timeout_seconds") or 30) * 1000
 
     try:
@@ -351,6 +424,9 @@ def _run_web_browser_target(target: dict[str, Any], manifest_dir: Path, env: dic
             page.goto(url, wait_until=str(target.get("wait_until") or "networkidle"), timeout=timeout_ms)
             ok, failure, expectation_evidence = _check_page_expectations(page, expectations)
             evidence.extend(expectation_evidence)
+            if ok and flow_steps:
+                ok, failure, flow_evidence = _run_browser_flow_steps(page, origin=origin, steps=flow_steps, evidence_dir=evidence_dir)
+                evidence.extend(flow_evidence)
             page.screenshot(path=str(screenshot_path), full_page=True)
             html_path.write_text(page.content(), encoding="utf-8")
             if bool(target.get("trace", True)):
