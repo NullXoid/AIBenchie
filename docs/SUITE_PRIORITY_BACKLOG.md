@@ -43,7 +43,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Resource bloat guardrails | GREEN / BACKEND PROOF | Budgets, generated-output policy, strict runtime evidence validation, and NullBridge-generated Resource Manager evidence prove leases, cleanup, retention, and pressure snapshots. | Show as complete when backend-generated evidence passes `--resource-budget --resource-manager-require-runtime`. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, unknown-service rejection, JWT audience binding, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
 
-## Ranked Next Work
+## Ranked Stabilization Work
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
@@ -56,6 +56,8 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | 7 | Notification system through NullBridge | 345 | Proof aware | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; EchoLabs Ops/readiness now consume notification proof, flag private-material persistence, and keep route-only installs in warning state. |
 | 8 | AIBenchie deploy add-on | 295 | Evidence surfaced | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; EchoLabs exposes it as an admin-only manifest, readiness gate, and public-safe release evidence card. |
 | 9 | Docker support documentation | 210 | Guarded | Website/docs mark Docker as coming soon, explicitly not supported yet, with constraints, non-goals, future AIBenchie gate acceptance criteria, and a regression test blocking tracked Docker entrypoints before the gate is ready. |
+
+Current state: all ranked stabilization work above is implemented and covered by the suite release gate. Future work should be added as a new scored row instead of reusing these completed rows.
 
 ## Paused Automation Pickup
 
@@ -81,9 +83,10 @@ Current implementation:
 - The target builds EchoLabs with the local embedded app flag, serves static output with SPA fallback, can serve target-scoped mock API/SSE routes, opens `/nullxoid`, verifies the chat composer, sends a mocked NullXoid chat through `/chat/stream`, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
 - Playwright is pinned in the Python requirements; the configured runner has executed the full UX lane with web command, browser, Android, and desktop targets passing while capturing screenshot, HTML, and trace evidence.
 
-Next implementation:
+Maintenance:
 
 - Keep existing command targets as compatibility gates; the browser target adds real user-flow coverage without replacing platform release gates.
+- If the web UX flow changes, update the `web-browser-ux` selectors, mock routes, and expected release-evidence text in the Universal E2E manifest together.
 
 Acceptance:
 
@@ -103,7 +106,7 @@ Encryption usually adds CPU overhead. It can still improve whole-system efficien
 - Use platform crypto primitives where possible instead of custom production crypto.
 - Do not claim encryption makes raw inference faster. The performance benefit should be framed as safer storage, bounded sync, and less repeated network or disk work.
 
-## Immediate Next Recommendation
+## Current Release Posture
 
 Native passkey/OIDC ceremony wiring is implemented and gated. Real provider values and physical Android Credential Manager enrollment proof have passed through AIBenchie without moving tokens into frontend-accessible storage.
 
