@@ -83,8 +83,13 @@ python aibenchie_local.py --resource-budget --resource-manager-evidence path/to/
 The runtime evidence must prove:
 
 - leases are approved and bounded by duration, memory, cleanup, and profile caps
+- every lease has a unique id, known profile, capability, and trace id
+- heavy work requires a lease
+- missing, expired, mismatched, and over-parallel leases are denied
 - cleanup is enabled and has recent success evidence
 - expired leases and temporary artifacts are cleaned up
+- cleanup emits an audit event
 - pressure snapshots are low/normal/ready, not high/critical/blocked
-- active leases do not exceed profile parallelism
+- pressure snapshots include a sample time, known profile, active leases, and queued jobs
+- active leases and queued jobs do not exceed profile parallelism
 - no tokens, client secrets, private keys, or service credentials are present

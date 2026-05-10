@@ -258,6 +258,10 @@ def _int_or_none(value: Any) -> int | None:
         return None
 
 
+def _nonempty_string(value: Any) -> bool:
+    return bool(str(value or "").strip())
+
+
 def validate_runtime_evidence(path: str | Path | None, *, require_runtime: bool = False) -> dict[str, Any]:
     evidence_path = _resolve_runtime_evidence_path(path)
     checks: list[dict[str, Any]] = []
@@ -287,15 +291,34 @@ def validate_runtime_evidence(path: str | Path | None, *, require_runtime: bool 
     checks.append(_check("runtime.secret_keys_absent", not forbidden, "forbidden_secret_keys_present", paths=forbidden))
 
     profiles = payload.get("profiles") if isinstance(payload.get("profiles"), dict) else {}
+    checks.append(_check("runtime.profiles", bool(profiles), "missing_profiles"))
+
+    enforcement = payload.get("enforcement")
+    if not isinstance(enforcement, dict):
+        checks.append(_check("runtime.enforcement", False, "missing_enforcement_proof"))
+    else:
+        required_enforcement = {
+            "lease_required_for_heavy_work": "heavy_work_without_lease_not_blocked",
+            "missing_lease_denied": "missing_lease_not_denied",
+            "expired_lease_denied": "expired_lease_not_denied",
+            "mismatched_lease_denied": "mismatched_lease_not_denied",
+            "parallel_limit_denied": "parallel_limit_not_denied",
+        }
+        for key, failure in required_enforcement.items():
+            checks.append(_check(f"runtime.enforcement.{key}", enforcement.get(key) is True, failure))
+
     leases = payload.get("leases")
     if not isinstance(leases, list) or not leases:
         checks.append(_check("runtime.leases", False, "missing_leases"))
     else:
         checks.append(_check("runtime.leases", True, count=len(leases)))
+        seen_lease_ids: set[str] = set()
         for index, lease in enumerate(leases):
             if not isinstance(lease, dict):
                 checks.append(_check(f"runtime.leases[{index}]", False, "lease_must_be_object"))
                 continue
+            lease_id = str(lease.get("id") or "").strip()
+            capability = str(lease.get("capability") or "").strip()
             profile_name = str(lease.get("profile") or "")
             profile = profiles.get(profile_name) if isinstance(profiles.get(profile_name), dict) else {}
             max_profile_seconds = _int_or_none(profile.get("max_lease_seconds")) or 0
@@ -304,6 +327,13 @@ def validate_runtime_evidence(path: str | Path | None, *, require_runtime: bool 
             duration = _int_or_none(lease.get("max_duration_seconds"))
             memory = _int_or_none(lease.get("max_memory_mb"))
             cleanup_after = _int_or_none(lease.get("cleanup_after_seconds"))
+            checks.append(_check(f"runtime.leases[{index}].id", bool(lease_id), "lease_id_missing"))
+            checks.append(_check(f"runtime.leases[{index}].id_unique", bool(lease_id) and lease_id not in seen_lease_ids, "lease_id_duplicate", lease_id=lease_id))
+            if lease_id:
+                seen_lease_ids.add(lease_id)
+            checks.append(_check(f"runtime.leases[{index}].capability", bool(capability), "lease_capability_missing"))
+            checks.append(_check(f"runtime.leases[{index}].profile", profile_name in profiles, "lease_profile_unknown", profile=profile_name))
+            checks.append(_check(f"runtime.leases[{index}].trace_id", _nonempty_string(lease.get("trace_id")), "lease_trace_id_missing"))
             checks.append(_check(f"runtime.leases[{index}].approved", lease.get("approved") is True, "lease_must_be_approved"))
             checks.append(_check(f"runtime.leases[{index}].duration", duration is not None and duration > 0 and (not max_profile_seconds or duration <= max_profile_seconds), "lease_duration_unbounded", duration=duration, max=max_profile_seconds))
             checks.append(_check(f"runtime.leases[{index}].memory", memory is not None and memory > 0 and (not max_profile_memory or memory <= max_profile_memory), "lease_memory_unbounded", memory=memory, max=max_profile_memory))
@@ -317,6 +347,7 @@ def validate_runtime_evidence(path: str | Path | None, *, require_runtime: bool 
         checks.append(_check("runtime.cleanup.last_success_at", bool(str(cleanup.get("last_success_at") or "").strip()), "cleanup_success_missing"))
         deleted_expired = _int_or_none(cleanup.get("deleted_expired_leases"))
         checks.append(_check("runtime.cleanup.deleted_expired_leases", deleted_expired is not None and deleted_expired >= 0, "cleanup_deleted_count_invalid"))
+        checks.append(_check("runtime.cleanup.audit_event_recorded", cleanup.get("audit_event_recorded") is True, "cleanup_audit_missing"))
 
     pressure = payload.get("pressure")
     if not isinstance(pressure, dict):
@@ -324,10 +355,14 @@ def validate_runtime_evidence(path: str | Path | None, *, require_runtime: bool 
     else:
         level = str(pressure.get("level") or "").lower()
         checks.append(_check("runtime.pressure.level", level in {"low", "normal", "ok", "ready"}, "pressure_not_safe", level=level))
+        checks.append(_check("runtime.pressure.sampled_at", _nonempty_string(pressure.get("sampled_at")), "pressure_sample_missing"))
         active_leases = _int_or_none(pressure.get("active_leases"))
+        queued_jobs = _int_or_none(pressure.get("queued_jobs"))
         pressure_profile = profiles.get(str(pressure.get("profile") or "")) if isinstance(profiles.get(str(pressure.get("profile") or "")), dict) else {}
         max_parallel = _int_or_none(pressure_profile.get("max_parallel_jobs")) or 0
+        checks.append(_check("runtime.pressure.profile", str(pressure.get("profile") or "") in profiles, "pressure_profile_unknown", profile=pressure.get("profile")))
         checks.append(_check("runtime.pressure.active_leases", active_leases is not None and active_leases >= 0 and (not max_parallel or active_leases <= max_parallel), "active_leases_above_profile", active=active_leases, max=max_parallel))
+        checks.append(_check("runtime.pressure.queued_jobs", queued_jobs is not None and queued_jobs >= 0 and (not max_parallel or queued_jobs <= max_parallel), "queued_jobs_above_profile", queued=queued_jobs, max=max_parallel))
 
     return {
         "ok": all(check["ok"] for check in checks),

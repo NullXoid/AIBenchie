@@ -21,11 +21,19 @@
       "trace_id": "trace_example"
     }
   ],
+  "enforcement": {
+    "lease_required_for_heavy_work": true,
+    "missing_lease_denied": true,
+    "expired_lease_denied": true,
+    "mismatched_lease_denied": true,
+    "parallel_limit_denied": true
+  },
   "cleanup": {
     "enabled": true,
     "last_success_at": "REPLACE_WITH_ISO8601_TIME",
     "deleted_expired_leases": 0,
-    "deleted_temp_artifacts": 0
+    "deleted_temp_artifacts": 0,
+    "audit_event_recorded": true
   },
   "pressure": {
     "profile": "ct400-wrapper",
