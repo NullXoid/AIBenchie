@@ -596,7 +596,7 @@ def _target_result(target: dict[str, Any], status: str, failure: str, evidence: 
     }
 
 
-def _run_target(target: dict[str, Any], manifest_dir: Path, env: dict[str, str]) -> dict[str, Any]:
+def _run_target_once(target: dict[str, Any], manifest_dir: Path, env: dict[str, str]) -> dict[str, Any]:
     adapter = str(target.get("adapter") or target.get("type") or "").strip().lower()
     if adapter in {"http", "api"}:
         return _run_http_target(target)
@@ -607,6 +607,42 @@ def _run_target(target: dict[str, Any], manifest_dir: Path, env: dict[str, str])
     if adapter in {"manual", "adb", "desktop"}:
         return _run_manual_target(target)
     return _target_result(target, "fail", f"unknown_adapter:{adapter}", [])
+
+
+def _run_target(target: dict[str, Any], manifest_dir: Path, env: dict[str, str]) -> dict[str, Any]:
+    retries = max(0, int(target.get("retries") or target.get("retry_count") or 0))
+    failed_attempts: list[dict[str, Any]] = []
+    for attempt in range(retries + 1):
+        result = _run_target_once(target, manifest_dir, env)
+        if result.get("ok"):
+            if failed_attempts:
+                result.setdefault("evidence", []).insert(
+                    0,
+                    {
+                        "kind": "target_retry_summary",
+                        "passed_attempt": attempt + 1,
+                        "failed_attempts": failed_attempts,
+                    },
+                )
+            return result
+        failed_attempts.append(
+            {
+                "attempt": attempt + 1,
+                "status": result.get("status", "fail"),
+                "failure": result.get("failure", ""),
+            }
+        )
+
+    if failed_attempts:
+        result.setdefault("evidence", []).insert(
+            0,
+            {
+                "kind": "target_retry_summary",
+                "passed_attempt": None,
+                "failed_attempts": failed_attempts,
+            },
+        )
+    return result
 
 
 def run_universal_e2e(

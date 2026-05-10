@@ -114,6 +114,48 @@ def test_universal_e2e_missing_backend_fails_fast(tmp_path):
     assert result["lanes"][0]["targets"][0]["failure"] == "missing_base_url"
 
 
+def test_universal_e2e_retries_flaky_target_once(monkeypatch, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "retry-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "flaky-browser",
+                                "adapter": "web_browser",
+                                "required": True,
+                                "retries": 1,
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    attempts = {"count": 0}
+
+    def fake_run_once(target, _manifest_dir, _env):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            return universal_e2e._target_result(target, "fail", "browser_step_failed:3:expect_text", [])
+        return universal_e2e._target_result(target, "pass", "", [])
+
+    monkeypatch.setattr(universal_e2e, "_run_target_once", fake_run_once)
+
+    result = universal_e2e.run_universal_e2e(manifest, lanes=["ux"]).as_dict()
+    target = result["lanes"][0]["targets"][0]
+
+    assert result["ok"] is True
+    assert attempts["count"] == 2
+    assert target["status"] == "pass"
+    assert target["evidence"][0]["kind"] == "target_retry_summary"
+    assert target["evidence"][0]["failed_attempts"][0]["failure"] == "browser_step_failed:3:expect_text"
+
+
 def test_universal_e2e_command_adapter(monkeypatch, tmp_path):
     manifest = tmp_path / "manifest.json"
     manifest.write_text(
