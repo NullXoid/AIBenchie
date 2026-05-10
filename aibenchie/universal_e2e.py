@@ -229,8 +229,55 @@ def _artifact_dir(target: dict[str, Any], manifest_dir: Path) -> Path:
 
 
 class _QuietStaticHandler(SimpleHTTPRequestHandler):
+    mock_routes: list[dict[str, Any]] = []
+
     def log_message(self, *_args):  # noqa: D401 - stdlib hook
         return
+
+    def _mock_route(self, method: str) -> dict[str, Any] | None:
+        request_path = urllib.parse.urlsplit(self.path).path
+        candidate_paths = [request_path]
+        if request_path.startswith("/nullxoid/"):
+            candidate_paths.append(request_path[len("/nullxoid"):])
+        for route in self.mock_routes:
+            if not isinstance(route, dict):
+                continue
+            route_method = str(route.get("method") or "GET").strip().upper()
+            route_path = str(route.get("path") or "").strip()
+            if route_method == method.upper() and route_path in candidate_paths:
+                return route
+        return None
+
+    def _send_mock_route(self, route: dict[str, Any]) -> None:
+        body = route.get("body", "")
+        if isinstance(body, (dict, list)):
+            content_type = str(route.get("content_type") or "application/json")
+            body_text = json.dumps(body)
+        else:
+            content_type = str(route.get("content_type") or "text/plain; charset=utf-8")
+            body_text = str(body)
+        body_bytes = body_text.encode("utf-8")
+        self.send_response(int(route.get("status") or 200))
+        self.send_header("Content-Type", content_type)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body_bytes)))
+        self.end_headers()
+        self.wfile.write(body_bytes)
+
+    def do_GET(self):  # noqa: N802 - stdlib hook
+        route = self._mock_route("GET")
+        if route:
+            self._send_mock_route(route)
+            return
+        return super().do_GET()
+
+    def do_POST(self):  # noqa: N802 - stdlib hook
+        route = self._mock_route("POST")
+        if route:
+            self._send_mock_route(route)
+            return
+        self.send_response(404)
+        self.end_headers()
 
     def send_head(self):  # noqa: D401 - stdlib hook
         requested_path = Path(self.translate_path(urllib.parse.urlsplit(self.path).path))
@@ -240,8 +287,13 @@ class _QuietStaticHandler(SimpleHTTPRequestHandler):
         return super().send_head()
 
 
-def _start_static_server(directory: Path) -> tuple[ThreadingHTTPServer, Thread, str]:
-    handler = partial(_QuietStaticHandler, directory=str(directory))
+def _start_static_server(directory: Path, mock_routes: list[dict[str, Any]] | None = None) -> tuple[ThreadingHTTPServer, Thread, str]:
+    handler_class = type(
+        "UniversalE2EStaticHandler",
+        (_QuietStaticHandler,),
+        {"mock_routes": mock_routes or []},
+    )
+    handler = partial(handler_class, directory=str(directory))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -404,7 +456,8 @@ def _run_web_browser_target(target: dict[str, Any], manifest_dir: Path, env: dic
     if not serve_dir.exists():
         return _target_result(target, "fail" if required else "skip", "serve_dir_missing", evidence)
 
-    server, thread, origin = _start_static_server(serve_dir)
+    mock_routes = target.get("mock_routes") if isinstance(target.get("mock_routes"), list) else []
+    server, thread, origin = _start_static_server(serve_dir, mock_routes)
     path = str(target.get("path") or "/").strip() or "/"
     url = _join_url(origin, path)
     screenshot_path = evidence_dir / "screenshot.png"

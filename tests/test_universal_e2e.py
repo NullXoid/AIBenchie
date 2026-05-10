@@ -513,6 +513,46 @@ def test_universal_e2e_static_server_supports_spa_fallback(tmp_path):
     assert "NullXoid shell" in text
 
 
+def test_universal_e2e_static_server_supports_mock_routes(tmp_path):
+    site = tmp_path / "dist"
+    site.mkdir()
+    (site / "index.html").write_text("<main>NullXoid shell</main>", encoding="utf-8")
+    server, thread, origin = universal_e2e._start_static_server(
+        site,
+        [
+            {
+                "method": "POST",
+                "path": "/chat/stream",
+                "content_type": "text/event-stream",
+                "body": 'event: token\ndata: {"delta":"AIBenchie browser mock response"}\n\n',
+            },
+            {
+                "method": "GET",
+                "path": "/health/features",
+                "body": {"ok": True, "features": {"chat_stream": True}},
+            },
+        ],
+    )
+    try:
+        request = urllib.request.Request(f"{origin}/chat/stream", data=b"{}", method="POST")
+        with urllib.request.urlopen(request, timeout=5) as response:
+            stream_text = response.read().decode("utf-8")
+            stream_type = response.headers.get("Content-Type")
+        mounted_request = urllib.request.Request(f"{origin}/nullxoid/chat/stream", data=b"{}", method="POST")
+        with urllib.request.urlopen(mounted_request, timeout=5) as response:
+            mounted_stream_text = response.read().decode("utf-8")
+        with urllib.request.urlopen(f"{origin}/health/features", timeout=5) as response:
+            features = json.loads(response.read().decode("utf-8"))
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+    assert "AIBenchie browser mock response" in stream_text
+    assert "AIBenchie browser mock response" in mounted_stream_text
+    assert stream_type == "text/event-stream"
+    assert features["features"]["chat_stream"] is True
+
+
 def test_universal_e2e_cli_outputs_json_and_optional_output_file(monkeypatch, capsys, tmp_path):
     class FakeResult:
         def as_dict(self):
