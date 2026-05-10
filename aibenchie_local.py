@@ -24,6 +24,7 @@ from aibenchie.secure_signin_setup import run_from_env as run_secure_signin_setu
 from aibenchie.suite_security import run_suite_security_check
 from aibenchie.suite_security_privacy import run_from_env as run_suite_security_privacy_from_env
 from aibenchie.suite_test_catalog import run_suite_tests_from_env
+from aibenchie.universal_e2e import run_universal_e2e
 from aibenchie.zero_knowledge_devices import run_zero_knowledge_device_lifecycle_proof
 
 
@@ -177,6 +178,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run AIBenchie's master suite test catalog across configured suite repositories.",
     )
     parser.add_argument(
+        "--universal-e2e",
+        action="store_true",
+        help="Run manifest-driven universal API/UX E2E checks.",
+    )
+    parser.add_argument(
+        "--universal-e2e-manifest",
+        default="",
+        help="JSON/YAML manifest path for --universal-e2e.",
+    )
+    parser.add_argument(
+        "--universal-e2e-lane",
+        action="append",
+        default=[],
+        help="Run one E2E lane from the manifest. Repeat for multiple lanes, or use all.",
+    )
+    parser.add_argument(
         "--suite-test-target",
         action="append",
         default=[],
@@ -228,6 +245,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Deny route: HTTP {result['deny']['status']}")
             print(f"Secrets persisted: {result['secrets_persisted']}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.universal_e2e:
+        if not args.universal_e2e_manifest:
+            failure = {"ok": False, "verdict": "fail", "failure": "missing_universal_e2e_manifest"}
+            print(json.dumps(failure, indent=2) if args.json else "Result: FAIL (missing universal E2E manifest)")
+            return 1
+        result = run_universal_e2e(args.universal_e2e_manifest, lanes=args.universal_e2e_lane).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print(f"Universal E2E: {result['suite_id']}")
+            print(f"Verdict: {result['verdict'].upper()}")
+            for lane in result["lanes"]:
+                print(f"- {lane['id']}: {'PASS' if lane['ok'] else 'FAIL'}")
         return 0 if result["ok"] else 1
 
     if args.notification_smoke:

@@ -126,6 +126,15 @@ AIBenchie owns the release verdict and suite-wide test catalog. NullBridge, Null
 
 Wiring the NullBridge trust and notification gates into the broader suite verdict makes signed service identity, deny-by-default routing, and redacted audit behavior release-blocking. That benefits the project because a single verdict can catch cross-repo regressions before publish, prove implementation and policy together, and preserve repeatable evidence instead of relying on manual retesting.
 
+Run the standalone Universal E2E foundation:
+
+```powershell
+$env:AIBENCHIE_BACKEND_URL="http://127.0.0.1:8090"
+python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echolabs_universal_e2e.json --universal-e2e-lane api --json
+```
+
+Universal E2E separates API contract checks from UX workflow checks while keeping one manifest and one verdict format. See [docs/UNIVERSAL_E2E.md](docs/UNIVERSAL_E2E.md).
+
 Run the release-blocking NullPrivacy E2EE readiness gate:
 
 ```powershell

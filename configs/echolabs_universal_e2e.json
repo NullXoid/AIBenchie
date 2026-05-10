@@ -1,0 +1,60 @@
+{
+  "schema": "aibenchie.universal-e2e.manifest.v1",
+  "id": "echolabs-suite",
+  "name": "EchoLabs Suite",
+  "lanes": {
+    "api": {
+      "name": "EchoLabs API E2E",
+      "type": "api",
+      "targets": [
+        {
+          "id": "hosted-backend",
+          "name": "Hosted or local backend",
+          "type": "http",
+          "adapter": "http",
+          "base_url": "${ENV:AIBENCHIE_BACKEND_URL:-}",
+          "required": true,
+          "timeout_seconds": 10,
+          "checks": [
+            {
+              "id": "health",
+              "path": "/health",
+              "expect_status": 200
+            },
+            {
+              "id": "aibenchie-greeting",
+              "path": "/api/aibenchie/greeting",
+              "expect_status": 200,
+              "expect_json": {
+                "ok": true,
+                "contract": "aibenchie.frontend-backend.v1"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ux": {
+      "name": "EchoLabs UX E2E",
+      "type": "ux",
+      "targets": [
+        {
+          "id": "web-ux",
+          "name": "Web user workflow",
+          "type": "playwright",
+          "adapter": "manual",
+          "required": false,
+          "notes": "Foundation placeholder. Replace with a Playwright adapter target when the web UX script is promoted."
+        },
+        {
+          "id": "android-ux",
+          "name": "Android user workflow",
+          "type": "adb",
+          "adapter": "manual",
+          "required": false,
+          "notes": "Foundation placeholder. Replace with an ADB/instrumentation target when the Android UX workflow is promoted."
+        }
+      ]
+    }
+  }
+}
