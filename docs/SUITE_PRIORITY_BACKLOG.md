@@ -54,7 +54,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | 5 | Backend Operations UI v1 | 390 | Resource proof aware | EchoLabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, Resource Manager runtime proof, runtime status, and notifications without exposing secrets. |
 | 6 | AIBenchie website scoreboard and release evidence display | 365 | Evidence cards ready | Website consumes public-safe scoreboard and release evidence exports, then shows latest valid score per class/test, overall score, release details, progress bars, and trust/privacy/notification/resource evidence cards. |
 | 7 | Notification system through NullBridge | 345 | Proof aware | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; EchoLabs Ops/readiness now consume notification proof, flag private-material persistence, and keep route-only installs in warning state. |
-| 8 | AIBenchie deploy add-on | 295 | Foundation ready | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; EchoLabs exposes it as an admin-only add-on manifest. |
+| 8 | AIBenchie deploy add-on | 295 | Evidence surfaced | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; EchoLabs exposes it as an admin-only manifest, readiness gate, and public-safe release evidence card. |
 | 9 | Docker support documentation | 210 | Foundation ready | Website/docs mark Docker as coming soon, explicitly not supported yet, with constraints, non-goals, and future AIBenchie gate acceptance criteria. |
 
 ## Paused Automation Pickup
