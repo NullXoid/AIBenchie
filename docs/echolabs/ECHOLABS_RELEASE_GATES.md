@@ -18,6 +18,14 @@ The Universal E2E verdict is written beside it:
 _validation/aibenchie_universal_e2e_latest.json
 ```
 
+To explicitly verify the public hosted API route, run:
+
+```powershell
+.\scripts\echolabs_hosted_api_e2e.ps1
+```
+
+That wrapper sets `AIBENCHIE_BACKEND_URL` to `https://api.echolabs.diy/nullxoid` unless overridden and writes `_validation/aibenchie_hosted_api_e2e_latest.json`.
+
 The script auto-detects the parent workspace when AIBenchie is checked out next to the EchoLabs repos. Use `-SuiteRoot` for a different layout:
 
 ```powershell
