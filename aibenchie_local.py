@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 from aibenchie.local_ollama import DEFAULT_OLLAMA_URL, benchmark_ollama_model, list_ollama_models, model_name
+from aibenchie.auth_provider_config import run_from_env as run_auth_provider_config_from_env
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullbridge_platform_adapters import run_from_env as run_nullbridge_platform_adapters_from_env
 from aibenchie.nullprivacy import run_e2ee_storage_proof
@@ -224,6 +225,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--secure-signin-setup",
         action="store_true",
         help="Run secure sign-in setup policy, Android UI, wrapper feature, and hosted route gates.",
+    )
+    parser.add_argument(
+        "--auth-provider-config",
+        action="store_true",
+        help="Run passkey/OIDC provider configuration contract checks.",
+    )
+    parser.add_argument(
+        "--auth-provider-config-require-real",
+        action="store_true",
+        help="Require non-template passkey/OIDC provider values for --auth-provider-config.",
     )
     parser.add_argument(
         "--nullbridge-platform-adapters",
@@ -657,6 +668,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Android repo: {result['android_repo']}")
             print(f"Wrapper repo: {result['wrapper_repo']}")
             print(f"Public API: {result['public_api']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.auth_provider_config:
+        if args.auth_provider_config_require_real:
+            import os
+
+            os.environ["AIBENCHIE_AUTH_PROVIDER_CONFIG_REQUIRE_REAL"] = "1"
+        result = run_auth_provider_config_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("EchoLabs Auth Provider Configuration Gate")
+            print(f"Config: {result['config_path']}")
+            print(f"Template: {result['template']}")
+            print(f"Require real values: {result['require_real']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")

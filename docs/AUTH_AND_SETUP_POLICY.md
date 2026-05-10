@@ -20,6 +20,8 @@ The preferred user sign-in path is passkeys.
 
 OIDC Authorization Code with PKCE is allowed for teams that already use an identity provider. Password fallback is migration-only and must require MFA for administrative accounts.
 
+Provider configuration is validated as a public-safe contract in `configs/echolabs_auth_provider_config.example.json`. Real provider values must live in deployment secret storage or ignored local add-ons. AIBenchie may validate those real values through `AIBENCHIE_AUTH_PROVIDER_CONFIG`, but it must not commit OIDC secrets, release signing material, or personal credentials.
+
 AIBenchie must fail a release or deploy gate if it finds:
 
 - frontend NullBridge service credentials

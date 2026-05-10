@@ -1,0 +1,45 @@
+{
+  "schema": "echolabs.auth-provider-config.v1",
+  "template": true,
+  "product": "EchoLabs Suite",
+  "passkey": {
+    "rp_id": "api.echolabs.diy",
+    "origin": "https://api.echolabs.diy",
+    "assetlinks_url": "https://api.echolabs.diy/.well-known/assetlinks.json",
+    "android_package": "com.nullxoid.android",
+    "relations": [
+      "delegate_permission/common.get_login_creds"
+    ],
+    "android_sha256_fingerprints": [
+      "REPLACE_WITH_RELEASE_SHA256_FINGERPRINT"
+    ]
+  },
+  "oidc": {
+    "issuer": "https://REPLACE_WITH_OIDC_ISSUER",
+    "client_id": "REPLACE_WITH_OIDC_PUBLIC_CLIENT_ID",
+    "redirect_uri": "nullxoid://auth/oidc/callback",
+    "flow": "authorization_code_pkce",
+    "pkce_required": true,
+    "client_secret_allowed": false,
+    "scopes": [
+      "openid",
+      "profile",
+      "email"
+    ]
+  },
+  "deployment_setup": {
+    "store_values_in": "deployment_secret_store_or_ignored_local_addon",
+    "publish_assetlinks_to": "/.well-known/assetlinks.json",
+    "env_names": [
+      "NULLXOID_AUTH_PASSKEY_RP_ID",
+      "NULLXOID_AUTH_PASSKEY_ORIGIN",
+      "NULLXOID_AUTH_OIDC_ISSUER",
+      "NULLXOID_AUTH_OIDC_CLIENT_ID"
+    ],
+    "forbidden": [
+      "frontend client secrets",
+      "tokens in URLs",
+      "tracked personal provider credentials"
+    ]
+  }
+}

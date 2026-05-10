@@ -25,6 +25,7 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Zero-knowledge setup UI v1 | Done | Wrapper Privacy/Security panel can initialize a device, show a recovery kit, approve a Companion device, recover, revoke, rotate the recovery kit, and expose redacted audit evidence |
 | Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.echolabs.diy/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
 | Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, hosted JSON route behavior, and configured-provider Android Digital Asset Links |
+| Passkey/OIDC provider configuration foundation | Done | Public-safe provider config template, validation gate, and real-value enforcement mode exist without committing secrets |
 
 ## Visual Status Tracks
 
@@ -37,6 +38,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Zero-knowledge setup UI | GREEN / V1 GATED | Guided browser UI exists for approving devices, exporting recovery kits, recovery unlock, revocation, and redacted audit evidence. | Show as complete for v1 when wrapper `npm run test:e2ee` and AIBenchie suite tests pass. |
 | Android/Companion remote profile | GREEN / GATED | Mobile/off-network profile uses the public HTTPS API route and passes AIBenchie remote backend checks. | Show as complete when `--companion-remote-backend` and Android unit tests pass. |
 | Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, backend auth capabilities are advertised as JSON, and configured Android passkey providers require valid Digital Asset Links. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
+| Passkey/OIDC provider config | BLUE / FOUNDATION READY | AIBenchie has a public-safe config contract and can enforce real passkey/OIDC values from ignored deployment config. | Show as green only after real provider values pass `--auth-provider-config --auth-provider-config-require-real` and physical Android passkey enrollment is proven. |
 | Universal E2E real UX adapters | BLUE / FOUNDATION READY | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop. Browser/user automation is paused at the Playwright-style adapter step. | Show as in progress until a Playwright web workflow runs through `--universal-e2e-lane ux` and captures artifacts. |
 | Resource bloat guardrails | YELLOW / PARTIAL | Budgets and generated-output policy exist, but runtime lease enforcement is not complete. | Show as partial until leases and cleanup jobs are enforced. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
@@ -46,7 +48,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
 | 1 | Universal E2E Playwright web UX adapter | 470 | Planned / paused | Resume AIBenchie at the Playwright-style step: open EchoLabs in a browser, run a real user workflow, capture screenshot/artifact evidence, and emit it through the existing Universal E2E verdict. |
-| 2 | Passkey/OIDC provider configuration | 455 | Planned | Configure real WebAuthn/OIDC provider settings and publish Android Digital Asset Links for the passkey RP domain. |
+| 2 | Passkey/OIDC provider configuration | 455 | Foundation ready | Configure real WebAuthn/OIDC provider settings and publish Android Digital Asset Links for the passkey RP domain. |
 | 3 | NullBridge trust fabric hardening | 440 | Partial | Signed backend identity, deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 4 | Resource Manager v1 runtime enforcement | 420 | Partial | Backend leases, cleanup jobs, retention caps, pressure alerts, and no unbounded heavy work. |
 | 5 | Backend Operations UI v1 | 390 | Planned | Read-only UI shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
@@ -100,6 +102,12 @@ Encryption usually adds CPU overhead. It can still improve whole-system efficien
 ## Immediate Next Recommendation
 
 Native passkey/OIDC ceremony wiring is now implemented and gated. The next auth gap is configuring real providers behind those endpoints without moving tokens into frontend-accessible storage.
+
+Foundation now exists:
+
+- `configs/echolabs_auth_provider_config.example.json` documents the public-safe provider contract.
+- `python aibenchie_local.py --auth-provider-config --json` validates the tracked template.
+- `python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --json` enforces non-template deployment values from `AIBENCHIE_AUTH_PROVIDER_CONFIG`.
 
 Acceptance:
 

@@ -244,6 +244,21 @@ This gate proves the setup boundary for easy secure sign-in: AIBenchie validates
 
 When `/health/features` reports that the hosted passkey provider is configured, this gate also requires Android Digital Asset Links at `/.well-known/assetlinks.json` on the passkey RP origin. The statement must bind `com.nullxoid.android` to `delegate_permission/common.get_login_creds` with valid release signing SHA-256 fingerprints. After that passes, physical Android testing is required to prove Credential Manager enrollment on a real device.
 
+Run the provider configuration contract when preparing real passkey/OIDC settings:
+
+```powershell
+python aibenchie_local.py --auth-provider-config --json
+```
+
+The tracked template lives at `configs/echolabs_auth_provider_config.example.json`. It is public-safe and contains placeholders only. When production values are ready, point `AIBENCHIE_AUTH_PROVIDER_CONFIG` at an ignored config file and enforce real values:
+
+```powershell
+$env:AIBENCHIE_AUTH_PROVIDER_CONFIG="path\to\ignored-auth-provider-config.json"
+python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --json
+```
+
+See `docs/AUTH_PROVIDER_CONFIGURATION.md` for the passkey RP, Android Digital Asset Links, and OIDC PKCE requirements.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell
