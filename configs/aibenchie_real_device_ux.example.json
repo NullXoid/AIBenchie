@@ -1,0 +1,46 @@
+{
+  "schema": "aibenchie.real-device-ux-proof.v1",
+  "template": true,
+  "proof_id": "example-android-real-device-ux",
+  "platform": "android",
+  "device": {
+    "manufacturer": "Example",
+    "model": "Example device",
+    "os_version": "Android 16",
+    "device_id_hash": "0123456789abcdef0123456789abcdef"
+  },
+  "app": {
+    "package": "com.nullxoid.android",
+    "version": "0.0.0-example",
+    "build_type": "release"
+  },
+  "environment": {
+    "base_url": "https://api.echolabs.diy/nullxoid",
+    "network": "real-device"
+  },
+  "workflows": [
+    {
+      "id": "signin",
+      "name": "Native passkey sign-in",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "manual_observation",
+          "summary": "Credential Manager sign-in completed without exposing session material."
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "name": "NullXoid chat response",
+      "status": "pass",
+      "evidence": [
+        {
+          "kind": "manual_observation",
+          "summary": "A user prompt returned a visible assistant response on the device."
+        }
+      ]
+    }
+  ],
+  "artifacts": []
+}

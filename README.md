@@ -272,6 +272,14 @@ python aibenchie_local.py --auth-provider-config --auth-provider-config-require-
 
 See `docs/AUTH_PROVIDER_CONFIGURATION.md` for the passkey RP, Android Digital Asset Links, OIDC PKCE, and physical-device proof requirements.
 
+Run a public-safe physical-device UX proof:
+
+```powershell
+python aibenchie_local.py --real-device-ux-proof .suite/local/aibenchie/android-real-device-ux.json --json
+```
+
+Use `configs/aibenchie_real_device_ux.example.json` as the template for ignored runtime evidence. The verifier rejects template proofs, raw device identifiers, token/session fields, unsafe artifact paths, failing workflows, and Android proofs that do not include both sign-in and chat workflows.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell

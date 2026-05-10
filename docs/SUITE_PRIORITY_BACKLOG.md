@@ -59,6 +59,12 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 Current state: all ranked stabilization work above is implemented and covered by the suite release gate. Future work should be added as a new scored row instead of reusing these completed rows.
 
+## Future Product / Release Lanes
+
+| Rank | Item | Score | Status | Completion target |
+| --- | --- | ---: | --- | --- |
+| F1 | Real-device UX proof gate | 360 | Foundation ready | Public-safe proof verifier validates physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; Android proofs require sign-in and chat workflows before they can count as release evidence. |
+
 ## Paused Automation Pickup
 
 ### Universal E2E Playwright Web UX Adapter

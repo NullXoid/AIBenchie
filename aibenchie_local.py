@@ -21,6 +21,7 @@ from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check,
 from aibenchie.docker_support import run_docker_support_gate
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
+from aibenchie.real_device_ux import validate_real_device_ux_proof
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
 from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
@@ -312,6 +313,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--docker-support",
         action="store_true",
         help="Run the Docker support boundary gate. Docker remains unsupported until this gate evolves and passes in supported mode.",
+    )
+    parser.add_argument(
+        "--real-device-ux-proof",
+        default="",
+        help="Validate a public-safe real-device UX proof JSON file.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -861,6 +867,21 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("AIBenchie Docker Support Boundary Gate")
             print(f"Status: {result['status']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.real_device_ux_proof:
+        result = validate_real_device_ux_proof(args.real_device_ux_proof).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Real-Device UX Proof")
+            print(f"Proof: {result['proof_path']}")
+            print(f"Platform: {result['platform']}")
+            print(f"Proof id: {result['proof_id']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")
