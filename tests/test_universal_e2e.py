@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -185,6 +186,162 @@ def test_universal_e2e_command_adapter_reports_missing_command(monkeypatch, tmp_
     assert result["lanes"][0]["targets"][0]["failure"] == "command_not_found"
 
 
+def test_universal_e2e_web_browser_adapter_skips_without_playwright(monkeypatch, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "browser-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "web-browser",
+                                "adapter": "web_browser",
+                                "required": False,
+                                "cwd": ".",
+                                "serve_dir": "dist",
+                                "path": "/",
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(universal_e2e, "_load_playwright", lambda: None)
+
+    result = universal_e2e.run_universal_e2e(manifest, lanes=["ux"]).as_dict()
+    target = result["lanes"][0]["targets"][0]
+
+    assert result["ok"] is True
+    assert target["status"] == "skip"
+    assert target["failure"] == "playwright_not_installed"
+
+
+def test_universal_e2e_web_browser_adapter_captures_artifacts(monkeypatch, tmp_path):
+    site = tmp_path / "dist"
+    site.mkdir()
+    (site / "index.html").write_text("<main>NullXoid <button>Ops</button></main>", encoding="utf-8")
+    manifest = tmp_path / "manifest.json"
+    evidence_dir = tmp_path / "evidence"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "browser-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "web-browser",
+                                "adapter": "web_browser",
+                                "required": True,
+                                "cwd": ".",
+                                "serve_dir": "dist",
+                                "path": "/",
+                                "evidence_dir": str(evidence_dir),
+                                "expect": [{"text": "NullXoid"}, {"text": "Ops"}],
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeLocator:
+        def wait_for(self, **_kwargs):
+            return None
+
+        @property
+        def first(self):
+            return self
+
+    class FakePage:
+        def goto(self, *_args, **_kwargs):
+            return None
+
+        def get_by_text(self, *_args, **_kwargs):
+            return FakeLocator()
+
+        def locator(self, *_args, **_kwargs):
+            return FakeLocator()
+
+        def screenshot(self, path, **_kwargs):
+            Path(path).write_bytes(b"fake screenshot")
+
+        def content(self):
+            return "<main>NullXoid <button>Ops</button></main>"
+
+    class FakeTracing:
+        def start(self, **_kwargs):
+            return None
+
+        def stop(self, path):
+            Path(path).write_bytes(b"fake trace")
+
+    class FakeContext:
+        tracing = FakeTracing()
+
+        def new_page(self):
+            return FakePage()
+
+    class FakeBrowser:
+        def new_context(self, **_kwargs):
+            return FakeContext()
+
+        def close(self):
+            return None
+
+    class FakeChromium:
+        def launch(self, **_kwargs):
+            return FakeBrowser()
+
+    class FakePlaywright:
+        chromium = FakeChromium()
+
+    class FakeSyncPlaywright:
+        def __call__(self):
+            return self
+
+        def __enter__(self):
+            return FakePlaywright()
+
+        def __exit__(self, *_args):
+            return False
+
+    monkeypatch.setattr(universal_e2e, "_load_playwright", lambda: FakeSyncPlaywright())
+
+    result = universal_e2e.run_universal_e2e(manifest, lanes=["ux"]).as_dict()
+    target = result["lanes"][0]["targets"][0]
+    artifact = target["evidence"][-1]
+
+    assert result["ok"] is True
+    assert target["status"] == "pass"
+    assert artifact["kind"] == "browser_artifact"
+    assert Path(artifact["screenshot"]).exists()
+    assert Path(artifact["html"]).read_text(encoding="utf-8").startswith("<main>NullXoid")
+    assert Path(artifact["trace"]).exists()
+
+
+def test_universal_e2e_static_server_supports_spa_fallback(tmp_path):
+    site = tmp_path / "dist"
+    site.mkdir()
+    (site / "index.html").write_text("<main>NullXoid shell</main>", encoding="utf-8")
+    server, thread, origin = universal_e2e._start_static_server(site)
+    try:
+        with urllib.request.urlopen(f"{origin}/nullxoid", timeout=5) as response:
+            text = response.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+
+    assert "NullXoid shell" in text
+
+
 def test_universal_e2e_cli_outputs_json_and_optional_output_file(monkeypatch, capsys, tmp_path):
     class FakeResult:
         def as_dict(self):
@@ -226,6 +383,10 @@ def test_echolabs_manifest_has_executable_ux_targets():
     assert targets["web-ux"]["adapter"] == "command"
     assert targets["web-ux"]["required"] is True
     assert targets["web-ux"]["command"] == ["npm", "run", "verify:nullxoid"]
+    assert targets["web-browser-ux"]["adapter"] == "web_browser"
+    assert targets["web-browser-ux"]["required"] is False
+    assert targets["web-browser-ux"]["path"] == "/nullxoid"
+    assert targets["web-browser-ux"]["build_command"] == ["npm", "run", "build"]
     assert targets["android-ux"]["adapter"] == "command"
     assert targets["android-ux"]["required"] is True
     assert targets["android-ux"]["command"] == [

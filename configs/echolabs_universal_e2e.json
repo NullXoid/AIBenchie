@@ -61,6 +61,25 @@
           "notes": "Runs the EchoLabs web shell build and NullXoid UI contract checks until the browser-driven Playwright adapter is promoted."
         },
         {
+          "id": "web-browser-ux",
+          "name": "Web browser workflow",
+          "type": "web",
+          "adapter": "web_browser",
+          "required": false,
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
+          "build_command": ["npm", "run", "build"],
+          "build_timeout_seconds": 240,
+          "serve_dir": "dist",
+          "path": "/nullxoid",
+          "timeout_seconds": 30,
+          "evidence_dir": "${ENV:AIBENCHIE_ECHOLABS_BROWSER_EVIDENCE:-../_validation/universal-e2e/web-browser-ux}",
+          "expect": [
+            { "text": "NullXoid" },
+            { "text": "Ops" }
+          ],
+          "notes": "Optional Playwright-style browser workflow. Captures screenshot, HTML, and trace evidence when Playwright is installed; skips cleanly on runners without the browser dependency."
+        },
+        {
           "id": "android-ux",
           "name": "Android user workflow",
           "type": "android",

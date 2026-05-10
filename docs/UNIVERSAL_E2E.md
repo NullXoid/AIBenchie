@@ -52,7 +52,7 @@ $env:AIBENCHIE_ECHOLABS_WEB_ROOT="C:\Users\kasom\projects\NullXoid-live"
 python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echolabs_universal_e2e.json --universal-e2e-lane ux --json
 ```
 
-The current EchoLabs UX lane runs the web shell build and NullXoid UI contract checks through `npm run verify:nullxoid`. This gives the standalone runner an executable user-surface gate before the browser-driven Playwright adapter is promoted.
+The EchoLabs UX lane keeps the web shell build and NullXoid UI contract checks through `npm run verify:nullxoid`, then adds an optional `web_browser` target for the Playwright-style browser workflow. When Playwright is installed, the browser target builds the web app, serves the static output, opens `/nullxoid`, verifies visible user-facing text, and captures screenshot, HTML, and trace evidence. When Playwright is not installed, the optional target skips cleanly and the existing command target remains the required compatibility gate.
 
 The same UX lane also runs the Android release gate through `scripts/android_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_ANDROID_ROOT` when the Android checkout is outside the default sibling `NullXoidAndroid` path.
 
@@ -100,10 +100,11 @@ Implemented now:
 - EchoLabs BridgeEcho/NullBridge API command target.
 - UX lane command/manual target foundation.
 - EchoLabs web UX command target.
+- Optional EchoLabs web browser UX target with screenshot, HTML, and trace evidence.
 - EchoLabs Android UX command target.
 - EchoLabs desktop UX command target.
 - Unified verdict with lane, target, evidence, and summary data.
 
-Next adapters should add Playwright, ADB, desktop automation, SSE/WebSocket streams, artifact capture, screenshot capture, and JUnit/HTML reporters without changing the manifest or verdict contract.
+Next adapters should add required Playwright runner packaging, ADB, desktop automation, SSE/WebSocket streams, broader artifact capture, and JUnit/HTML reporters without changing the manifest or verdict contract.
 
 The next paused implementation item is tracked in `docs/SUITE_PRIORITY_BACKLOG.md` under "Universal E2E Playwright Web UX Adapter" so automation can resume the browser UX work without chat context.

@@ -39,7 +39,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Android/Companion remote profile | GREEN / GATED | Mobile/off-network profile uses the public HTTPS API route and passes AIBenchie remote backend checks. | Show as complete when `--companion-remote-backend` and Android unit tests pass. |
 | Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, backend auth capabilities are advertised as JSON, and configured Android passkey providers require valid Digital Asset Links. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
 | Passkey/OIDC provider config | BLUE / FOUNDATION READY | AIBenchie has a public-safe config contract and can enforce real passkey/OIDC values from ignored deployment config. | Show as green only after real provider values pass `--auth-provider-config --auth-provider-config-require-real` and physical Android passkey enrollment is proven. |
-| Universal E2E real UX adapters | BLUE / FOUNDATION READY | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop. Browser/user automation is paused at the Playwright-style adapter step. | Show as in progress until a Playwright web workflow runs through `--universal-e2e-lane ux` and captures artifacts. |
+| Universal E2E real UX adapters | BLUE / FOUNDATION READY | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop plus an optional Playwright-style web browser target that captures screenshot/HTML/trace evidence when Playwright is installed. | Show as in progress until Playwright is packaged as a required runner dependency and the browser target is release-blocking. |
 | Resource bloat guardrails | YELLOW / PARTIAL | Budgets and generated-output policy exist, but runtime lease enforcement is not complete. | Show as partial until leases and cleanup jobs are enforced. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
 
@@ -47,7 +47,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| 1 | Universal E2E Playwright web UX adapter | 470 | Planned / paused | Resume AIBenchie at the Playwright-style step: open EchoLabs in a browser, run a real user workflow, capture screenshot/artifact evidence, and emit it through the existing Universal E2E verdict. |
+| 1 | Universal E2E Playwright web UX adapter | 470 | Foundation ready | Optional `web_browser` adapter builds EchoLabs, serves `/nullxoid`, verifies visible text, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict when Playwright is installed. |
 | 2 | Passkey/OIDC provider configuration | 455 | Foundation ready | Configure real WebAuthn/OIDC provider settings and publish Android Digital Asset Links for the passkey RP domain. |
 | 3 | NullBridge trust fabric hardening | 440 | Hardened / gated | Signed backend identity, explicit deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 4 | Resource Manager v1 runtime enforcement | 420 | Runtime leases gated | Backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and no unbounded heavy work. |
@@ -61,7 +61,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 ### Universal E2E Playwright Web UX Adapter
 
-Status: planned / paused.
+Status: foundation ready.
 
 Owner: AIBenchie.
 
@@ -74,17 +74,23 @@ Current foundation:
 - `scripts/echolabs_suite_release_gate.ps1` runs Universal E2E and persists `_validation/aibenchie_universal_e2e_latest.json`.
 - UX command targets currently cover web build/UI contracts, Android release gate, and desktop release gate.
 
+Current implementation:
+
+- `web_browser` adapter exists in `aibenchie/universal_e2e.py`.
+- `web-browser-ux` target exists in `configs/echolabs_universal_e2e.json`.
+- The target builds EchoLabs, serves static output with SPA fallback, opens `/nullxoid`, verifies visible text, and captures screenshot, HTML, and trace evidence when Playwright is installed.
+- If Playwright is missing, the target skips cleanly because the older `web-ux` command target remains the required compatibility gate.
+
 Next implementation:
 
-- Add a Playwright-style web adapter or command target that opens EchoLabs in a browser.
-- Exercise a real user flow: load app, confirm NullXoid Chat shell, type/send a prompt through a mocked or configured backend, verify a visible assistant result, open Canvas/CCC or release dashboard, and capture evidence.
-- Persist screenshots, traces, and target evidence in the Universal E2E verdict without changing `aibenchie.universal-e2e.verdict.v1`.
+- Package Playwright as a supported runner dependency and make `web-browser-ux` required.
+- Exercise a deeper real user flow: type/send a prompt through a mocked or configured backend, verify a visible assistant result, open Canvas/CCC or release dashboard, and capture evidence.
 - Keep existing command targets as compatibility gates; the Playwright target should add coverage rather than replacing the current build/contract gate immediately.
 
 Acceptance:
 
-- `python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echolabs_universal_e2e.json --universal-e2e-lane ux --json` runs the browser UX target successfully in a clean local checkout.
-- Failure output identifies the browser step, selector/action, screenshot or trace path, and target id.
+- `python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echolabs_universal_e2e.json --universal-e2e-lane ux --json` includes `web-browser-ux` in the verdict and either captures browser evidence or reports `playwright_not_installed` as an optional skip.
+- Failure output identifies the browser step, selector/action, screenshot or trace path when available, and target id.
 - `.\scripts\echolabs_suite_release_gate.ps1 -SkipWeb -SkipAndroid -SkipDesktop -SkipBridge` still writes `_validation/aibenchie_universal_e2e_latest.json`.
 - Existing API/UX command targets remain green.
 
