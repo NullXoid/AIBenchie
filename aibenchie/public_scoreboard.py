@@ -290,19 +290,19 @@ def _visual_tracks() -> list[dict[str, str]]:
         {
             "key": "zero_knowledge_privacy",
             "title": "Zero-knowledge privacy",
-            "visual_label": "PLANNED",
-            "result": "planned",
+            "visual_label": "GREEN / V1 GATED",
+            "result": "pass",
             "summary": (
-                "Future track for user or device held keys where supported private payloads stay unreadable to the backend."
+                "Device enrollment, recovery restore, wrong-key rejection, revocation/key rotation, backend key absence, and redacted audit evidence are gated."
             ),
         },
         {
             "key": "resource_bloat_guardrails",
             "title": "Resource bloat guardrails",
-            "visual_label": "YELLOW / PARTIAL",
-            "result": "partial",
+            "visual_label": "GREEN / LEASES GATED",
+            "result": "pass",
             "summary": (
-                "Budget checks and generated-output policy exist; runtime leases and cleanup jobs are next."
+                "Budget checks, generated-output policy, Runtime Resource Manager leases, cleanup, and pressure snapshots are gated."
             ),
         },
         {

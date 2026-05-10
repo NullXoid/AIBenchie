@@ -44,7 +44,8 @@ def test_public_scoreboard_keeps_latest_valid_report_per_class(tmp_path):
     assert scoreboard["policy"]["raw_reports_published"] is False
     visual = {item["key"]: item for item in scoreboard["visual_tracks"]}
     assert visual["e2ee_readiness"]["result"] == "pass"
-    assert visual["zero_knowledge_privacy"]["result"] == "planned"
+    assert visual["zero_knowledge_privacy"]["result"] == "pass"
+    assert visual["resource_bloat_guardrails"]["result"] == "pass"
     assert "work in progress" not in json.dumps(visual).lower()
 
 

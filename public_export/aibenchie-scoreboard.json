@@ -3,50 +3,13 @@
     {
       "key": "accepted_runtime_repair_promotion",
       "milestone": "LV7 v1.5.10",
-      "result": "blocked",
-      "score": 0.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_5_10_accepted_runtime_repair_promotion.json",
-      "status": "V1_5_10_PROMOTION_BLOCKED",
-      "summary": "V1_5_10_PROMOTION_BLOCKED. resolve blocked promotion evidence",
+      "status": "V1_5_10_PROMOTION_COMPLETE",
+      "summary": "V1_5_10_PROMOTION_COMPLETE. Use models/adapters/lv7_sft_runtime_repair_v1_5_1/ as the accepted LV7 runtime checkpoint.",
       "title": "Accepted Runtime Repair Promotion",
       "version": "v1_5_10"
-    },
-    {
-      "key": "candidate_runtime_repair_acceptance",
-      "milestone": "LV7 v1.5.9",
-      "pass_count": 0,
-      "record_count": 0,
-      "result": "blocked",
-      "score": 0.0,
-      "source": "reports/runtime/v1_5_9_candidate_runtime_repair_acceptance.json",
-      "status": "V1_5_9_ACCEPTANCE_BLOCKED",
-      "summary": "V1_5_9_ACCEPTANCE_BLOCKED",
-      "title": "Candidate Runtime Repair Acceptance",
-      "version": "v1_5_9"
-    },
-    {
-      "key": "post_promotion_identity_sync",
-      "milestone": "LV7 v1.5.11",
-      "result": "blocked",
-      "score": 0.0,
-      "source": "reports/runtime/v1_5_11_post_promotion_identity_sync.json",
-      "status": "V1_5_11_IDENTITY_SYNC_BLOCKED",
-      "summary": "V1_5_11_IDENTITY_SYNC_BLOCKED. Resolve blocked identity sync evidence.",
-      "title": "Post Promotion Identity Sync",
-      "version": "v1_5_11"
-    },
-    {
-      "key": "promoted_runtime_release_readiness",
-      "milestone": "LV7 v1.5.12",
-      "pass_count": 0,
-      "record_count": 0,
-      "result": "blocked",
-      "score": 0.0,
-      "source": "reports/runtime/v1_5_12_promoted_runtime_release_readiness.json",
-      "status": "V1_5_12_RELEASE_BASELINE_BLOCKED",
-      "summary": "V1_5_12_RELEASE_BASELINE_BLOCKED. Resolve blocked release-readiness evidence.",
-      "title": "Promoted Runtime Release Readiness",
-      "version": "v1_5_12"
     },
     {
       "key": "android_cancel_timeout_fallback_contract",
@@ -73,11 +36,11 @@
     {
       "key": "candidate_runtime_failure_diagnosis",
       "milestone": "LV7 v1.5.5",
-      "result": "review",
-      "score": 50.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_5_5_candidate_runtime_failure_diagnosis.json",
-      "status": "V1_5_5_DIAGNOSIS_INSUFFICIENT",
-      "summary": "V1_5_5_DIAGNOSIS_INSUFFICIENT",
+      "status": "V1_5_5_DIAGNOSIS_COMPLETE",
+      "summary": "V1_5_5_DIAGNOSIS_COMPLETE",
       "title": "Candidate Runtime Failure Diagnosis",
       "version": "v1_5_5"
     },
@@ -93,6 +56,19 @@
       "version": "v1_5_3"
     },
     {
+      "key": "candidate_runtime_repair_acceptance",
+      "milestone": "LV7 v1.5.9",
+      "pass_count": 10,
+      "record_count": 10,
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_9_candidate_runtime_repair_acceptance.json",
+      "status": "V1_5_9_CANDIDATE_ACCEPTED_FOR_PROMOTION",
+      "summary": "V1_5_9_CANDIDATE_ACCEPTED_FOR_PROMOTION",
+      "title": "Candidate Runtime Repair Acceptance",
+      "version": "v1_5_9"
+    },
+    {
       "key": "candidate_runtime_repair_spec",
       "milestone": "LV7 v1.5.6",
       "result": "review",
@@ -106,12 +82,12 @@
     {
       "key": "candidate_runtime_results_ingestion",
       "milestone": "LV7 v1.5.4",
-      "record_count": 0,
-      "result": "review",
-      "score": 50.0,
+      "record_count": 10,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_5_4_candidate_runtime_results_ingestion.json",
-      "status": "V1_5_4_CANDIDATE_RUNTIME_RESULTS_INVALID",
-      "summary": "V1_5_4_CANDIDATE_RUNTIME_RESULTS_INVALID",
+      "status": "V1_5_4_CANDIDATE_RUNTIME_PASSED",
+      "summary": "V1_5_4_CANDIDATE_RUNTIME_PASSED",
       "title": "Candidate Runtime Results Ingestion",
       "version": "v1_5_4"
     },
@@ -140,22 +116,22 @@
     {
       "key": "narrow_runtime_model_repair_plan",
       "milestone": "LV7 v1.5.0",
-      "result": "review",
-      "score": 50.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_5_0_narrow_runtime_model_repair_plan.json",
-      "status": "V1_5_0_REPAIR_PLAN_INSUFFICIENT",
-      "summary": "V1_5_0_REPAIR_PLAN_INSUFFICIENT",
+      "status": "V1_5_0_REPAIR_PLAN_READY",
+      "summary": "V1_5_0_REPAIR_PLAN_READY",
       "title": "Narrow Runtime Model Repair Plan",
       "version": "v1_5_0"
     },
     {
       "key": "narrow_runtime_sft_repair_implementation",
       "milestone": "LV7 v1.5.1",
-      "result": "review",
-      "score": 50.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_5_1_narrow_runtime_sft_repair_implementation.json",
-      "status": "V1_5_1_IMPLEMENTATION_INSUFFICIENT",
-      "summary": "V1_5_1_IMPLEMENTATION_INSUFFICIENT",
+      "status": "V1_5_1_IMPLEMENTATION_READY",
+      "summary": "V1_5_1_IMPLEMENTATION_READY",
       "title": "Narrow Runtime SFT Repair Implementation",
       "version": "v1_5_1"
     },
@@ -184,11 +160,11 @@
     {
       "key": "policy_rationale_fix_spec",
       "milestone": "LV7 v1.4.5",
-      "result": "review",
-      "score": 50.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_4_5_policy_rationale_fix_spec.json",
-      "status": "V1_4_5_FIX_SPEC_INSUFFICIENT",
-      "summary": "V1_4_5_FIX_SPEC_INSUFFICIENT",
+      "status": "V1_4_5_FIX_SPEC_READY",
+      "summary": "V1_4_5_FIX_SPEC_READY",
       "title": "Policy Rationale Fix Spec",
       "version": "v1_4_5"
     },
@@ -204,24 +180,48 @@
       "version": "v1_5_7"
     },
     {
+      "key": "post_promotion_identity_sync",
+      "milestone": "LV7 v1.5.11",
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_11_post_promotion_identity_sync.json",
+      "status": "V1_5_11_IDENTITY_SYNC_COMPLETE",
+      "summary": "V1_5_11_IDENTITY_SYNC_COMPLETE. Use the promoted runtime repair checkpoint for future LV7 runtime hardening and release-readiness work.",
+      "title": "Post Promotion Identity Sync",
+      "version": "v1_5_11"
+    },
+    {
+      "key": "promoted_runtime_release_readiness",
+      "milestone": "LV7 v1.5.12",
+      "pass_count": 10,
+      "record_count": 10,
+      "result": "pass",
+      "score": 100.0,
+      "source": "reports/runtime/v1_5_12_promoted_runtime_release_readiness.json",
+      "status": "V1_5_12_RELEASE_BASELINE_READY",
+      "summary": "V1_5_12_RELEASE_BASELINE_READY. Treat the promoted adapter as the stable LV7 runtime baseline for downstream wrapper/release work.",
+      "title": "Promoted Runtime Release Readiness",
+      "version": "v1_5_12"
+    },
+    {
       "key": "runtime_model_failure_diagnosis",
       "milestone": "LV7 v1.4.4",
-      "result": "review",
-      "score": 50.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_4_4_runtime_model_failure_diagnosis.json",
-      "status": "V1_4_4_DIAGNOSIS_INSUFFICIENT",
-      "summary": "V1_4_4_DIAGNOSIS_INSUFFICIENT",
+      "status": "V1_4_4_DIAGNOSIS_COMPLETE",
+      "summary": "V1_4_4_DIAGNOSIS_COMPLETE",
       "title": "Runtime Model Failure Diagnosis",
       "version": "v1_4_4"
     },
     {
       "key": "runtime_model_repair_investigation",
       "milestone": "LV7 v1.4.9",
-      "result": "review",
-      "score": 50.0,
+      "result": "pass",
+      "score": 100.0,
       "source": "reports/runtime/v1_4_9_runtime_model_repair_investigation.json",
-      "status": "V1_4_9_REPAIR_INVESTIGATION_INSUFFICIENT",
-      "summary": "V1_4_9_REPAIR_INVESTIGATION_INSUFFICIENT",
+      "status": "V1_4_9_REPAIR_INVESTIGATION_READY",
+      "summary": "V1_4_9_REPAIR_INVESTIGATION_READY",
       "title": "Runtime Model Repair Investigation",
       "version": "v1_4_9"
     },
@@ -237,14 +237,14 @@
       "version": "v1_5_8"
     }
   ],
-  "generated_at": "2026-04-27T23:58:00.836082+00:00",
+  "generated_at": "2026-05-10T18:01:31.462238+00:00",
   "overall": {
-    "blocked_count": 4,
+    "blocked_count": 0,
     "class_count": 21,
-    "grade": "review",
-    "pass_count": 9,
-    "review_count": 8,
-    "score": 61.9
+    "grade": "release_candidate",
+    "pass_count": 20,
+    "review_count": 1,
+    "score": 97.62
   },
   "policy": {
     "latest_per_class": true,
@@ -265,17 +265,17 @@
     },
     {
       "key": "zero_knowledge_privacy",
-      "result": "planned",
-      "summary": "Future track for user or device held keys where supported private payloads stay unreadable to the backend.",
+      "result": "pass",
+      "summary": "Device enrollment, recovery restore, wrong-key rejection, revocation/key rotation, backend key absence, and redacted audit evidence are gated.",
       "title": "Zero-knowledge privacy",
-      "visual_label": "PLANNED"
+      "visual_label": "GREEN / V1 GATED"
     },
     {
       "key": "resource_bloat_guardrails",
-      "result": "partial",
-      "summary": "Budget checks and generated-output policy exist; runtime leases and cleanup jobs are next.",
+      "result": "pass",
+      "summary": "Budget checks, generated-output policy, Runtime Resource Manager leases, cleanup, and pressure snapshots are gated.",
       "title": "Resource bloat guardrails",
-      "visual_label": "YELLOW / PARTIAL"
+      "visual_label": "GREEN / LEASES GATED"
     },
     {
       "key": "nullbridge_trust_fabric",
