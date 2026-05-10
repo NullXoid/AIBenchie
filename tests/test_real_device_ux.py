@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 
 import aibenchie_local
-from aibenchie.real_device_ux import validate_real_device_ux_proof
+from aibenchie.real_device_ux import emit_android_real_device_ux_proof, validate_real_device_ux_proof
 
 
 def write_proof(path, overrides=None):
@@ -109,3 +109,71 @@ def test_real_device_ux_cli(capsys, tmp_path):
     assert exit_code == 0
     assert payload["ok"] is True
     assert payload["proof_id"] == "android-physical-smoke-001"
+
+
+def test_emit_android_real_device_ux_proof_hashes_device_identifier(tmp_path):
+    def fake_adb(args):
+        command = " ".join(args)
+        if command == "get-serialno":
+            return "RAW-DEVICE-123"
+        if command == "shell getprop ro.product.manufacturer":
+            return "Google"
+        if command == "shell getprop ro.product.model":
+            return "Pixel 9"
+        if command == "shell getprop ro.build.version.release":
+            return "16"
+        if command == "shell getprop ro.build.version.sdk":
+            return "36"
+        if command == "shell dumpsys package com.nullxoid.android":
+            return "Package [com.nullxoid.android]\n  versionName=1.2.3\n"
+        raise AssertionError(f"unexpected adb command: {command}")
+
+    output = tmp_path / "android-real-device-ux.json"
+    result = emit_android_real_device_ux_proof(
+        output,
+        signin_passed=True,
+        chat_passed=True,
+        proof_id="android-real-device-test",
+        adb_reader=fake_adb,
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+
+    assert result["ok"] is True
+    assert payload["app"]["version"] == "1.2.3"
+    assert payload["device"]["device_id_hash"] != "RAW-DEVICE-123"
+    assert "RAW-DEVICE-123" not in output.read_text(encoding="utf-8")
+    assert validate_real_device_ux_proof(output).ok is True
+
+
+def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
+    output = tmp_path / "proof.json"
+
+    def fake_emit(output_path, **kwargs):
+        assert output_path == str(output)
+        assert kwargs["signin_passed"] is True
+        assert kwargs["chat_passed"] is True
+        return {
+            "ok": True,
+            "output": str(output),
+            "proof_id": "android-cli-proof",
+            "platform": "android",
+            "validation": {"ok": True},
+        }
+
+    monkeypatch.setattr(aibenchie_local, "emit_android_real_device_ux_proof", fake_emit)
+
+    exit_code = aibenchie_local.main(
+        [
+            "--emit-android-real-device-ux-proof",
+            "--real-device-ux-output",
+            str(output),
+            "--real-device-ux-signin-passed",
+            "--real-device-ux-chat-passed",
+            "--json",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["ok"] is True
+    assert payload["proof_id"] == "android-cli-proof"

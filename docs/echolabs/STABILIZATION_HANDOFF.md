@@ -54,5 +54,5 @@ Good next lanes:
 
 - Provider-backed deploy executor after the dry-run deploy add-on and read-only plan verifier.
 - Docker support gate before advertising containers as supported.
-- More real-device UX coverage beyond the current Android proof. The first foundation is `python aibenchie_local.py --real-device-ux-proof <ignored-proof.json> --json`, which validates public-safe physical-device UX evidence without raw identifiers or session material.
+- More real-device UX coverage beyond the current Android proof. The first foundation is `python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --json`, then `python aibenchie_local.py --real-device-ux-proof <ignored-proof.json> --json`, which generates and validates public-safe physical-device UX evidence without raw identifiers or session material.
 - Standalone AIBenchie expansion for arbitrary app/API E2E testing.

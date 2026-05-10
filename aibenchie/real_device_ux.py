@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from hashlib import sha256
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 REAL_DEVICE_UX_SCHEMA = "aibenchie.real-device-ux-proof.v1"
@@ -13,6 +16,9 @@ ALLOWED_PLATFORMS = {"android", "ios", "desktop", "web"}
 SECRET_KEY_PARTS = ("token", "secret", "password", "credential", "private_key", "apikey", "api_key", "session")
 SECRET_VALUE_PREFIXES = ("ghp_", "github_pat_", "gitea_", "forgejo_", "glpat-", "xoxb-", "sk-", "eyj")
 REQUIRED_ANDROID_WORKFLOWS = {"signin", "chat"}
+DEFAULT_ANDROID_PROOF_OUTPUT = Path(".suite/local/aibenchie/android-real-device-ux.json")
+DEFAULT_ANDROID_PACKAGE = "com.nullxoid.android"
+DEFAULT_ANDROID_BASE_URL = "https://api.echolabs.diy/nullxoid"
 
 
 @dataclass(frozen=True)
@@ -65,6 +71,126 @@ def _load_json(path: Path) -> tuple[dict[str, Any], str]:
     if not isinstance(payload, dict):
         return {}, "proof_not_object"
     return payload, ""
+
+
+def _adb_value(adb: str, args: list[str]) -> str:
+    return subprocess.check_output(
+        [adb, *args],
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=15,
+    ).strip()
+
+
+def _android_package_version(adb_reader: Callable[[list[str]], str], package_name: str) -> str:
+    try:
+        package_dump = adb_reader(["shell", "dumpsys", "package", package_name])
+    except Exception:
+        return ""
+    for line in package_dump.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("versionName="):
+            return stripped.split("=", 1)[1].strip()
+    return ""
+
+
+def _android_prop(adb_reader: Callable[[list[str]], str], prop: str, fallback: str) -> str:
+    try:
+        value = adb_reader(["shell", "getprop", prop]).strip()
+    except Exception:
+        return fallback
+    return value or fallback
+
+
+def _workflow_status(passed: bool) -> str:
+    return "pass" if passed else "pending"
+
+
+def emit_android_real_device_ux_proof(
+    output_path: str | Path = DEFAULT_ANDROID_PROOF_OUTPUT,
+    *,
+    adb: str = "adb",
+    package_name: str = DEFAULT_ANDROID_PACKAGE,
+    base_url: str = DEFAULT_ANDROID_BASE_URL,
+    app_version: str = "",
+    proof_id: str = "",
+    signin_passed: bool = False,
+    chat_passed: bool = False,
+    network: str = "real-device",
+    adb_reader: Callable[[list[str]], str] | None = None,
+) -> dict[str, Any]:
+    reader = adb_reader or (lambda args: _adb_value(adb, args))
+    raw_device_handle = reader(["get-serialno"]).strip()
+    if not raw_device_handle:
+        raise RuntimeError("adb_device_missing")
+
+    manufacturer = _android_prop(reader, "ro.product.manufacturer", "unknown")
+    model = _android_prop(reader, "ro.product.model", "unknown")
+    os_release = _android_prop(reader, "ro.build.version.release", "unknown")
+    os_sdk = _android_prop(reader, "ro.build.version.sdk", "")
+    resolved_version = app_version.strip() or _android_package_version(reader, package_name) or "unknown"
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    resolved_proof_id = proof_id.strip() or f"android-real-device-ux-{timestamp}"
+
+    payload = {
+        "schema": REAL_DEVICE_UX_SCHEMA,
+        "template": False,
+        "proof_id": resolved_proof_id,
+        "platform": "android",
+        "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "device": {
+            "manufacturer": manufacturer,
+            "model": model,
+            "os_version": f"Android {os_release}" + (f" API {os_sdk}" if os_sdk else ""),
+            "device_id_hash": sha256(raw_device_handle.encode("utf-8")).hexdigest(),
+        },
+        "app": {
+            "package": package_name,
+            "version": resolved_version,
+            "build_type": "installed",
+        },
+        "environment": {
+            "base_url": base_url,
+            "network": network,
+        },
+        "workflows": [
+            {
+                "id": "signin",
+                "name": "Native passkey sign-in",
+                "status": _workflow_status(signin_passed),
+                "evidence": [
+                    {
+                        "kind": "operator_confirmation",
+                        "summary": "Physical Android sign-in completed." if signin_passed else "Physical Android sign-in awaits operator confirmation.",
+                    }
+                ],
+            },
+            {
+                "id": "chat",
+                "name": "NullXoid chat response",
+                "status": _workflow_status(chat_passed),
+                "evidence": [
+                    {
+                        "kind": "operator_confirmation",
+                        "summary": "Physical Android chat returned a visible response." if chat_passed else "Physical Android chat awaits operator confirmation.",
+                    }
+                ],
+            },
+        ],
+        "artifacts": [],
+    }
+
+    output = Path(output_path).expanduser()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    validation = validate_real_device_ux_proof(output).as_dict()
+    return {
+        "ok": validation["ok"],
+        "output": str(output.resolve()),
+        "proof_id": resolved_proof_id,
+        "platform": "android",
+        "validation": validation,
+    }
 
 
 def _scan_secret_like_values(value: Any, path: str = "") -> list[str]:

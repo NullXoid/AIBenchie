@@ -21,7 +21,13 @@ from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check,
 from aibenchie.docker_support import run_docker_support_gate
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
-from aibenchie.real_device_ux import validate_real_device_ux_proof
+from aibenchie.real_device_ux import (
+    DEFAULT_ANDROID_BASE_URL,
+    DEFAULT_ANDROID_PACKAGE,
+    DEFAULT_ANDROID_PROOF_OUTPUT,
+    emit_android_real_device_ux_proof,
+    validate_real_device_ux_proof,
+)
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
 from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
@@ -318,6 +324,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--real-device-ux-proof",
         default="",
         help="Validate a public-safe real-device UX proof JSON file.",
+    )
+    parser.add_argument(
+        "--emit-android-real-device-ux-proof",
+        action="store_true",
+        help="Generate an ignored public-safe Android real-device UX proof from a connected adb device.",
+    )
+    parser.add_argument(
+        "--real-device-ux-output",
+        default=str(DEFAULT_ANDROID_PROOF_OUTPUT),
+        help="Output path for --emit-android-real-device-ux-proof.",
+    )
+    parser.add_argument("--real-device-ux-adb", default="adb", help="adb executable for Android proof generation.")
+    parser.add_argument(
+        "--real-device-ux-package",
+        default=DEFAULT_ANDROID_PACKAGE,
+        help="Android package name for proof generation.",
+    )
+    parser.add_argument(
+        "--real-device-ux-base-url",
+        default=DEFAULT_ANDROID_BASE_URL,
+        help="Base URL recorded in generated Android proof evidence.",
+    )
+    parser.add_argument("--real-device-ux-app-version", default="", help="Override detected Android app version.")
+    parser.add_argument("--real-device-ux-proof-id", default="", help="Override generated Android proof id.")
+    parser.add_argument(
+        "--real-device-ux-signin-passed",
+        action="store_true",
+        help="Mark the generated Android sign-in workflow as passed after operator confirmation.",
+    )
+    parser.add_argument(
+        "--real-device-ux-chat-passed",
+        action="store_true",
+        help="Mark the generated Android chat workflow as passed after operator confirmation.",
     )
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
     return parser
@@ -872,6 +911,33 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{check['name']}: {status}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
+
+    if args.emit_android_real_device_ux_proof:
+        try:
+            result = emit_android_real_device_ux_proof(
+                args.real_device_ux_output,
+                adb=args.real_device_ux_adb,
+                package_name=args.real_device_ux_package,
+                base_url=args.real_device_ux_base_url,
+                app_version=args.real_device_ux_app_version,
+                proof_id=args.real_device_ux_proof_id,
+                signin_passed=args.real_device_ux_signin_passed,
+                chat_passed=args.real_device_ux_chat_passed,
+            )
+        except Exception as exc:
+            result = {"ok": False, "output": args.real_device_ux_output, "failure": str(exc)}
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Android Real-Device UX Proof Generator")
+            print(f"Output: {result.get('output', args.real_device_ux_output)}")
+            if result.get("failure"):
+                print(f"Failure: {result['failure']}")
+            elif result.get("validation"):
+                print(f"Proof id: {result['proof_id']}")
+                print("Validation: PASS" if result["ok"] else "Validation: FAIL")
+            print("Result: PASS" if result.get("ok") else "Result: FAIL")
+        return 0 if result.get("ok") else 1
 
     if args.real_device_ux_proof:
         result = validate_real_device_ux_proof(args.real_device_ux_proof).as_dict()
