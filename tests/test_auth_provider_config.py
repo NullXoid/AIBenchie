@@ -39,6 +39,35 @@ VALID_REAL_CONFIG = {
     },
 }
 
+VALID_DEVICE_PROOF = {
+    "schema": "echolabs.auth-provider-device-proof.v1",
+    "template": False,
+    "product": "EchoLabs Suite",
+    "device": {
+        "platform": "android",
+        "package": "com.nullxoid.android",
+        "model": "Pixel test device",
+        "os_version": "Android 15",
+        "release_sha256_fingerprint": VALID_REAL_CONFIG["passkey"]["android_sha256_fingerprints"][0],
+    },
+    "enrollment": {
+        "tested_at": "2026-05-10T00:00:00Z",
+        "rp_id": "api.echolabs.diy",
+        "credential_manager_used": True,
+        "passkey_created": True,
+        "assetlinks_verified": True,
+        "provider_metadata_live": True,
+        "evidence": ["_validation/android-passkey-proof.png"],
+    },
+    "token_storage": "android_keystore",
+    "leak_checks": {
+        "urls_clean": True,
+        "logs_clean": True,
+        "frontend_storage_clean": True,
+        "nullbridge_service_credentials_absent": True,
+    },
+}
+
 
 def write_config(path: Path, payload: dict) -> Path:
     path.write_text(json.dumps(payload), encoding="utf-8")
@@ -71,6 +100,52 @@ def test_real_auth_provider_config_passes(tmp_path):
     assert result.template is False
 
 
+def test_real_auth_provider_config_with_device_proof_passes(tmp_path):
+    config_path = write_config(tmp_path / "auth-provider.json", VALID_REAL_CONFIG)
+    proof_path = write_config(tmp_path / "device-proof.json", VALID_DEVICE_PROOF)
+
+    result = validate_auth_provider_config(
+        config_path,
+        require_real=True,
+        device_proof_path=proof_path,
+        require_device_proof=True,
+    )
+
+    assert result.ok is True
+    assert result.require_device_proof is True
+
+
+def test_auth_provider_config_requires_device_proof_file(tmp_path):
+    config_path = write_config(tmp_path / "auth-provider.json", VALID_REAL_CONFIG)
+
+    result = validate_auth_provider_config(config_path, require_real=True, require_device_proof=True)
+
+    assert result.ok is False
+    failures = {check.name: check.failure for check in result.checks if not check.ok}
+    assert failures["device_proof_file"] == "missing_device_proof_path"
+
+
+def test_auth_provider_device_proof_rejects_token_storage_and_fingerprint_mismatch(tmp_path):
+    config_path = write_config(tmp_path / "auth-provider.json", VALID_REAL_CONFIG)
+    proof = dict(VALID_DEVICE_PROOF)
+    proof["device"] = dict(VALID_DEVICE_PROOF["device"])
+    proof["device"]["release_sha256_fingerprint"] = "AA:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"
+    proof["token_storage"] = "shared_preferences"
+    proof_path = write_config(tmp_path / "device-proof.json", proof)
+
+    result = validate_auth_provider_config(
+        config_path,
+        require_real=True,
+        device_proof_path=proof_path,
+        require_device_proof=True,
+    )
+
+    assert result.ok is False
+    failures = {check.name: check.failure for check in result.checks if not check.ok}
+    assert failures["device_proof.device.release_sha256_fingerprint"] == "fingerprint_not_in_provider_config"
+    assert failures["device_proof.token_storage"] == "token_storage_must_be_android_keystore"
+
+
 def test_real_auth_provider_config_rejects_client_secret(tmp_path):
     payload = dict(VALID_REAL_CONFIG)
     payload["oidc"] = dict(VALID_REAL_CONFIG["oidc"])
@@ -94,6 +169,8 @@ def test_auth_provider_config_cli_outputs_json(monkeypatch, capsys):
                 "config_path": "configs/echolabs_auth_provider_config.example.json",
                 "template": True,
                 "require_real": False,
+                "device_proof_path": "configs/echolabs_auth_provider_device_proof.example.json",
+                "require_device_proof": False,
                 "checks": [],
                 "next_steps": [],
             }
@@ -106,3 +183,37 @@ def test_auth_provider_config_cli_outputs_json(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["ok"] is True
     assert payload["template"] is True
+
+
+def test_auth_provider_config_cli_accepts_device_proof(monkeypatch, capsys):
+    class FakeResult:
+        ok = True
+
+        def as_dict(self):
+            return {
+                "ok": True,
+                "config_path": "ignored-auth-provider-config.json",
+                "device_proof_path": "ignored-device-proof.json",
+                "template": False,
+                "require_real": True,
+                "require_device_proof": True,
+                "checks": [],
+                "next_steps": [],
+            }
+
+    monkeypatch.setattr(aibenchie_local, "run_auth_provider_config_from_env", lambda: FakeResult())
+
+    code = aibenchie_local.main(
+        [
+            "--auth-provider-config",
+            "--auth-provider-config-require-real",
+            "--auth-provider-config-device-proof",
+            "ignored-device-proof.json",
+            "--auth-provider-config-require-device-proof",
+            "--json",
+        ]
+    )
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["require_device_proof"] is True

@@ -238,6 +238,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Require non-template passkey/OIDC provider values for --auth-provider-config.",
     )
     parser.add_argument(
+        "--auth-provider-config-device-proof",
+        default="",
+        help="Optional ignored JSON proof of physical Android passkey enrollment for --auth-provider-config.",
+    )
+    parser.add_argument(
+        "--auth-provider-config-require-device-proof",
+        action="store_true",
+        help="Require physical Android passkey enrollment proof for --auth-provider-config.",
+    )
+    parser.add_argument(
         "--nullbridge-platform-adapters",
         action="store_true",
         help="Run the M35 platform backend NullBridge adapter E2E gate.",
@@ -695,14 +705,24 @@ def main(argv: list[str] | None = None) -> int:
             import os
 
             os.environ["AIBENCHIE_AUTH_PROVIDER_CONFIG_REQUIRE_REAL"] = "1"
+        if args.auth_provider_config_device_proof:
+            import os
+
+            os.environ["AIBENCHIE_AUTH_PROVIDER_DEVICE_PROOF"] = args.auth_provider_config_device_proof
+        if args.auth_provider_config_require_device_proof:
+            import os
+
+            os.environ["AIBENCHIE_AUTH_PROVIDER_CONFIG_REQUIRE_DEVICE_PROOF"] = "1"
         result = run_auth_provider_config_from_env().as_dict()
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
             print("EchoLabs Auth Provider Configuration Gate")
             print(f"Config: {result['config_path']}")
+            print(f"Device proof: {result['device_proof_path']}")
             print(f"Template: {result['template']}")
             print(f"Require real values: {result['require_real']}")
+            print(f"Require device proof: {result['require_device_proof']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")

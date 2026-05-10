@@ -38,7 +38,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Zero-knowledge setup UI | GREEN / V1 GATED | Guided browser UI exists for approving devices, exporting recovery kits, recovery unlock, revocation, and redacted audit evidence. | Show as complete for v1 when wrapper `npm run test:e2ee` and AIBenchie suite tests pass. |
 | Android/Companion remote profile | GREEN / GATED | Mobile/off-network profile uses the public HTTPS API route and passes AIBenchie remote backend checks. | Show as complete when `--companion-remote-backend` and Android unit tests pass. |
 | Secure sign-in setup | GREEN / CONTRACT GATED | Setup is UI-first, passkey/OIDC-first, password fallback is migration/development only, Android has native ceremony wiring, backend auth capabilities are advertised as JSON, and configured Android passkey providers require valid Digital Asset Links. | Show as complete when `--secure-signin-setup` and master suite tests pass. |
-| Passkey/OIDC provider config | BLUE / FOUNDATION READY | AIBenchie has a public-safe config contract and can enforce real passkey/OIDC values from ignored deployment config. | Show as green only after real provider values pass `--auth-provider-config --auth-provider-config-require-real` and physical Android passkey enrollment is proven. |
+| Passkey/OIDC provider config | BLUE / PROOF GATE READY | AIBenchie has a public-safe config contract, real-value enforcement, and an ignored physical Android device-proof gate for Credential Manager enrollment. | Show as green after real provider values and device proof pass `--auth-provider-config --auth-provider-config-require-real --auth-provider-config-require-device-proof`. |
 | Universal E2E real UX adapters | GREEN / BROWSER GATED | Universal API/UX E2E has command targets for BridgeEcho, web, Android, and desktop plus a release-blocking Playwright-style web browser target that captures screenshot/HTML/trace evidence. | Show as complete for the web UX adapter when runner setup installs Playwright and Chromium. |
 | Resource bloat guardrails | YELLOW / PARTIAL | Budgets and generated-output policy exist, but runtime lease enforcement is not complete. | Show as partial until leases and cleanup jobs are enforced. |
 | NullBridge trust fabric | GREEN / PASS | Signed service identity, deny-by-default routing, redacted audit, notification policy, and AIBenchie gates pass. | Show as complete while the master suite remains green. |
@@ -48,7 +48,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
 | 1 | Universal E2E Playwright web UX adapter | 470 | Browser gated | Required `web_browser` adapter builds EchoLabs, serves `/nullxoid`, verifies visible text, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict. |
-| 2 | Passkey/OIDC provider configuration | 455 | Foundation ready | Configure real WebAuthn/OIDC provider settings and publish Android Digital Asset Links for the passkey RP domain. |
+| 2 | Passkey/OIDC provider configuration | 455 | Proof gate ready | Configure real WebAuthn/OIDC provider settings, publish Android Digital Asset Links, and provide ignored physical Android Credential Manager proof. |
 | 3 | NullBridge trust fabric hardening | 440 | Hardened / gated | Signed backend identity, explicit deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 4 | Resource Manager v1 runtime enforcement | 420 | Runtime leases gated | Backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and no unbounded heavy work. |
 | 5 | Backend Operations UI v1 | 390 | Foundation ready | EchoLabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, runtime status, and notifications without exposing secrets. |
@@ -111,8 +111,10 @@ Native passkey/OIDC ceremony wiring is now implemented and gated. The next auth 
 Foundation now exists:
 
 - `configs/echolabs_auth_provider_config.example.json` documents the public-safe provider contract.
+- `configs/echolabs_auth_provider_device_proof.example.json` documents the physical Android enrollment evidence contract.
 - `python aibenchie_local.py --auth-provider-config --json` validates the tracked template.
 - `python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --json` enforces non-template deployment values from `AIBENCHIE_AUTH_PROVIDER_CONFIG`.
+- `python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --auth-provider-config-device-proof <ignored-proof.json> --auth-provider-config-require-device-proof --json` enforces the real provider plus device proof boundary.
 
 Acceptance:
 

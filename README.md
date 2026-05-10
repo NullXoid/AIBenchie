@@ -264,7 +264,13 @@ $env:AIBENCHIE_AUTH_PROVIDER_CONFIG="path\to\ignored-auth-provider-config.json"
 python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --json
 ```
 
-See `docs/AUTH_PROVIDER_CONFIGURATION.md` for the passkey RP, Android Digital Asset Links, and OIDC PKCE requirements.
+After physical Android Credential Manager enrollment is proven, add an ignored device-proof file and require it:
+
+```powershell
+python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --auth-provider-config-device-proof "path\to\ignored-device-proof.json" --auth-provider-config-require-device-proof --json
+```
+
+See `docs/AUTH_PROVIDER_CONFIGURATION.md` for the passkey RP, Android Digital Asset Links, OIDC PKCE, and physical-device proof requirements.
 
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 

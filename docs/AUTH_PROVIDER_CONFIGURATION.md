@@ -21,6 +21,19 @@ $env:AIBENCHIE_AUTH_PROVIDER_CONFIG="path/to/ignored-auth-provider-config.json"
 python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --json
 ```
 
+After provider metadata and Android Digital Asset Links are live, record the physical Android Credential Manager enrollment proof in ignored local configuration:
+
+```text
+configs/echolabs_auth_provider_device_proof.example.json
+```
+
+Then run the production-ready gate:
+
+```text
+$env:AIBENCHIE_AUTH_PROVIDER_CONFIG="path/to/ignored-auth-provider-config.json"
+python aibenchie_local.py --auth-provider-config --auth-provider-config-require-real --auth-provider-config-device-proof "path/to/ignored-device-proof.json" --auth-provider-config-require-device-proof --json
+```
+
 ## Requirements
 
 - Passkey RP ID and origin must be HTTPS and must match the hosted auth domain.
@@ -31,5 +44,6 @@ python aibenchie_local.py --auth-provider-config --auth-provider-config-require-
 - The Android redirect URI is `nullxoid://auth/oidc/callback`.
 - Public/mobile clients must not use or expose a client secret.
 - Provider values belong in deployment secret storage or ignored local add-ons, not tracked repo files.
+- Physical Android proof must show Credential Manager enrollment, live provider metadata, verified Digital Asset Links, Android Keystore token storage, and clean URL/log/frontend-storage/NullBridge credential leak checks.
 
 This is separate from `--secure-signin-setup`: that gate proves app/backend wiring and hosted route behavior. This gate proves the provider configuration shape is ready and can be enforced with real values.
