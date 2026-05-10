@@ -63,6 +63,7 @@ Release interpretation:
 - All default gates pass: the suite is locally stable for handoff.
 - Optional UI/full backend gates pass: stronger local confidence before packaging.
 - Any gate fails: fix that surface first, then rerun the failed surface gate before rerunning the suite gate.
+- Docker support is coming soon, but Docker is not a supported release target yet. A future Docker path must add its own AIBenchie gate before container images or Compose files are advertised as production-ready.
 - The JSON report uses schema `echolabs.suite-release-gate.v1` and is suitable for AIBenchie ingestion or EchoLabs readiness display.
 - Each surface entry includes stable machine fields for dashboards and AIBenchie ingestion:
 

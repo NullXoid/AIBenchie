@@ -55,7 +55,7 @@ Public dashboards should show the completed gate as green instead of "work in pr
 | 6 | AIBenchie website scoreboard and release evidence display | 365 | Foundation ready | Website consumes public-safe scoreboard and release evidence exports, then shows latest valid score per class/test, overall score, release details, and progress bars. |
 | 7 | Notification system through NullBridge | 345 | Foundation ready | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; EchoLabs Ops now shows a read-only notification center and toast highlight without raw service payloads. |
 | 8 | AIBenchie deploy add-on | 295 | Foundation ready | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; EchoLabs exposes it as an admin-only add-on manifest. |
-| 9 | Docker support documentation | 210 | Planned | Website/docs mark Docker as coming soon, with constraints and no false support claim. |
+| 9 | Docker support documentation | 210 | Foundation ready | Website/docs mark Docker as coming soon, explicitly not supported yet, with constraints, non-goals, and future AIBenchie gate acceptance criteria. |
 
 ## Paused Automation Pickup
 
