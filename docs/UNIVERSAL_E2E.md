@@ -33,6 +33,15 @@ python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echol
 
 For a hosted backend, set `AIBENCHIE_BACKEND_URL` to the hosted API origin.
 
+## EchoLabs UX Example
+
+```powershell
+$env:AIBENCHIE_ECHOLABS_WEB_ROOT="C:\Users\kasom\projects\NullXoid-live"
+python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echolabs_universal_e2e.json --universal-e2e-lane ux --json
+```
+
+The current EchoLabs UX lane runs the web shell build and NullXoid UI contract checks through `npm run verify:nullxoid`. This gives the standalone runner an executable user-surface gate before the browser-driven Playwright adapter is promoted.
+
 ## Manifest Shape
 
 ```json
@@ -73,6 +82,7 @@ Implemented now:
 - Environment substitution with `${ENV:NAME:-fallback}`.
 - API lane HTTP checks.
 - UX lane command/manual target foundation.
+- EchoLabs web UX command target.
 - Unified verdict with lane, target, evidence, and summary data.
 
 Next adapters should add Playwright, ADB, desktop automation, SSE/WebSocket streams, artifact capture, screenshot capture, and JUnit/HTML reporters without changing the manifest or verdict contract.

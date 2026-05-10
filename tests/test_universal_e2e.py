@@ -141,12 +141,48 @@ def test_universal_e2e_command_adapter(monkeypatch, tmp_path):
         assert kwargs["cwd"] == tmp_path
         return SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
 
+    monkeypatch.setattr(universal_e2e, "_resolve_command_executable", lambda executable: executable)
     monkeypatch.setattr(universal_e2e.subprocess, "run", fake_run)
 
     result = universal_e2e.run_universal_e2e(manifest).as_dict()
 
     assert result["ok"] is True
     assert result["lanes"][0]["targets"][0]["adapter"] == "command"
+
+
+def test_universal_e2e_command_adapter_reports_missing_command(monkeypatch, tmp_path):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "id": "command-suite",
+                "lanes": {
+                    "ux": {
+                        "targets": [
+                            {
+                                "id": "missing-command",
+                                "adapter": "command",
+                                "command": ["not-a-real-command"],
+                                "cwd": ".",
+                            }
+                        ]
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_run(_command, **_kwargs):
+        raise FileNotFoundError("missing executable")
+
+    monkeypatch.setattr(universal_e2e, "_resolve_command_executable", lambda executable: executable)
+    monkeypatch.setattr(universal_e2e.subprocess, "run", fake_run)
+
+    result = universal_e2e.run_universal_e2e(manifest).as_dict()
+
+    assert result["ok"] is False
+    assert result["lanes"][0]["targets"][0]["failure"] == "command_not_found"
 
 
 def test_universal_e2e_cli_outputs_json(monkeypatch, capsys):

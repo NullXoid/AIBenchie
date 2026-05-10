@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import time
 import urllib.error
@@ -162,16 +163,26 @@ def _run_command_target(target: dict[str, Any], manifest_dir: Path, env: dict[st
     if not cwd.is_absolute():
         cwd = (manifest_dir / cwd).resolve()
     timeout_seconds = int(target.get("timeout_seconds") or 180)
+    command_parts = [str(part) for part in command]
+    if command_parts:
+        command_parts[0] = _resolve_command_executable(command_parts[0])
     started = time.monotonic()
     try:
         completed = subprocess.run(
-            [str(part) for part in command],
+            command_parts,
             cwd=cwd,
             env={**os.environ, **env},
             text=True,
             capture_output=True,
             timeout=timeout_seconds,
             check=False,
+        )
+    except FileNotFoundError as exc:
+        return _target_result(
+            target,
+            "fail",
+            "command_not_found",
+            [{"kind": "command", "command": command_parts, "error": str(exc)}],
         )
     except subprocess.TimeoutExpired as exc:
         return _target_result(
@@ -190,6 +201,13 @@ def _run_command_target(target: dict[str, Any], manifest_dir: Path, env: dict[st
         }
     ]
     return _target_result(target, "pass" if completed.returncode == 0 else "fail", "" if completed.returncode == 0 else f"exit_{completed.returncode}", evidence)
+
+
+def _resolve_command_executable(executable: str) -> str:
+    if os.name != "nt" or Path(executable).suffix:
+        return executable
+    resolved = shutil.which(executable) or shutil.which(f"{executable}.cmd") or shutil.which(f"{executable}.exe")
+    return resolved or executable
 
 
 def _run_manual_target(target: dict[str, Any]) -> dict[str, Any]:

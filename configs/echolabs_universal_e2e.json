@@ -41,10 +41,13 @@
         {
           "id": "web-ux",
           "name": "Web user workflow",
-          "type": "playwright",
-          "adapter": "manual",
-          "required": false,
-          "notes": "Foundation placeholder. Replace with a Playwright adapter target when the web UX script is promoted."
+          "type": "web",
+          "adapter": "command",
+          "required": true,
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
+          "command": ["npm", "run", "verify:nullxoid"],
+          "timeout_seconds": 240,
+          "notes": "Runs the EchoLabs web shell build and NullXoid UI contract checks until the browser-driven Playwright adapter is promoted."
         },
         {
           "id": "android-ux",
