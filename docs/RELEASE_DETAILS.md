@@ -87,3 +87,9 @@ AIBenchie has a provider-neutral deploy add-on foundation for repo hubs such as 
 The deploy add-on is deliberately separate from release details. Release details prove what was built and verified. The deploy add-on can use that proof to prepare a sanitized deploy plan for the selected repo hub. A future provider executor must be added as its own explicit, gated capability before any assets are uploaded or releases are published.
 
 When a runner sets `AIBENCHIE_DEPLOY_PLAN` or `AIBENCHIE_DEPLOY_ADDON_PLAN`, the release summary includes only a public-safe deploy proof summary: pass/fail, dry-run state, provider type, release tag, check counts, and asset count. Raw provider configuration and token environment names stay out of public release evidence.
+
+## Real-Device UX Proof
+
+Real-device UX proof is optional release evidence for physical device runs. Keep the actual proof JSON under an ignored runtime path such as `.suite/local/aibenchie/android-real-device-ux.json`.
+
+When a runner sets `AIBENCHIE_REAL_DEVICE_UX_PROOF` or `AIBENCHIE_ANDROID_REAL_DEVICE_UX_PROOF`, the release summary includes only a public-safe proof summary: pass/fail, platform, proof id, workflow count, check count, and failed-check count. Raw device identifiers, session material, screenshots, local paths, and detailed workflow notes stay out of public release evidence.

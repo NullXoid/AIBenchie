@@ -75,6 +75,59 @@ def test_build_release_report_surfaces_public_safe_deploy_plan_summary(tmp_path)
     assert_public_safe(summary)
 
 
+def test_build_release_report_surfaces_public_safe_real_device_ux_summary(tmp_path):
+    proof = {
+        "schema": "aibenchie.real-device-ux-proof.v1",
+        "template": False,
+        "proof_id": "android-physical-smoke-001",
+        "platform": "android",
+        "device": {
+            "manufacturer": "Samsung",
+            "model": "SM-A176U",
+            "os_version": "Android 16",
+            "device_id_hash": "0123456789abcdef0123456789abcdef",
+        },
+        "app": {
+            "package": "com.nullxoid.android",
+            "version": "1.0.0",
+            "build_type": "release",
+        },
+        "environment": {
+            "base_url": "https://api.echolabs.diy/nullxoid",
+            "network": "cellular",
+        },
+        "workflows": [
+            {
+                "id": "signin",
+                "status": "pass",
+                "evidence": [{"kind": "manual_observation", "summary": "Signed in."}],
+            },
+            {
+                "id": "chat",
+                "status": "pass",
+                "evidence": [{"kind": "manual_observation", "summary": "Chat responded."}],
+            },
+        ],
+        "artifacts": [{"kind": "screenshot", "name": "chat", "sha256": "a" * 64}],
+    }
+    proof_path = tmp_path / "real-device-proof.json"
+    proof_path.write_text(json.dumps(proof), encoding="utf-8")
+
+    summary, _, _ = build_release_report(ROOT, run_trust_smoke=False, env={"AIBENCHIE_REAL_DEVICE_UX_PROOF": str(proof_path)})
+
+    assert summary["real_device_ux"] == {
+        "ok": True,
+        "status": "pass",
+        "platform": "android",
+        "proof_id": "android-physical-smoke-001",
+        "workflow_count": 2,
+        "checks_total": 13,
+        "failed_checks": 0,
+    }
+    assert "SM-A176U" not in json.dumps(summary)
+    assert_public_safe(summary)
+
+
 def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path):
     result = write_release_report(ROOT, tmp_path, run_trust_smoke=False)
 
@@ -90,6 +143,7 @@ def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path)
     assert details["aibenchie_verdict"]["suite_verdict"] == "ship_candidate"
     assert details["aibenchie_verdict"]["summary_path"] == "summary.json"
     assert details["aibenchie_verdict"]["full_report_path"] == "full-report.json.encrypted"
+    assert any(gate["name"] == "Real-device UX proof" for gate in details["gates"])
     assert details["release_package_attestation"]["status"] == "incomplete"
     assert details["release_package_attestation"]["artifact_count"] == 2
     assert details["artifacts"][0]["digest"]["algorithm"] == "sha256"

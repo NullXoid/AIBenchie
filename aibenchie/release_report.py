@@ -11,6 +11,7 @@ from typing import Any, Iterable
 from aibenchie.deploy_addon import verify_deploy_plan
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullprivacy import decrypt_blob, encrypt_blob, generate_key, run_e2ee_storage_proof
+from aibenchie.real_device_ux import validate_real_device_ux_proof
 from training.release_fabric import (
     POLICIES_ROOT,
     load_json,
@@ -147,12 +148,42 @@ def _deploy_addon_public_summary(env: dict[str, str] | None = None) -> dict[str,
     }
 
 
+def _real_device_ux_public_summary(env: dict[str, str] | None = None) -> dict[str, Any]:
+    source = env or os.environ
+    configured = (source.get("AIBENCHIE_REAL_DEVICE_UX_PROOF") or source.get("AIBENCHIE_ANDROID_REAL_DEVICE_UX_PROOF") or "").strip()
+    if not configured:
+        return {
+            "ok": "skipped",
+            "status": "not_run",
+            "platform": "",
+            "proof_id": "",
+            "workflow_count": 0,
+            "checks_total": 0,
+            "failed_checks": 0,
+        }
+    verification = validate_real_device_ux_proof(configured).as_dict()
+    checks = verification.get("checks") if isinstance(verification.get("checks"), list) else []
+    failed = [check for check in checks if isinstance(check, dict) and check.get("ok") is False]
+    workflows = verification.get("workflows") if isinstance(verification.get("workflows"), list) else []
+    ok = bool(verification.get("ok"))
+    return {
+        "ok": ok,
+        "status": "pass" if ok else "fail",
+        "platform": str(verification.get("platform") or ""),
+        "proof_id": str(verification.get("proof_id") or ""),
+        "workflow_count": len(workflows),
+        "checks_total": len(checks),
+        "failed_checks": len(failed),
+    }
+
+
 def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
     tracks = summary.get("tracks") or {}
     trust_smoke = summary.get("trust_smoke") or {}
     notification_smoke = summary.get("notification_smoke") or {}
     privacy_proof = summary.get("privacy_proof") or {}
     deploy_addon = summary.get("deploy_addon") or {}
+    real_device_ux = summary.get("real_device_ux") or {}
     return [
         {
             "name": "NullBridge trust fabric",
@@ -188,6 +219,11 @@ def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
             "name": "Deploy add-on plan",
             "result": _status_for(deploy_addon.get("ok", "skipped")),
             "evidence": "deploy_addon",
+        },
+        {
+            "name": "Real-device UX proof",
+            "result": _status_for(real_device_ux.get("ok", "skipped")),
+            "evidence": "real_device_ux",
         },
     ]
 
@@ -607,6 +643,7 @@ def build_release_report(
         }
 
     deploy_addon = _deploy_addon_public_summary(env)
+    real_device_ux = _real_device_ux_public_summary(env)
     critical_blocks = sorted(track for track, status in tracks.items() if status == "critical_block")
     blocks_release = sorted(track for track, status in tracks.items() if status == "blocks_release")
     verdict = "ship_candidate" if not critical_blocks and not blocks_release else "critical_block"
@@ -628,6 +665,7 @@ def build_release_report(
         },
         "notification_smoke": notification_smoke,
         "deploy_addon": deploy_addon,
+        "real_device_ux": real_device_ux,
     }
     assert_public_safe(summary)
 
