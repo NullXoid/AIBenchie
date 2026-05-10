@@ -25,20 +25,21 @@ Durable engineering decisions live here when they affect release trust, deploy c
 
 - Status: accepted
 - Decision: keep deploy behavior in a deploy add-on gate, separate from release details and release artifact verification.
-- Context: AIBenchie can produce verified package evidence first, then the deploy add-on can validate a provider-neutral release plan for a repo hub such as Forgejo, Gitea, GitHub, or another compatible provider.
+- Context: AIBenchie can produce verified package evidence first, then the deploy add-on can validate a provider-neutral release plan for a repo hub such as Forgejo, Gitea, GitHub, or another compatible provider. The saved deploy plan is verified read-only before it is surfaced in release evidence or the suite gate.
 - Rationale: deploy is a separate operational concern from release proof. AIBenchie should prove what is safe to ship first; a deploy add-on can later decide where and how to publish it.
-- Constraints: provider credentials, deploy tokens, tunnel keys, and signing secrets must stay in runtime/local secret storage and never be committed to the repo. The current add-on is a dry-run release-plan gate and should not publish assets unless a future provider executor is explicitly added and gated.
+- Constraints: provider credentials, deploy tokens, tunnel keys, and signing secrets must stay in runtime/local secret storage and never be committed to the repo. The current add-on is a dry-run release-plan gate plus a read-only deploy-plan verifier; it should not publish assets unless a future provider executor is explicitly added and gated.
 - Revisit trigger: revisit when adding a real provider executor, release upload, changelog publication, or PR/release creation flow.
 - Related files: `README.md`, `docs/RELEASE_DETAILS.md`, `aibenchie/deploy_addon.py`, `tests/test_deploy_addon.py`.
 - Validation commands:
   - `python aibenchie_local.py --deploy-addon --json`
+  - `python aibenchie_local.py --verify-deploy-plan --deploy-plan <deploy-plan.json> --json`
   - `python aibenchie_local.py --verify-release-artifacts --release-artifacts <release-artifacts.json> --json`
 
 ## 2026-05-10: EchoLabs Stabilization Backlog Is Complete
 
 - Status: accepted
 - Decision: treat the EchoLabs stabilization backlog as complete and require future suite work to enter as new scoped backlog rows, not by reopening completed stabilization rows.
-- Context: Web, Android, Desktop, BridgeEcho/NullBridge, Universal API/UX E2E, release artifact attestation, suite-security, generated-output policy, deploy add-on dry run, and hosted API E2E all passed in the current workspace.
+- Context: Web, Android, Desktop, BridgeEcho/NullBridge, Universal API/UX E2E, release artifact attestation, suite-security, generated-output policy, deploy add-on dry run, deploy-plan verification, and hosted API E2E all passed in the current workspace.
 - Rationale: the suite now has enough release evidence that old "next work" labels create confusion and duplicate effort. A handoff record should distinguish completed stabilization from new product/release lanes.
 - Consequences: future work should start from a clean lane such as provider-backed deployment, Docker gate support, broader real-device UX coverage, or the paused standalone AIBenchie expansion.
 - Revisit trigger: revisit only if a default suite release gate regresses or a completed gate is intentionally replaced.
