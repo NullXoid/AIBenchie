@@ -13,7 +13,7 @@
           "type": "http",
           "adapter": "http",
           "base_url": "${ENV:AIBENCHIE_BACKEND_URL:-}",
-          "required": true,
+          "required": false,
           "timeout_seconds": 10,
           "checks": [
             {
@@ -31,6 +31,17 @@
               }
             }
           ]
+        },
+        {
+          "id": "bridgeecho-api",
+          "name": "BridgeEcho API and trust fabric",
+          "type": "api",
+          "adapter": "command",
+          "required": true,
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_BRIDGE_ROOT:-../../NullBridge/backend}",
+          "command": ["powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/nullbridge_release_gate.ps1"],
+          "timeout_seconds": 420,
+          "notes": "Runs BridgeEcho/NullBridge API, service identity, approval routing, signed-envelope, and redaction gates."
         }
       ]
     },

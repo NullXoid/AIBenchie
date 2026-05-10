@@ -33,6 +33,8 @@ python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echol
 
 For a hosted backend, set `AIBENCHIE_BACKEND_URL` to the hosted API origin.
 
+The EchoLabs API lane also runs the BridgeEcho/NullBridge release gate through `scripts/nullbridge_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_BRIDGE_ROOT` when the NullBridge backend checkout is outside the default sibling `NullBridge/backend` path. The hosted HTTP target is optional by default so local API contract validation can run without a live deployment.
+
 ## EchoLabs UX Example
 
 ```powershell
@@ -85,6 +87,7 @@ Implemented now:
 - JSON/YAML manifest loading.
 - Environment substitution with `${ENV:NAME:-fallback}`.
 - API lane HTTP checks.
+- EchoLabs BridgeEcho/NullBridge API command target.
 - UX lane command/manual target foundation.
 - EchoLabs web UX command target.
 - EchoLabs Android UX command target.

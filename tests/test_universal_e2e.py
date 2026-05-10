@@ -239,3 +239,22 @@ def test_echolabs_manifest_has_executable_ux_targets():
         "-File",
         "scripts/desktop_release_gate.ps1",
     ]
+
+
+def test_echolabs_manifest_has_executable_api_targets():
+    manifest_path = Path("configs/echolabs_universal_e2e.json")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    targets = {target["id"]: target for target in manifest["lanes"]["api"]["targets"]}
+
+    assert targets["hosted-backend"]["adapter"] == "http"
+    assert targets["hosted-backend"]["required"] is False
+    assert targets["bridgeecho-api"]["adapter"] == "command"
+    assert targets["bridgeecho-api"]["required"] is True
+    assert targets["bridgeecho-api"]["command"] == [
+        "powershell",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/nullbridge_release_gate.ps1",
+    ]
