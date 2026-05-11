@@ -96,6 +96,11 @@ def test_build_release_report_surfaces_public_safe_real_device_ux_summary(tmp_pa
             "base_url": "https://api.echolabs.diy/nullxoid",
             "network": "cellular",
         },
+        "runtime": {
+            "provider": "llamacpp",
+            "model": "Qwen/Qwen3-4B-GGUF",
+            "endpoint_label": "ct729-text-8081",
+        },
         "workflows": [
             {
                 "id": "signin",
@@ -120,8 +125,16 @@ def test_build_release_report_surfaces_public_safe_real_device_ux_summary(tmp_pa
         "status": "pass",
         "platform": "android",
         "proof_id": "android-physical-smoke-001",
+        "app_package": "com.nullxoid.android",
+        "app_version": "1.0.0",
+        "app_build_type": "release",
+        "base_url": "https://api.echolabs.diy/nullxoid",
+        "network": "cellular",
+        "runtime_provider": "llamacpp",
+        "runtime_model": "Qwen/Qwen3-4B-GGUF",
+        "runtime_endpoint_label": "ct729-text-8081",
         "workflow_count": 2,
-        "checks_total": 13,
+        "checks_total": 14,
         "failed_checks": 0,
     }
     assert "SM-A176U" not in json.dumps(summary)
@@ -207,6 +220,7 @@ def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path)
     assert details["aibenchie_verdict"]["suite_verdict"] == "ship_candidate"
     assert details["aibenchie_verdict"]["summary_path"] == "summary.json"
     assert details["aibenchie_verdict"]["full_report_path"] == "full-report.json.encrypted"
+    assert "real_device_ux" in details
     assert any(gate["name"] == "Real-device UX proof" for gate in details["gates"])
     assert any(gate["name"] == "Docker supported-mode proof" for gate in details["gates"])
     assert details["release_package_attestation"]["status"] == "incomplete"
@@ -215,6 +229,7 @@ def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path)
     assert len(details["artifacts"][0]["digest"]["value"]) == 64
     assert details["security_and_privacy"]["full_report_encrypted"] is True
     assert "## AIBenchie Verdict" in details_markdown
+    assert "## Real-Device UX Evidence" in details_markdown
     assert "## Release Package Attestation" in details_markdown
     assert "| summary.json | sha256:" in details_markdown
     assert result["release_details"].endswith("release-details.json")

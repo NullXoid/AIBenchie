@@ -31,6 +31,11 @@ def write_proof(path, overrides=None):
             "base_url": "https://api.echolabs.diy/nullxoid",
             "network": "cellular",
         },
+        "runtime": {
+            "provider": "llamacpp",
+            "model": "Qwen/Qwen3-4B-GGUF",
+            "endpoint_label": "ct729-text-8081",
+        },
         "workflows": [
             {
                 "id": "signin",
@@ -61,6 +66,22 @@ def test_real_device_ux_accepts_public_safe_android_proof(tmp_path):
     assert result["ok"] is True
     assert result["platform"] == "android"
     assert result["workflows"] == ["signin", "chat"]
+    assert result["app"]["version"] == "1.0.0"
+    assert result["environment"]["base_url"] == "https://api.echolabs.diy/nullxoid"
+    assert result["runtime"]["model"] == "Qwen/Qwen3-4B-GGUF"
+
+
+def test_real_device_ux_requires_runtime_model_for_android_chat(tmp_path):
+    proof = write_proof(
+        tmp_path / "proof.json",
+        overrides={"runtime": {"provider": "llamacpp", "model": "", "endpoint_label": "ct729-text-8081"}},
+    )
+
+    result = validate_real_device_ux_proof(proof).as_dict()
+    checks = {check["name"]: check for check in result["checks"]}
+
+    assert result["ok"] is False
+    assert checks["runtime_model_label"]["failure"] == "runtime_model_missing_for_chat"
 
 
 def test_real_device_ux_rejects_template_default():
@@ -125,6 +146,21 @@ def test_real_device_ux_cli(capsys, tmp_path):
     assert payload["proof_id"] == "android-physical-smoke-001"
 
 
+def test_real_device_ux_cli_human_report_labels_runtime_and_environment(capsys, tmp_path):
+    proof = write_proof(tmp_path / "proof.json")
+
+    exit_code = aibenchie_local.main(["--real-device-ux-proof", str(proof)])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "App version: 1.0.0" in output
+    assert "Base URL: https://api.echolabs.diy/nullxoid" in output
+    assert "Network: cellular" in output
+    assert "Runtime provider: llamacpp" in output
+    assert "Runtime model: Qwen/Qwen3-4B-GGUF" in output
+    assert "Runtime endpoint: ct729-text-8081" in output
+
+
 def test_emit_android_real_device_ux_proof_hashes_device_identifier(tmp_path):
     def fake_adb(args):
         command = " ".join(args)
@@ -148,12 +184,20 @@ def test_emit_android_real_device_ux_proof_hashes_device_identifier(tmp_path):
         signin_passed=True,
         chat_passed=True,
         proof_id="android-real-device-test",
+        runtime_provider="llamacpp",
+        runtime_model="Qwen/Qwen3-4B-GGUF",
+        runtime_endpoint_label="ct729-text-8081",
         adb_reader=fake_adb,
     )
     payload = json.loads(output.read_text(encoding="utf-8"))
 
     assert result["ok"] is True
     assert payload["app"]["version"] == "1.2.3"
+    assert payload["runtime"] == {
+        "provider": "llamacpp",
+        "model": "Qwen/Qwen3-4B-GGUF",
+        "endpoint_label": "ct729-text-8081",
+    }
     assert payload["device"]["device_id_hash"] != "RAW-DEVICE-123"
     assert "RAW-DEVICE-123" not in output.read_text(encoding="utf-8")
     assert validate_real_device_ux_proof(output).ok is True
@@ -184,6 +228,7 @@ def test_emit_android_real_device_ux_proof_can_capture_ignored_screenshot(tmp_pa
         signin_passed=True,
         chat_passed=True,
         proof_id="android-real-device-screen-test",
+        runtime_model="Qwen/Qwen3-4B-GGUF",
         capture_screenshot=True,
         artifact_dir=artifact_dir,
         adb_reader=fake_adb,
@@ -222,7 +267,13 @@ def test_emit_android_real_device_ux_proof_requires_installed_package_version(tm
         raise AssertionError(f"unexpected adb command: {command}")
 
     try:
-        emit_android_real_device_ux_proof(tmp_path / "proof.json", signin_passed=True, chat_passed=True, adb_reader=fake_adb)
+        emit_android_real_device_ux_proof(
+            tmp_path / "proof.json",
+            signin_passed=True,
+            chat_passed=True,
+            runtime_model="Qwen/Qwen3-4B-GGUF",
+            adb_reader=fake_adb,
+        )
     except RuntimeError as exc:
         assert str(exc) == "android_package_version_missing"
     else:
@@ -252,6 +303,7 @@ def test_emit_android_real_device_ux_proof_allows_explicit_app_version_override(
         signin_passed=True,
         chat_passed=True,
         app_version="1.2.3-operator",
+        runtime_model="Qwen/Qwen3-4B-GGUF",
         adb_reader=fake_adb,
     )
     payload = json.loads(output.read_text(encoding="utf-8"))
@@ -268,6 +320,9 @@ def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
         assert kwargs["adb_serial"] == "RAW-DEVICE-123"
         assert kwargs["signin_passed"] is True
         assert kwargs["chat_passed"] is True
+        assert kwargs["runtime_provider"] == "llamacpp"
+        assert kwargs["runtime_model"] == "Qwen/Qwen3-4B-GGUF"
+        assert kwargs["runtime_endpoint_label"] == "ct729-text-8081"
         assert kwargs["capture_screenshot"] is True
         assert kwargs["artifact_dir"] == str(tmp_path / "artifacts")
         return {
@@ -289,6 +344,12 @@ def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
             "RAW-DEVICE-123",
             "--real-device-ux-signin-passed",
             "--real-device-ux-chat-passed",
+            "--real-device-ux-runtime-provider",
+            "llamacpp",
+            "--real-device-ux-runtime-model",
+            "Qwen/Qwen3-4B-GGUF",
+            "--real-device-ux-runtime-endpoint-label",
+            "ct729-text-8081",
             "--real-device-ux-capture-screenshot",
             "--real-device-ux-artifact-dir",
             str(tmp_path / "artifacts"),

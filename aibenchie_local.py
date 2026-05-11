@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -364,6 +365,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--real-device-ux-app-version", default="", help="Override detected Android app version.")
     parser.add_argument("--real-device-ux-proof-id", default="", help="Override generated Android proof id.")
+    parser.add_argument(
+        "--real-device-ux-runtime-provider",
+        default=os.environ.get("AIBENCHIE_REAL_DEVICE_UX_RUNTIME_PROVIDER", ""),
+        help="Public-safe runtime provider label recorded in generated Android proof evidence.",
+    )
+    parser.add_argument(
+        "--real-device-ux-runtime-model",
+        default=os.environ.get("AIBENCHIE_REAL_DEVICE_UX_RUNTIME_MODEL", ""),
+        help="Public-safe runtime model label recorded in generated Android proof evidence.",
+    )
+    parser.add_argument(
+        "--real-device-ux-runtime-endpoint-label",
+        default=os.environ.get("AIBENCHIE_REAL_DEVICE_UX_RUNTIME_ENDPOINT_LABEL", ""),
+        help="Public-safe runtime endpoint label recorded in generated Android proof evidence.",
+    )
     parser.add_argument(
         "--real-device-ux-signin-passed",
         action="store_true",
@@ -982,6 +998,9 @@ def main(argv: list[str] | None = None) -> int:
                 proof_id=args.real_device_ux_proof_id,
                 signin_passed=args.real_device_ux_signin_passed,
                 chat_passed=args.real_device_ux_chat_passed,
+                runtime_provider=args.real_device_ux_runtime_provider,
+                runtime_model=args.real_device_ux_runtime_model,
+                runtime_endpoint_label=args.real_device_ux_runtime_endpoint_label,
                 capture_screenshot=args.real_device_ux_capture_screenshot,
                 artifact_dir=args.real_device_ux_artifact_dir or None,
             )
@@ -996,6 +1015,20 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Failure: {result['failure']}")
             elif result.get("validation"):
                 print(f"Proof id: {result['proof_id']}")
+                validation = result.get("validation") or {}
+                runtime = validation.get("runtime") if isinstance(validation.get("runtime"), dict) else {}
+                app = validation.get("app") if isinstance(validation.get("app"), dict) else {}
+                environment = validation.get("environment") if isinstance(validation.get("environment"), dict) else {}
+                if app.get("version"):
+                    print(f"App version: {app.get('version')}")
+                if environment.get("base_url"):
+                    print(f"Base URL: {environment.get('base_url')}")
+                if runtime.get("model"):
+                    print(f"Runtime model: {runtime.get('model')}")
+                if runtime.get("provider"):
+                    print(f"Runtime provider: {runtime.get('provider')}")
+                if runtime.get("endpoint_label"):
+                    print(f"Runtime endpoint: {runtime.get('endpoint_label')}")
                 print("Validation: PASS" if result["ok"] else "Validation: FAIL")
             print("Result: PASS" if result.get("ok") else "Result: FAIL")
         return 0 if result.get("ok") else 1
@@ -1009,6 +1042,23 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Proof: {result['proof_path']}")
             print(f"Platform: {result['platform']}")
             print(f"Proof id: {result['proof_id']}")
+            app = result.get("app") if isinstance(result.get("app"), dict) else {}
+            environment = result.get("environment") if isinstance(result.get("environment"), dict) else {}
+            runtime = result.get("runtime") if isinstance(result.get("runtime"), dict) else {}
+            if app.get("version"):
+                print(f"App version: {app.get('version')}")
+            if app.get("build_type"):
+                print(f"App build type: {app.get('build_type')}")
+            if environment.get("base_url"):
+                print(f"Base URL: {environment.get('base_url')}")
+            if environment.get("network"):
+                print(f"Network: {environment.get('network')}")
+            if runtime.get("model"):
+                print(f"Runtime model: {runtime.get('model')}")
+            if runtime.get("provider"):
+                print(f"Runtime provider: {runtime.get('provider')}")
+            if runtime.get("endpoint_label"):
+                print(f"Runtime endpoint: {runtime.get('endpoint_label')}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")

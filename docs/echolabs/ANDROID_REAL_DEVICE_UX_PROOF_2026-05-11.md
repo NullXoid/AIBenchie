@@ -9,9 +9,10 @@ The Android real-device UX proof passed for the EchoLabs Suite release checkpoin
 - Platform: Android
 - Package: `com.nullxoid.android`
 - App version: `0.1.93`
+- Runtime: `llamacpp` / `Qwen/Qwen3-4B-GGUF` / `ct729-text-8081`
 - Workflows proven: sign-in and chat
-- Proof id: `android-real-device-ux-20260511T125801Z`
-- Proof validation: 13 checks passed, 0 failed
+- Proof id: `android-real-device-ux-20260511T131112Z`
+- Proof validation: 14 checks passed, 0 failed
 - Suite gate result: 8 passing surfaces, 0 failed
 
 ## Privacy Boundary
@@ -23,9 +24,9 @@ The proof uses a hashed device identifier and public-safe metadata only. Raw dev
 ```powershell
 adb devices
 python aibenchie_local.py --android-real-device-ux-preflight --json
-python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --real-device-ux-capture-screenshot --json
+python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --real-device-ux-runtime-provider llamacpp --real-device-ux-runtime-model "Qwen/Qwen3-4B-GGUF" --real-device-ux-runtime-endpoint-label ct729-text-8081 --real-device-ux-capture-screenshot --json
 python aibenchie_local.py --real-device-ux-proof .suite\local\aibenchie\android-real-device-ux.json --json
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\echolabs_suite_release_gate.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\echolabs_suite_release_gate.ps1 -GenerateAndroidRealDeviceUXProof -AndroidRealDeviceUXSigninPassed -AndroidRealDeviceUXChatPassed -RealDeviceUXRuntimeProvider llamacpp -RealDeviceUXRuntimeModel "Qwen/Qwen3-4B-GGUF" -RealDeviceUXRuntimeEndpointLabel ct729-text-8081
 ```
 
 ## Release Evidence
@@ -35,7 +36,7 @@ The public EchoLabs web evidence was refreshed from the sanitized AIBenchie summ
 - Latest verdict: `pass`
 - Suite gate: `8/8`
 - Real-device UX: `pass`
-- Real-device proof id: `android-real-device-ux-20260511T125801Z`
+- Real-device proof id: `android-real-device-ux-20260511T131112Z`
 
 ## Runtime Notes
 

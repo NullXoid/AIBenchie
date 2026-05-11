@@ -44,6 +44,9 @@ class RealDeviceUXResult:
     platform: str
     proof_id: str
     workflows: list[str]
+    app: dict[str, Any]
+    environment: dict[str, Any]
+    runtime: dict[str, Any]
     checks: list[RealDeviceUXCheck]
 
     def as_dict(self) -> dict[str, Any]:
@@ -53,6 +56,9 @@ class RealDeviceUXResult:
             "platform": self.platform,
             "proof_id": self.proof_id,
             "workflows": self.workflows,
+            "app": self.app,
+            "environment": self.environment,
+            "runtime": self.runtime,
             "checks": [check.as_dict() for check in self.checks],
         }
 
@@ -252,6 +258,9 @@ def emit_android_real_device_ux_proof(
     proof_id: str = "",
     signin_passed: bool = False,
     chat_passed: bool = False,
+    runtime_provider: str = "",
+    runtime_model: str = "",
+    runtime_endpoint_label: str = "",
     network: str = "real-device",
     capture_screenshot: bool = False,
     artifact_dir: str | Path | None = None,
@@ -315,6 +324,11 @@ def emit_android_real_device_ux_proof(
         "environment": {
             "base_url": base_url,
             "network": network,
+        },
+        "runtime": {
+            "provider": runtime_provider.strip(),
+            "model": runtime_model.strip(),
+            "endpoint_label": runtime_endpoint_label.strip(),
         },
         "workflows": [
             {
@@ -449,6 +463,26 @@ def validate_real_device_ux_proof(proof_path: str | Path | None = None) -> RealD
     if platform == "android":
         missing = sorted(REQUIRED_ANDROID_WORKFLOWS.difference(workflow_ids))
         checks.append(_check("android_required_workflows", not missing, ";".join(f"workflow_missing:{item}" for item in missing), required=sorted(REQUIRED_ANDROID_WORKFLOWS)))
+        runtime = payload.get("runtime") if isinstance(payload.get("runtime"), dict) else {}
+        runtime_model = str(runtime.get("model") or "").strip()
+        chat_workflow_passed = any(
+            isinstance(workflow, dict)
+            and str(workflow.get("id") or workflow.get("name") or "").strip() == "chat"
+            and str(workflow.get("status") or "").strip().lower() == "pass"
+            for workflow in workflows
+        )
+        checks.append(
+            _check(
+                "runtime_model_label",
+                bool(runtime_model) or not chat_workflow_passed,
+                "runtime_model_missing_for_chat",
+                model=runtime_model,
+                provider=str(runtime.get("provider") or "").strip(),
+                endpoint_label=str(runtime.get("endpoint_label") or "").strip(),
+            )
+        )
+    else:
+        runtime = payload.get("runtime") if isinstance(payload.get("runtime"), dict) else {}
 
     artifacts = payload.get("artifacts") if isinstance(payload.get("artifacts"), list) else []
     artifact_failures = []
@@ -469,5 +503,19 @@ def validate_real_device_ux_proof(proof_path: str | Path | None = None) -> RealD
         platform=platform,
         proof_id=proof_id,
         workflows=workflow_ids,
+        app={
+            "package": package_name,
+            "version": version,
+            "build_type": str(app.get("build_type") or "").strip(),
+        },
+        environment={
+            "base_url": base_url,
+            "network": str(environment.get("network") or "").strip(),
+        },
+        runtime={
+            "provider": str(runtime.get("provider") or "").strip(),
+            "model": str(runtime.get("model") or "").strip(),
+            "endpoint_label": str(runtime.get("endpoint_label") or "").strip(),
+        },
         checks=checks,
     )

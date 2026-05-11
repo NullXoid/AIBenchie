@@ -166,12 +166,23 @@ def _real_device_ux_public_summary(env: dict[str, str] | None = None) -> dict[st
     checks = verification.get("checks") if isinstance(verification.get("checks"), list) else []
     failed = [check for check in checks if isinstance(check, dict) and check.get("ok") is False]
     workflows = verification.get("workflows") if isinstance(verification.get("workflows"), list) else []
+    app = verification.get("app") if isinstance(verification.get("app"), dict) else {}
+    environment = verification.get("environment") if isinstance(verification.get("environment"), dict) else {}
+    runtime = verification.get("runtime") if isinstance(verification.get("runtime"), dict) else {}
     ok = bool(verification.get("ok"))
     return {
         "ok": ok,
         "status": "pass" if ok else "fail",
         "platform": str(verification.get("platform") or ""),
         "proof_id": str(verification.get("proof_id") or ""),
+        "app_package": str(app.get("package") or ""),
+        "app_version": str(app.get("version") or ""),
+        "app_build_type": str(app.get("build_type") or ""),
+        "base_url": str(environment.get("base_url") or ""),
+        "network": str(environment.get("network") or ""),
+        "runtime_provider": str(runtime.get("provider") or ""),
+        "runtime_model": str(runtime.get("model") or ""),
+        "runtime_endpoint_label": str(runtime.get("endpoint_label") or ""),
         "workflow_count": len(workflows),
         "checks_total": len(checks),
         "failed_checks": len(failed),
@@ -501,6 +512,7 @@ def build_release_details(
             "required_signature_policy": "pending_until_channel_signing_configured",
             "command": "python aibenchie_local.py --release-report",
         },
+        "real_device_ux": summary.get("real_device_ux", {}),
         "gates": _default_gates(summary),
         "release_package_attestation": build_release_package_attestation(normalized_artifacts),
         "artifacts": normalized_artifacts,
@@ -528,6 +540,7 @@ def build_release_details(
 
 def render_release_details_markdown(details: dict[str, Any]) -> str:
     verdict = details.get("aibenchie_verdict", {})
+    real_device_ux = details.get("real_device_ux", {}) if isinstance(details.get("real_device_ux"), dict) else {}
     source = details.get("source", {})
     security = details.get("security_and_privacy", {})
     review = details.get("operator_review", {})
@@ -567,6 +580,27 @@ def render_release_details_markdown(details: dict[str, Any]) -> str:
     ]
     for gate in details.get("gates", []):
         lines.append(f"| {gate.get('name', '')} | {gate.get('result', '')} | {gate.get('evidence', '')} |")
+    if real_device_ux:
+        lines.extend(
+            [
+                "",
+                "## Real-Device UX Evidence",
+                "",
+                f"- status: {real_device_ux.get('status', '')}",
+                f"- platform: {real_device_ux.get('platform', '')}",
+                f"- proof_id: {real_device_ux.get('proof_id', '')}",
+                f"- app_package: {real_device_ux.get('app_package', '')}",
+                f"- app_version: {real_device_ux.get('app_version', '')}",
+                f"- app_build_type: {real_device_ux.get('app_build_type', '')}",
+                f"- base_url: {real_device_ux.get('base_url', '')}",
+                f"- network: {real_device_ux.get('network', '')}",
+                f"- runtime_provider: {real_device_ux.get('runtime_provider', '')}",
+                f"- runtime_model: {real_device_ux.get('runtime_model', '')}",
+                f"- runtime_endpoint_label: {real_device_ux.get('runtime_endpoint_label', '')}",
+                f"- workflow_count: {real_device_ux.get('workflow_count', 0)}",
+                f"- checks: {real_device_ux.get('checks_total', 0)} total, {real_device_ux.get('failed_checks', 0)} failed",
+            ]
+        )
     attestation = details.get("release_package_attestation", {})
     missing_by_artifact = attestation.get("missing_by_artifact", {})
     lines.extend(

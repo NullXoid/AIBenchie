@@ -22,6 +22,9 @@ param(
     [string]$RealDeviceUXAdbSerial = "",
     [string]$RealDeviceUXPackage = "com.nullxoid.android",
     [string]$RealDeviceUXBaseUrl = "https://api.echolabs.diy/nullxoid",
+    [string]$RealDeviceUXRuntimeProvider = "",
+    [string]$RealDeviceUXRuntimeModel = "",
+    [string]$RealDeviceUXRuntimeEndpointLabel = "",
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
     [string]$SuiteRoot = ""
 )
@@ -345,6 +348,18 @@ if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {
     }
     if ($AndroidRealDeviceUXChatPassed) {
         $androidProofArgs += "--real-device-ux-chat-passed"
+    }
+    if ($RealDeviceUXRuntimeProvider) {
+        $androidProofArgs += "--real-device-ux-runtime-provider"
+        $androidProofArgs += $RealDeviceUXRuntimeProvider
+    }
+    if ($RealDeviceUXRuntimeModel) {
+        $androidProofArgs += "--real-device-ux-runtime-model"
+        $androidProofArgs += $RealDeviceUXRuntimeModel
+    }
+    if ($RealDeviceUXRuntimeEndpointLabel) {
+        $androidProofArgs += "--real-device-ux-runtime-endpoint-label"
+        $androidProofArgs += $RealDeviceUXRuntimeEndpointLabel
     }
     if ($CaptureAndroidRealDeviceUXScreenshot) {
         $androidProofArgs += "--real-device-ux-capture-screenshot"
