@@ -26,7 +26,7 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.echolabs.diy/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
 | Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, hosted JSON route behavior, and configured-provider Android Digital Asset Links |
 | Passkey/OIDC provider configuration and physical Android proof | Done | Public-safe provider config template, real-value enforcement mode, live Digital Asset Links, and physical Android Credential Manager enrollment proof passed without committing secrets |
-| Android real-device UX proof | Done | Physical Android sign-in and chat proof passed for `com.nullxoid.android` version `0.1.92`; public release evidence shows proof id `android-real-device-ux-20260511T095838Z` |
+| Android real-device UX proof | Done | Physical Android sign-in and chat proof passed for `com.nullxoid.android` version `0.1.93`; public release evidence shows proof id `android-real-device-ux-20260511T125801Z` |
 | Public AIBenchie release evidence deploy | Done | `https://www.echolabs.diy/aibenchie` shows public-safe release evidence, suite gate `8/8`, and Android real-device UX `pass`; CT400 deploy timer now delegates to the public-site guard |
 
 ## Visual Status Tracks
@@ -149,3 +149,4 @@ Acceptance:
 - Mobile session tokens stay in Android Keystore or equivalent platform storage.
 - AIBenchie proves the native ceremony cannot leak tokens through URLs, logs, frontend storage, or NullBridge service credentials.
 - A physical Android device proves Credential Manager passkey enrollment after provider metadata and Digital Asset Links are live.
+

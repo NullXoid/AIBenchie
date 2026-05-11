@@ -8,9 +8,9 @@ The Android real-device UX proof passed for the EchoLabs Suite release checkpoin
 
 - Platform: Android
 - Package: `com.nullxoid.android`
-- App version: `0.1.92`
+- App version: `0.1.93`
 - Workflows proven: sign-in and chat
-- Proof id: `android-real-device-ux-20260511T095838Z`
+- Proof id: `android-real-device-ux-20260511T125801Z`
 - Proof validation: 13 checks passed, 0 failed
 - Suite gate result: 8 passing surfaces, 0 failed
 
@@ -35,7 +35,17 @@ The public EchoLabs web evidence was refreshed from the sanitized AIBenchie summ
 - Latest verdict: `pass`
 - Suite gate: `8/8`
 - Real-device UX: `pass`
-- Real-device proof id: `android-real-device-ux-20260511T095838Z`
+- Real-device proof id: `android-real-device-ux-20260511T125801Z`
+
+## Runtime Notes
+
+The proof was regenerated after RuntimeEcho was moved off the temporary workstation Ollama endpoint and onto the dedicated CT729 llama.cpp text runtime:
+
+- CT729 `llama-server.service`: port `8080`, `Qwen/Qwen3-VL-8B-Instruct-GGUF`, vision/VL runtime.
+- CT729 `llama-server-text.service`: port `8081`, `Qwen/Qwen3-4B-GGUF`, normal text chat runtime.
+- CT400 RuntimeEcho default: `http://192.168.1.244:8081`, model `Qwen/Qwen3-4B-GGUF`.
+
+The physical Android chat path returned a visible response through the CT729 text runtime and no longer exposes the VL model as the normal-chat default.
 
 ## Deployment Smoke
 
@@ -49,3 +59,4 @@ Canonical public deployment passed on `https://www.echolabs.diy` after the publi
 - `https://www.echolabs.diy/content/verdicts/aibenchie-release-evidence.json`: real-device UX `pass`
 
 The older `https://echolabs.netlify.app` route is not the canonical deployment for this evidence and should not be used as the release smoke target.
+

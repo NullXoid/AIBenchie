@@ -17,7 +17,8 @@ This handoff records the current release posture for the EchoLabs Suite stabiliz
 - Deploy add-on dry-run plan gate, read-only plan verifier, release-summary proof hook, and optional suite-gate surface.
 - Passkey/OIDC provider configuration and physical Android Credential Manager proof.
 - Resource Manager runtime evidence and release evidence display.
-- Android real-device UX proof for physical sign-in and chat on app version `0.1.92`.
+- Android real-device UX proof for physical sign-in and chat on app version `0.1.93`.
+- RuntimeEcho hosted chat routed to CT729's dedicated llama.cpp text runtime on port `8081`, with the existing CT729 VL runtime isolated on port `8080`.
 - Public EchoLabs AIBenchie evidence display on `https://www.echolabs.diy/aibenchie`.
 - CT400 public-site deploy path corrected so the root-owned timer deploys `echolabs-site`, not the NullXoid suite app.
 

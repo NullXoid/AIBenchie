@@ -81,7 +81,9 @@ The local package proof used an ephemeral validation secret and key id `local-va
 
 The current Android foothold channel is the signed debug/prerelease update path. `v0.1.93` was published to Forgejo and `latest-debug` was moved to the same APK. The published `v0.1.93` and `latest-debug` assets both hash to `7ddfdc55791351ff001398c8da211e0686cff432b0d1ad86d14d2f079da52126` and target commit `7f6cc678614e1a2445f9ba4d0669b0db8e670031`.
 
-The connected Android test phone was updated to `0.1.93`, and AIBenchie real-device preflight passed for `com.nullxoid.android` version `0.1.93`. The prior public real-device UX proof remains `android-real-device-ux-20260511T095838Z` for version `0.1.92`; do not claim a new `0.1.93` physical sign-in/chat proof until those workflows are exercised again and a new proof is generated.
+The connected Android test phone was updated to `0.1.93`, and AIBenchie real-device preflight passed for `com.nullxoid.android` version `0.1.93`. Physical sign-in and chat were re-run after the RuntimeEcho model fix, and the current real-device UX proof is `android-real-device-ux-20260511T125801Z` for version `0.1.93`.
+
+RuntimeEcho now routes normal hosted chat to CT729's dedicated llama.cpp text service at `http://192.168.1.244:8081` with `Qwen/Qwen3-4B-GGUF`. CT729's existing VL service remains separate on port `8080` for `Qwen/Qwen3-VL-8B-Instruct-GGUF`, so Android normal chat no longer defaults to a VL model.
 
 A production/store-style Android release still needs real signing credentials configured through `NULLXOID_SIGNING_STORE_FILE`, `NULLXOID_SIGNING_STORE_PASSWORD`, `NULLXOID_SIGNING_KEY_ALIAS`, and `NULLXOID_SIGNING_KEY_PASSWORD`, then a signed release artifact should be rebuilt and re-attested.
 
@@ -102,3 +104,4 @@ The fix was committed to `.NullXoid` as `51bc3c222d5a0aa5af3167412379fa63539fca0
 - AIBenchie standalone product downloads remain deferred until after app release/deployment is stable.
 - Docker remains explicitly not supported as a release target.
 - Android production signing is the main blocker for a store-style release artifact, but not for the current debug/prerelease foothold channel.
+
