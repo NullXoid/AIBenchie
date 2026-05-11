@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from aibenchie.deploy_addon import verify_deploy_plan
+from aibenchie.docker_support import validate_docker_support_proof
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.nullprivacy import decrypt_blob, encrypt_blob, generate_key, run_e2ee_storage_proof
 from aibenchie.real_device_ux import validate_real_device_ux_proof
@@ -177,6 +178,30 @@ def _real_device_ux_public_summary(env: dict[str, str] | None = None) -> dict[st
     }
 
 
+def _docker_support_public_summary(env: dict[str, str] | None = None) -> dict[str, Any]:
+    source = env or os.environ
+    configured = (source.get("AIBENCHIE_DOCKER_SUPPORT_PROOF") or source.get("AIBENCHIE_DOCKER_PROOF") or "").strip()
+    if not configured:
+        return {
+            "ok": "skipped",
+            "status": "not_run",
+            "proof_status": "coming_soon",
+            "checks_total": 0,
+            "failed_checks": 0,
+        }
+    verification = validate_docker_support_proof(configured).as_dict()
+    checks = verification.get("checks") if isinstance(verification.get("checks"), list) else []
+    failed = [check for check in checks if isinstance(check, dict) and check.get("ok") is False]
+    ok = bool(verification.get("ok"))
+    return {
+        "ok": ok,
+        "status": "pass" if ok else "fail",
+        "proof_status": str(verification.get("status") or ""),
+        "checks_total": len(checks),
+        "failed_checks": len(failed),
+    }
+
+
 def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
     tracks = summary.get("tracks") or {}
     trust_smoke = summary.get("trust_smoke") or {}
@@ -184,6 +209,7 @@ def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
     privacy_proof = summary.get("privacy_proof") or {}
     deploy_addon = summary.get("deploy_addon") or {}
     real_device_ux = summary.get("real_device_ux") or {}
+    docker_support = summary.get("docker_support") or {}
     return [
         {
             "name": "NullBridge trust fabric",
@@ -224,6 +250,11 @@ def _default_gates(summary: dict[str, Any]) -> list[dict[str, str]]:
             "name": "Real-device UX proof",
             "result": _status_for(real_device_ux.get("ok", "skipped")),
             "evidence": "real_device_ux",
+        },
+        {
+            "name": "Docker supported-mode proof",
+            "result": _status_for(docker_support.get("ok", "skipped")),
+            "evidence": "docker_support",
         },
     ]
 
@@ -644,6 +675,7 @@ def build_release_report(
 
     deploy_addon = _deploy_addon_public_summary(env)
     real_device_ux = _real_device_ux_public_summary(env)
+    docker_support = _docker_support_public_summary(env)
     critical_blocks = sorted(track for track, status in tracks.items() if status == "critical_block")
     blocks_release = sorted(track for track, status in tracks.items() if status == "blocks_release")
     verdict = "ship_candidate" if not critical_blocks and not blocks_release else "critical_block"
@@ -666,6 +698,7 @@ def build_release_report(
         "notification_smoke": notification_smoke,
         "deploy_addon": deploy_addon,
         "real_device_ux": real_device_ux,
+        "docker_support": docker_support,
     }
     assert_public_safe(summary)
 

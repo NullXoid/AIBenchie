@@ -128,6 +128,70 @@ def test_build_release_report_surfaces_public_safe_real_device_ux_summary(tmp_pa
     assert_public_safe(summary)
 
 
+def test_build_release_report_surfaces_public_safe_docker_support_summary(tmp_path):
+    proof = {
+        "schema": "aibenchie.docker-support-proof.v1",
+        "template": False,
+        "status": "supported",
+        "services": [
+            {
+                "id": "echolabs_web",
+                "image_digest": "sha256:" + "a" * 64,
+                "healthcheck": "/health",
+                "resources": {"cpu": "1", "memory": "512m"},
+            },
+            {
+                "id": "bridgeecho",
+                "image_digest": "sha256:" + "b" * 64,
+                "healthcheck": "/health",
+                "resources": {"cpu": "1", "memory": "512m"},
+            },
+            {
+                "id": "aibenchie",
+                "image_digest": "sha256:" + "c" * 64,
+                "healthcheck": "python aibenchie_local.py --docker-support-proof",
+                "resources": {"cpu": "1", "memory": "512m"},
+            },
+        ],
+        "persistent_volumes": [
+            {"id": "vault"},
+            {"id": "artifacts"},
+            {"id": "logs"},
+            {"id": "aibenchie_evidence"},
+        ],
+        "runtime_secret_paths": [
+            "provider_tokens",
+            "service_credentials",
+            "release_signing",
+            "e2ee_recovery",
+        ],
+        "network": {
+            "https_routes": True,
+            "local_only_services": True,
+            "sse_or_websocket": True,
+        },
+        "gates": {
+            "suite_release_gate": "pass",
+            "docker_supported_mode_gate": "pass",
+            "secret_scan": "pass",
+        },
+    }
+    proof_path = tmp_path / "docker-support-proof.json"
+    proof_path.write_text(json.dumps(proof), encoding="utf-8")
+
+    summary, _, _ = build_release_report(ROOT, run_trust_smoke=False, env={"AIBENCHIE_DOCKER_SUPPORT_PROOF": str(proof_path)})
+
+    assert summary["docker_support"] == {
+        "ok": True,
+        "status": "pass",
+        "proof_status": "supported",
+        "checks_total": 10,
+        "failed_checks": 0,
+    }
+    assert "sha256:" not in json.dumps(summary)
+    assert_public_safe(summary)
+
+
 def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path):
     result = write_release_report(ROOT, tmp_path, run_trust_smoke=False)
 
@@ -144,6 +208,7 @@ def test_write_release_report_writes_summary_and_encrypted_full_report(tmp_path)
     assert details["aibenchie_verdict"]["summary_path"] == "summary.json"
     assert details["aibenchie_verdict"]["full_report_path"] == "full-report.json.encrypted"
     assert any(gate["name"] == "Real-device UX proof" for gate in details["gates"])
+    assert any(gate["name"] == "Docker supported-mode proof" for gate in details["gates"])
     assert details["release_package_attestation"]["status"] == "incomplete"
     assert details["release_package_attestation"]["artifact_count"] == 2
     assert details["artifacts"][0]["digest"]["algorithm"] == "sha256"
