@@ -8,6 +8,7 @@ param(
     [switch]$SkipDeployPlan,
     [switch]$SkipDockerSupport,
     [switch]$SkipRealDeviceUX,
+    [switch]$AndroidRealDeviceUXPreflight,
     [switch]$GenerateAndroidRealDeviceUXProof,
     [switch]$AndroidRealDeviceUXSigninPassed,
     [switch]$AndroidRealDeviceUXChatPassed,
@@ -89,6 +90,7 @@ function Write-SuiteGateReport {
             skip_deploy_plan = [bool]$SkipDeployPlan
             skip_docker_support = [bool]$SkipDockerSupport
             skip_real_device_ux = [bool]$SkipRealDeviceUX
+            android_real_device_ux_preflight = [bool]$AndroidRealDeviceUXPreflight
             generate_android_real_device_ux_proof = [bool]$GenerateAndroidRealDeviceUXProof
             capture_android_real_device_ux_screenshot = [bool]$CaptureAndroidRealDeviceUXScreenshot
             desktop_include_ui = [bool]$DesktopIncludeUi
@@ -269,6 +271,24 @@ $resolvedRealDeviceUXArtifactDir = if ([System.IO.Path]::IsPathRooted($RealDevic
     [System.IO.Path]::GetFullPath($RealDeviceUXArtifactDir)
 } else {
     [System.IO.Path]::GetFullPath((Join-Path $aibenchieRoot $RealDeviceUXArtifactDir))
+}
+
+if ((-not $SkipRealDeviceUX) -and ($AndroidRealDeviceUXPreflight -or $GenerateAndroidRealDeviceUXProof)) {
+    Invoke-SuiteGate `
+        -Id "aibenchie_android_real_device_ux_preflight" `
+        -Name "AIBenchie Android real-device UX preflight" `
+        -Owner "AIBenchie" `
+        -WorkingDirectory $aibenchieRoot `
+        -Command "python" `
+        -Arguments @(
+            "aibenchie_local.py",
+            "--android-real-device-ux-preflight",
+            "--real-device-ux-adb",
+            $RealDeviceUXAdb,
+            "--real-device-ux-package",
+            $RealDeviceUXPackage,
+            "--json"
+        )
 }
 
 if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {

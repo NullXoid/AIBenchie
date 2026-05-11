@@ -59,7 +59,7 @@ Useful options:
 .\scripts\echolabs_suite_release_gate.ps1 -DesktopIncludeUi
 .\scripts\echolabs_suite_release_gate.ps1 -BridgeFull
 .\scripts\echolabs_suite_release_gate.ps1 -DeployPlanPath .suite\local\aibenchie\deploy-plan.json
-python aibenchie_local.py --android-real-device-ux-preflight --json
+.\scripts\echolabs_suite_release_gate.ps1 -SkipWeb -SkipAndroid -SkipDesktop -SkipBridge -SkipUniversalE2E -SkipDeployPlan -SkipDockerSupport -AndroidRealDeviceUXPreflight
 .\scripts\echolabs_suite_release_gate.ps1 -GenerateAndroidRealDeviceUXProof -AndroidRealDeviceUXSigninPassed -AndroidRealDeviceUXChatPassed -CaptureAndroidRealDeviceUXScreenshot
 ```
 
@@ -68,7 +68,7 @@ Release interpretation:
 - All default gates pass: the suite is locally stable for handoff.
 - Optional UI/full backend gates pass: stronger local confidence before packaging.
 - Optional deploy-plan proof passes: ignored local deploy evidence is well-formed and public-safe enough to feed release evidence.
-- Optional real-device UX proof passes: ignored physical-device evidence is public-safe and includes required workflows such as Android sign-in and chat. Run `python aibenchie_local.py --android-real-device-ux-preflight --json` first when diagnosing device readiness; it only checks hashed adb/package state and does not create release proof. Use `-GenerateAndroidRealDeviceUXProof` only with explicit `-AndroidRealDeviceUXSigninPassed` and `-AndroidRealDeviceUXChatPassed` operator confirmation after those workflows have passed on the connected adb device. Add `-CaptureAndroidRealDeviceUXScreenshot` to store an ignored local screenshot artifact and record only its hash in the proof.
+- Optional real-device UX proof passes: ignored physical-device evidence is public-safe and includes required workflows such as Android sign-in and chat. Use `-AndroidRealDeviceUXPreflight` when diagnosing device readiness; it only checks hashed adb/package state and does not create release proof. The suite gate also runs this preflight before `-GenerateAndroidRealDeviceUXProof`. Use proof generation only with explicit `-AndroidRealDeviceUXSigninPassed` and `-AndroidRealDeviceUXChatPassed` operator confirmation after those workflows have passed on the connected adb device. Add `-CaptureAndroidRealDeviceUXScreenshot` to store an ignored local screenshot artifact and record only its hash in the proof.
 - Any gate fails: fix that surface first, then rerun the failed surface gate before rerunning the suite gate.
 - Docker support is coming soon, but Docker is not a supported release target yet. The current AIBenchie `--docker-support` gate enforces that guarded boundary and blocks tracked Docker entrypoints before supported-mode Docker exists. A future Docker path must evolve that gate before container images or Compose files are advertised as production-ready.
 - The JSON report uses schema `echolabs.suite-release-gate.v1` and is suitable for AIBenchie ingestion or EchoLabs readiness display.
