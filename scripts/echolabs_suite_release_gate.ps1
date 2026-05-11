@@ -19,6 +19,7 @@ param(
     [string]$RealDeviceUXProofPath = ".suite\local\aibenchie\android-real-device-ux.json",
     [string]$RealDeviceUXArtifactDir = ".suite\local\aibenchie\artifacts",
     [string]$RealDeviceUXAdb = "adb",
+    [string]$RealDeviceUXAdbSerial = "",
     [string]$RealDeviceUXPackage = "com.nullxoid.android",
     [string]$RealDeviceUXBaseUrl = "https://api.echolabs.diy/nullxoid",
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
@@ -102,6 +103,30 @@ function Write-SuiteGateReport {
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $resolvedReportPath -Encoding UTF8
 }
 
+function Get-RedactedCommandText {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Command,
+        [string[]]$Arguments = @()
+    )
+
+    $parts = @($Command) + @($Arguments)
+    $redacted = @()
+    $redactNext = $false
+    foreach ($part in $parts) {
+        if ($redactNext) {
+            $redacted += "<redacted>"
+            $redactNext = $false
+            continue
+        }
+        $redacted += $part
+        if ($part -eq "--real-device-ux-adb-serial") {
+            $redactNext = $true
+        }
+    }
+    return $redacted -join " "
+}
+
 function Invoke-SuiteGate {
     param(
         [Parameter(Mandatory = $true)]
@@ -130,7 +155,7 @@ function Invoke-SuiteGate {
 
     $elapsed = [int]((Get-Date) - $started).TotalMilliseconds
     $ok = $exitCode -eq 0
-    $commandText = (@($Command) + @($Arguments)) -join " "
+    $commandText = Get-RedactedCommandText -Command $Command -Arguments $Arguments
     $relativeWorkingDirectory = Get-SuiteRelativePath -BasePath $workspaceRoot -TargetPath $WorkingDirectory
     $results.Add([pscustomobject]@{
         id = $Id
@@ -274,21 +299,27 @@ $resolvedRealDeviceUXArtifactDir = if ([System.IO.Path]::IsPathRooted($RealDevic
 }
 
 if ((-not $SkipRealDeviceUX) -and ($AndroidRealDeviceUXPreflight -or $GenerateAndroidRealDeviceUXProof)) {
+    $preflightArgs = @(
+        "aibenchie_local.py",
+        "--android-real-device-ux-preflight",
+        "--real-device-ux-adb",
+        $RealDeviceUXAdb,
+        "--real-device-ux-package",
+        $RealDeviceUXPackage,
+        "--json"
+    )
+    if ($RealDeviceUXAdbSerial) {
+        $preflightArgs += "--real-device-ux-adb-serial"
+        $preflightArgs += $RealDeviceUXAdbSerial
+    }
+
     Invoke-SuiteGate `
         -Id "aibenchie_android_real_device_ux_preflight" `
         -Name "AIBenchie Android real-device UX preflight" `
         -Owner "AIBenchie" `
         -WorkingDirectory $aibenchieRoot `
         -Command "python" `
-        -Arguments @(
-            "aibenchie_local.py",
-            "--android-real-device-ux-preflight",
-            "--real-device-ux-adb",
-            $RealDeviceUXAdb,
-            "--real-device-ux-package",
-            $RealDeviceUXPackage,
-            "--json"
-        )
+        -Arguments $preflightArgs
 }
 
 if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {
@@ -305,6 +336,10 @@ if ((-not $SkipRealDeviceUX) -and $GenerateAndroidRealDeviceUXProof) {
         $RealDeviceUXBaseUrl,
         "--json"
     )
+    if ($RealDeviceUXAdbSerial) {
+        $androidProofArgs += "--real-device-ux-adb-serial"
+        $androidProofArgs += $RealDeviceUXAdbSerial
+    }
     if ($AndroidRealDeviceUXSigninPassed) {
         $androidProofArgs += "--real-device-ux-signin-passed"
     }

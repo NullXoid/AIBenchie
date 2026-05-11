@@ -199,6 +199,7 @@ def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
 
     def fake_emit(output_path, **kwargs):
         assert output_path == str(output)
+        assert kwargs["adb_serial"] == "RAW-DEVICE-123"
         assert kwargs["signin_passed"] is True
         assert kwargs["chat_passed"] is True
         assert kwargs["capture_screenshot"] is True
@@ -218,6 +219,8 @@ def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
             "--emit-android-real-device-ux-proof",
             "--real-device-ux-output",
             str(output),
+            "--real-device-ux-adb-serial",
+            "RAW-DEVICE-123",
             "--real-device-ux-signin-passed",
             "--real-device-ux-chat-passed",
             "--real-device-ux-capture-screenshot",
@@ -264,9 +267,28 @@ def test_android_real_device_ux_preflight_hashes_connected_device_and_checks_pac
     assert "OFFLINE-DEVICE" not in json.dumps(result)
 
 
+def test_android_real_device_ux_preflight_supports_selected_adb_serial_without_leaking_it():
+    def fake_adb(args):
+        command = " ".join(args)
+        if command == "devices":
+            return "List of devices attached\nFIRST\tdevice\nSECOND\tdevice\n"
+        if command == "shell dumpsys package com.nullxoid.android":
+            return "Package [com.nullxoid.android]\n  versionName=1.2.3\n"
+        raise AssertionError(f"unexpected adb command: {command}")
+
+    result = check_android_real_device_ux_preflight(adb_serial="SECOND", adb_reader=fake_adb).as_dict()
+    checks = {check["name"]: check for check in result["checks"]}
+
+    assert result["ok"] is True
+    assert checks["selected_device"]["ok"] is True
+    assert checks["selected_device"]["detail"]["selector_used"] is True
+    assert "SECOND" not in json.dumps(result)
+
+
 def test_android_real_device_ux_preflight_cli(capsys, monkeypatch):
     def fake_preflight(**kwargs):
         assert kwargs["package_name"] == "com.nullxoid.android"
+        assert kwargs["adb_serial"] == "RAW-DEVICE-123"
         return check_android_real_device_ux_preflight(
             adb_reader=lambda args: "List of devices attached\nRAW-DEVICE-123\tdevice\n"
             if args == ["devices"]
@@ -275,7 +297,7 @@ def test_android_real_device_ux_preflight_cli(capsys, monkeypatch):
 
     monkeypatch.setattr(aibenchie_local, "check_android_real_device_ux_preflight", fake_preflight)
 
-    exit_code = aibenchie_local.main(["--android-real-device-ux-preflight", "--json"])
+    exit_code = aibenchie_local.main(["--android-real-device-ux-preflight", "--real-device-ux-adb-serial", "RAW-DEVICE-123", "--json"])
     payload = json.loads(capsys.readouterr().out)
 
     assert exit_code == 0

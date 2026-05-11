@@ -93,18 +93,25 @@ def _load_json(path: Path) -> tuple[dict[str, Any], str]:
     return payload, ""
 
 
-def _adb_value(adb: str, args: list[str]) -> str:
+def _adb_command_args(args: list[str], adb_serial: str = "") -> list[str]:
+    selected_serial = adb_serial.strip()
+    if selected_serial:
+        return ["-s", selected_serial, *args]
+    return args
+
+
+def _adb_value(adb: str, args: list[str], adb_serial: str = "") -> str:
     return subprocess.check_output(
-        [adb, *args],
+        [adb, *_adb_command_args(args, adb_serial)],
         stderr=subprocess.STDOUT,
         text=True,
         timeout=15,
     ).strip()
 
 
-def _adb_bytes(adb: str, args: list[str]) -> bytes:
+def _adb_bytes(adb: str, args: list[str], adb_serial: str = "") -> bytes:
     return subprocess.check_output(
-        [adb, *args],
+        [adb, *_adb_command_args(args, adb_serial)],
         stderr=subprocess.STDOUT,
         timeout=15,
     )
@@ -145,10 +152,12 @@ def _parse_adb_devices(output: str) -> list[dict[str, str]]:
 def check_android_real_device_ux_preflight(
     *,
     adb: str = "adb",
+    adb_serial: str = "",
     package_name: str = DEFAULT_ANDROID_PACKAGE,
     adb_reader: Callable[[list[str]], str] | None = None,
 ) -> AndroidRealDeviceUXPreflightResult:
-    reader = adb_reader or (lambda args: _adb_value(adb, args))
+    selected_serial = adb_serial.strip()
+    reader = adb_reader or (lambda args: _adb_value(adb, args, selected_serial if args != ["devices"] else ""))
     checks: list[RealDeviceUXCheck] = []
     raw_devices: list[dict[str, str]] = []
     devices_output = ""
@@ -162,12 +171,22 @@ def check_android_real_device_ux_preflight(
 
     connected = [device for device in raw_devices if device.get("state") == "device"]
     blocked = [device for device in raw_devices if device.get("state") != "device"]
+    selected_connected = [device for device in connected if device.get("handle") == selected_serial] if selected_serial else connected
     checks.append(
         _check(
             "connected_device",
             bool(connected),
             "adb_device_missing" if not connected else "",
             blocked_states=sorted({device.get("state", "") for device in blocked if device.get("state")}),
+        )
+    )
+    checks.append(
+        _check(
+            "selected_device",
+            bool(selected_connected),
+            "adb_serial_not_connected" if selected_serial else "adb_device_missing",
+            selected_device_hash=sha256(selected_serial.encode("utf-8")).hexdigest() if selected_serial else "",
+            selector_used=bool(selected_serial),
         )
     )
 
@@ -182,7 +201,7 @@ def check_android_real_device_ux_preflight(
 
     version = ""
     package_ok = False
-    if connected:
+    if selected_connected:
         version = _android_package_version(reader, package_name)
         package_ok = bool(version)
     checks.append(
@@ -221,6 +240,7 @@ def emit_android_real_device_ux_proof(
     output_path: str | Path = DEFAULT_ANDROID_PROOF_OUTPUT,
     *,
     adb: str = "adb",
+    adb_serial: str = "",
     package_name: str = DEFAULT_ANDROID_PACKAGE,
     base_url: str = DEFAULT_ANDROID_BASE_URL,
     app_version: str = "",
@@ -233,8 +253,9 @@ def emit_android_real_device_ux_proof(
     adb_reader: Callable[[list[str]], str] | None = None,
     adb_binary_reader: Callable[[list[str]], bytes] | None = None,
 ) -> dict[str, Any]:
-    reader = adb_reader or (lambda args: _adb_value(adb, args))
-    binary_reader = adb_binary_reader or (lambda args: _adb_bytes(adb, args))
+    selected_serial = adb_serial.strip()
+    reader = adb_reader or (lambda args: _adb_value(adb, args, selected_serial))
+    binary_reader = adb_binary_reader or (lambda args: _adb_bytes(adb, args, selected_serial))
     raw_device_handle = reader(["get-serialno"]).strip()
     if not raw_device_handle:
         raise RuntimeError("adb_device_missing")

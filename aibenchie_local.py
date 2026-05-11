@@ -348,6 +348,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--real-device-ux-adb", default="adb", help="adb executable for Android proof generation.")
     parser.add_argument(
+        "--real-device-ux-adb-serial",
+        default="",
+        help="Optional adb device serial selector for Android proof generation. The raw value is not written to proof output.",
+    )
+    parser.add_argument(
         "--real-device-ux-package",
         default=DEFAULT_ANDROID_PACKAGE,
         help="Android package name for proof generation.",
@@ -950,6 +955,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.android_real_device_ux_preflight:
         result = check_android_real_device_ux_preflight(
             adb=args.real_device_ux_adb,
+            adb_serial=args.real_device_ux_adb_serial,
             package_name=args.real_device_ux_package,
         ).as_dict()
         if args.json:
@@ -969,6 +975,7 @@ def main(argv: list[str] | None = None) -> int:
             result = emit_android_real_device_ux_proof(
                 args.real_device_ux_output,
                 adb=args.real_device_ux_adb,
+                adb_serial=args.real_device_ux_adb_serial,
                 package_name=args.real_device_ux_package,
                 base_url=args.real_device_ux_base_url,
                 app_version=args.real_device_ux_app_version,
