@@ -1,0 +1,34 @@
+{
+  "schema": "aibenchie.docker-support-proof.v1",
+  "template": true,
+  "status": "coming_soon",
+  "services": [
+    {
+      "id": "echolabs_web",
+      "image_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "healthcheck": "/health",
+      "resources": {
+        "cpu": "template",
+        "memory": "template"
+      }
+    }
+  ],
+  "persistent_volumes": [
+    {
+      "id": "vault"
+    }
+  ],
+  "runtime_secret_paths": [
+    "provider_tokens"
+  ],
+  "network": {
+    "https_routes": false,
+    "local_only_services": false,
+    "sse_or_websocket": false
+  },
+  "gates": {
+    "suite_release_gate": "not_run",
+    "docker_supported_mode_gate": "not_run",
+    "secret_scan": "not_run"
+  }
+}

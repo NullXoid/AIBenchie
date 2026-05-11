@@ -22,6 +22,18 @@ The current release path is still repo-native: each surface runs its own local r
 - AIBenchie Docker gate. The current `--docker-support` gate only enforces the guarded "not supported yet" boundary; the future supported-mode gate must build the stack, run health/features, chat stream, notification, E2EE, release evidence, and no-secret checks.
 - Release attestation for container images, including image digest, SBOM, signature evidence, and provenance.
 
+## Supported-Mode Proof Contract
+
+The tracked template at `configs/aibenchie_docker_support.example.json` documents the private proof shape. It is intentionally marked as a template and does not make Docker supported.
+
+When a private runner has a real container stack, validate ignored runtime evidence with:
+
+```powershell
+python aibenchie_local.py --docker-support-proof .suite/local/aibenchie/docker-support.json --json
+```
+
+The proof verifier requires supported status, image digests, health checks, resource limits, persistent volumes, runtime secret paths, network policy, suite release gate evidence, Docker supported-mode gate evidence, and secret-scan evidence. It rejects template proof files and secret-like fields.
+
 ## Non-Goals For v1
 
 - Containerizing Android builds as the default release path.
