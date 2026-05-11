@@ -66,6 +66,9 @@ Current state: all ranked stabilization work above is implemented and covered by
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
 | F1 | Real-device UX proof gate | 360 | Android sign-in/chat proof complete | Public-safe proof verifier, Android adb readiness preflight, and Android adb generator validate physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; optional screenshot capture stores ignored local artifacts and records only digests; Android proofs require operator-confirmed sign-in and chat workflows before they can count as release evidence. Next expansion is broader workflow coverage beyond sign-in and chat. |
+| F2 | Standalone AIBenchie productization | 340 | Post app release/deployment | Resume after EchoLabs/NullXoid has app foothold and release deployment is stable. Keep AIBenchie active as the suite tester/release gate, but do not publish it as a downloadable standalone product yet. Productize AIBenchie later as its own universal API + UX E2E release gate with stable CLI commands, versioned config/schema, Playwright web adapter, API adapter, Android adapter, evidence bundles, secret redaction, standalone scoreboard, CI examples, packaging, and non-EchoLabs demo targets. |
+
+Post-release rule: do not treat standalone AIBenchie publishing as a blocker for the EchoLabs/NullXoid app release. Keep using AIBenchie as the suite release gate now; productize and publish it as a separate public product only after release deployment is proven.
 
 ## Paused Automation Pickup
 
