@@ -57,6 +57,26 @@ class RealDeviceUXResult:
         }
 
 
+@dataclass(frozen=True)
+class AndroidRealDeviceUXPreflightResult:
+    ok: bool
+    platform: str
+    package_name: str
+    device_count: int
+    devices: list[dict[str, Any]]
+    checks: list[RealDeviceUXCheck]
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "platform": self.platform,
+            "package_name": self.package_name,
+            "device_count": self.device_count,
+            "devices": self.devices,
+            "checks": [check.as_dict() for check in self.checks],
+        }
+
+
 def _check(name: str, ok: bool, failure: str = "", **detail: Any) -> RealDeviceUXCheck:
     return RealDeviceUXCheck(name=name, ok=ok, failure="" if ok else failure, detail=detail)
 
@@ -108,6 +128,81 @@ def _android_prop(adb_reader: Callable[[list[str]], str], prop: str, fallback: s
     except Exception:
         return fallback
     return value or fallback
+
+
+def _parse_adb_devices(output: str) -> list[dict[str, str]]:
+    devices: list[dict[str, str]] = []
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.lower().startswith("list of devices"):
+            continue
+        parts = stripped.split()
+        if len(parts) >= 2:
+            devices.append({"handle": parts[0], "state": parts[1]})
+    return devices
+
+
+def check_android_real_device_ux_preflight(
+    *,
+    adb: str = "adb",
+    package_name: str = DEFAULT_ANDROID_PACKAGE,
+    adb_reader: Callable[[list[str]], str] | None = None,
+) -> AndroidRealDeviceUXPreflightResult:
+    reader = adb_reader or (lambda args: _adb_value(adb, args))
+    checks: list[RealDeviceUXCheck] = []
+    raw_devices: list[dict[str, str]] = []
+    devices_output = ""
+
+    try:
+        devices_output = reader(["devices"])
+        checks.append(_check("adb_devices", True))
+        raw_devices = _parse_adb_devices(devices_output)
+    except Exception as exc:
+        checks.append(_check("adb_devices", False, f"adb_devices_failed:{exc}"))
+
+    connected = [device for device in raw_devices if device.get("state") == "device"]
+    blocked = [device for device in raw_devices if device.get("state") != "device"]
+    checks.append(
+        _check(
+            "connected_device",
+            bool(connected),
+            "adb_device_missing" if not connected else "",
+            blocked_states=sorted({device.get("state", "") for device in blocked if device.get("state")}),
+        )
+    )
+
+    public_devices = [
+        {
+            "device_id_hash": sha256(device["handle"].encode("utf-8")).hexdigest(),
+            "state": device.get("state", "unknown"),
+        }
+        for device in raw_devices
+        if device.get("handle")
+    ]
+
+    version = ""
+    package_ok = False
+    if connected:
+        version = _android_package_version(reader, package_name)
+        package_ok = bool(version)
+    checks.append(
+        _check(
+            "package_installed",
+            package_ok,
+            "package_missing_or_version_unknown",
+            package=package_name,
+            version=version,
+        )
+    )
+
+    return AndroidRealDeviceUXPreflightResult(
+        ok=all(check.ok for check in checks),
+        platform="android",
+        package_name=package_name,
+        device_count=len(public_devices),
+        devices=public_devices,
+        checks=checks,
+    )
 
 
 def _workflow_status(passed: bool) -> str:

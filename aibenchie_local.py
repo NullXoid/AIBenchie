@@ -25,6 +25,7 @@ from aibenchie.real_device_ux import (
     DEFAULT_ANDROID_BASE_URL,
     DEFAULT_ANDROID_PACKAGE,
     DEFAULT_ANDROID_PROOF_OUTPUT,
+    check_android_real_device_ux_preflight,
     emit_android_real_device_ux_proof,
     validate_real_device_ux_proof,
 )
@@ -324,6 +325,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--docker-support-proof",
         default="",
         help="Validate a private Docker supported-mode proof JSON without changing the guarded Docker boundary.",
+    )
+    parser.add_argument(
+        "--android-real-device-ux-preflight",
+        action="store_true",
+        help="Check adb device/package readiness for Android real-device UX proof without generating release proof.",
     )
     parser.add_argument(
         "--real-device-ux-proof",
@@ -935,6 +941,23 @@ def main(argv: list[str] | None = None) -> int:
             print("AIBenchie Docker Supported-Mode Proof")
             print(f"Proof: {result['proof_path']}")
             print(f"Status: {result['status']}")
+            for check in result["checks"]:
+                status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
+                print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.android_real_device_ux_preflight:
+        result = check_android_real_device_ux_preflight(
+            adb=args.real_device_ux_adb,
+            package_name=args.real_device_ux_package,
+        ).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Android Real-Device UX Preflight")
+            print(f"Package: {result['package_name']}")
+            print(f"Devices: {result['device_count']}")
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")
