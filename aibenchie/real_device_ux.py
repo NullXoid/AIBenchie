@@ -129,6 +129,11 @@ def _android_package_version(adb_reader: Callable[[list[str]], str], package_nam
     return ""
 
 
+def _is_known_app_version(value: str) -> bool:
+    normalized = value.strip().lower()
+    return bool(normalized and normalized not in {"unknown", "n/a", "na", "none", "missing"})
+
+
 def _android_prop(adb_reader: Callable[[list[str]], str], prop: str, fallback: str) -> str:
     try:
         value = adb_reader(["shell", "getprop", prop]).strip()
@@ -264,7 +269,9 @@ def emit_android_real_device_ux_proof(
     model = _android_prop(reader, "ro.product.model", "unknown")
     os_release = _android_prop(reader, "ro.build.version.release", "unknown")
     os_sdk = _android_prop(reader, "ro.build.version.sdk", "")
-    resolved_version = app_version.strip() or _android_package_version(reader, package_name) or "unknown"
+    resolved_version = app_version.strip() or _android_package_version(reader, package_name)
+    if not _is_known_app_version(resolved_version):
+        raise RuntimeError("android_package_version_missing")
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     resolved_proof_id = proof_id.strip() or f"android-real-device-ux-{timestamp}"
     output = Path(output_path).expanduser()
@@ -418,7 +425,7 @@ def validate_real_device_ux_proof(proof_path: str | Path | None = None) -> RealD
     app = payload.get("app") if isinstance(payload.get("app"), dict) else {}
     package_name = str(app.get("package") or app.get("bundle_id") or "").strip()
     version = str(app.get("version") or app.get("build") or "").strip()
-    checks.append(_check("app_identity", bool(package_name and version), "app_identity_missing", package=package_name, version=version))
+    checks.append(_check("app_identity", bool(package_name and _is_known_app_version(version)), "app_identity_missing", package=package_name, version=version))
 
     environment = payload.get("environment") if isinstance(payload.get("environment"), dict) else {}
     base_url = str(environment.get("base_url") or "").strip()

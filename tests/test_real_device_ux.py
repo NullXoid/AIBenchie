@@ -104,6 +104,16 @@ def test_real_device_ux_requires_android_signin_and_chat(tmp_path):
     assert checks["android_required_workflows"]["failure"] == "workflow_missing:chat"
 
 
+def test_real_device_ux_rejects_unknown_app_version(tmp_path):
+    proof = write_proof(tmp_path / "proof.json", overrides={"app": {"package": "com.nullxoid.android", "version": "unknown"}})
+
+    result = validate_real_device_ux_proof(proof).as_dict()
+    checks = {check["name"]: check for check in result["checks"]}
+
+    assert result["ok"] is False
+    assert checks["app_identity"]["failure"] == "app_identity_missing"
+
+
 def test_real_device_ux_cli(capsys, tmp_path):
     proof = write_proof(tmp_path / "proof.json")
 
@@ -192,6 +202,62 @@ def test_emit_android_real_device_ux_proof_can_capture_ignored_screenshot(tmp_pa
         }
     ]
     assert (artifact_dir / "android-real-device-screen-test-screen.png").read_bytes() == screenshot
+
+
+def test_emit_android_real_device_ux_proof_requires_installed_package_version(tmp_path):
+    def fake_adb(args):
+        command = " ".join(args)
+        if command == "get-serialno":
+            return "RAW-DEVICE-123"
+        if command == "shell getprop ro.product.manufacturer":
+            return "Google"
+        if command == "shell getprop ro.product.model":
+            return "Pixel 9"
+        if command == "shell getprop ro.build.version.release":
+            return "16"
+        if command == "shell getprop ro.build.version.sdk":
+            return "36"
+        if command == "shell dumpsys package com.nullxoid.android":
+            return "Package [com.nullxoid.android]\n"
+        raise AssertionError(f"unexpected adb command: {command}")
+
+    try:
+        emit_android_real_device_ux_proof(tmp_path / "proof.json", signin_passed=True, chat_passed=True, adb_reader=fake_adb)
+    except RuntimeError as exc:
+        assert str(exc) == "android_package_version_missing"
+    else:
+        raise AssertionError("expected android_package_version_missing")
+
+
+def test_emit_android_real_device_ux_proof_allows_explicit_app_version_override(tmp_path):
+    def fake_adb(args):
+        command = " ".join(args)
+        if command == "get-serialno":
+            return "RAW-DEVICE-123"
+        if command == "shell getprop ro.product.manufacturer":
+            return "Google"
+        if command == "shell getprop ro.product.model":
+            return "Pixel 9"
+        if command == "shell getprop ro.build.version.release":
+            return "16"
+        if command == "shell getprop ro.build.version.sdk":
+            return "36"
+        if command == "shell dumpsys package com.nullxoid.android":
+            return "Package [com.nullxoid.android]\n"
+        raise AssertionError(f"unexpected adb command: {command}")
+
+    output = tmp_path / "proof.json"
+    result = emit_android_real_device_ux_proof(
+        output,
+        signin_passed=True,
+        chat_passed=True,
+        app_version="1.2.3-operator",
+        adb_reader=fake_adb,
+    )
+    payload = json.loads(output.read_text(encoding="utf-8"))
+
+    assert result["ok"] is True
+    assert payload["app"]["version"] == "1.2.3-operator"
 
 
 def test_emit_android_real_device_ux_cli(capsys, monkeypatch, tmp_path):
