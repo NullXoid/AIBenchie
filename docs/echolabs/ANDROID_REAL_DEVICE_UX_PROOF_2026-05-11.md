@@ -41,4 +41,11 @@ The public EchoLabs web evidence was refreshed from the sanitized AIBenchie summ
 
 Local production preview passed for `/aibenchie`, `/aibenchie/latest-verdict.json`, and `/aibenchie/release-evidence.json`.
 
-The public Netlify route `https://echolabs.netlify.app/aibenchie` returned `404` during closure, and the public JSON evidence endpoints were not yet available there. Treat deployed-host evidence as blocked until Netlify picks up the current build or its route/static-file publishing is corrected.
+Canonical public deployment passed on `https://www.echolabs.diy` after the public-site deploy path was corrected.
+
+- `https://www.echolabs.diy/aibenchie`: `200`
+- Public route verification: 7 app routes and 8 content routes passed
+- `https://www.echolabs.diy/content/verdicts/aibenchie-latest-verdict.json`: suite gate `8/8`
+- `https://www.echolabs.diy/content/verdicts/aibenchie-release-evidence.json`: real-device UX `pass`
+
+The older `https://echolabs.netlify.app` route is not the canonical deployment for this evidence and should not be used as the release smoke target.

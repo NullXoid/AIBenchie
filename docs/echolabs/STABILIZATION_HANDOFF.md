@@ -1,6 +1,6 @@
 # EchoLabs Stabilization Handoff
 
-Status: complete as of 2026-05-10.
+Status: complete as of 2026-05-11.
 
 This handoff records the current release posture for the EchoLabs Suite stabilization lane. It should be updated only when the suite release posture changes; new product work should get a new backlog row instead of reopening completed stabilization items.
 
@@ -17,6 +17,9 @@ This handoff records the current release posture for the EchoLabs Suite stabiliz
 - Deploy add-on dry-run plan gate, read-only plan verifier, release-summary proof hook, and optional suite-gate surface.
 - Passkey/OIDC provider configuration and physical Android Credential Manager proof.
 - Resource Manager runtime evidence and release evidence display.
+- Android real-device UX proof for physical sign-in and chat on app version `0.1.92`.
+- Public EchoLabs AIBenchie evidence display on `https://www.echolabs.diy/aibenchie`.
+- CT400 public-site deploy path corrected so the root-owned timer deploys `echolabs-site`, not the NullXoid suite app.
 
 ## Current Gate Commands
 
@@ -43,6 +46,9 @@ python aibenchie_local.py --verify-deploy-plan --deploy-plan .suite\local\aibenc
 - Hosted API E2E: `C:\Users\kasom\projects\_validation\aibenchie_hosted_api_e2e_latest.json`
 - Local release packages, deploy plan, and attestation: `AIBenchie\.suite\local\aibenchie\`
 - Optional real-device UX proof: `AIBenchie\.suite\local\aibenchie\android-real-device-ux.json`
+- Public AIBenchie page: `https://www.echolabs.diy/aibenchie`
+- Public latest verdict: `https://www.echolabs.diy/content/verdicts/aibenchie-latest-verdict.json`
+- Public release evidence: `https://www.echolabs.diy/content/verdicts/aibenchie-release-evidence.json`
 
 The `_validation` and `.suite/local` paths are runtime evidence paths and are intentionally ignored by Git.
 
@@ -54,5 +60,5 @@ Good next lanes:
 
 - Provider-backed deploy executor after the dry-run deploy add-on and read-only plan verifier.
 - Docker support gate before advertising containers as supported.
-- More real-device UX coverage beyond the current Android proof. The first foundation is `python aibenchie_local.py --emit-android-real-device-ux-proof --real-device-ux-signin-passed --real-device-ux-chat-passed --json`, then `python aibenchie_local.py --real-device-ux-proof <ignored-proof.json> --json`, which generates and validates public-safe physical-device UX evidence without raw identifiers or session material.
+- More real-device UX coverage beyond the current Android sign-in/chat proof.
 - Standalone AIBenchie expansion for arbitrary app/API E2E testing.

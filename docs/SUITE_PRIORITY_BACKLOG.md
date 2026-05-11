@@ -26,6 +26,8 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.echolabs.diy/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
 | Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, hosted JSON route behavior, and configured-provider Android Digital Asset Links |
 | Passkey/OIDC provider configuration and physical Android proof | Done | Public-safe provider config template, real-value enforcement mode, live Digital Asset Links, and physical Android Credential Manager enrollment proof passed without committing secrets |
+| Android real-device UX proof | Done | Physical Android sign-in and chat proof passed for `com.nullxoid.android` version `0.1.92`; public release evidence shows proof id `android-real-device-ux-20260511T095838Z` |
+| Public AIBenchie release evidence deploy | Done | `https://www.echolabs.diy/aibenchie` shows public-safe release evidence, suite gate `8/8`, and Android real-device UX `pass`; CT400 deploy timer now delegates to the public-site guard |
 
 ## Visual Status Tracks
 
@@ -63,7 +65,7 @@ Current state: all ranked stabilization work above is implemented and covered by
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| F1 | Real-device UX proof gate | 360 | Preflight wired | Public-safe proof verifier, Android adb readiness preflight, and Android adb generator validate physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; optional screenshot capture stores ignored local artifacts and records only digests; Android proofs require operator-confirmed sign-in and chat workflows before they can count as release evidence. |
+| F1 | Real-device UX proof gate | 360 | Android sign-in/chat proof complete | Public-safe proof verifier, Android adb readiness preflight, and Android adb generator validate physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; optional screenshot capture stores ignored local artifacts and records only digests; Android proofs require operator-confirmed sign-in and chat workflows before they can count as release evidence. Next expansion is broader workflow coverage beyond sign-in and chat. |
 
 ## Paused Automation Pickup
 
