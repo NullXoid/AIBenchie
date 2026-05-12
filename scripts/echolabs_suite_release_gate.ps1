@@ -7,6 +7,7 @@ param(
     [switch]$SkipUniversalE2E,
     [switch]$SkipDeployPlan,
     [switch]$SkipDockerSupport,
+    [switch]$SkipDistributionHygiene,
     [switch]$SkipRealDeviceUX,
     [switch]$AndroidRealDeviceUXPreflight,
     [switch]$GenerateAndroidRealDeviceUXProof,
@@ -93,6 +94,7 @@ function Write-SuiteGateReport {
             skip_universal_e2e = [bool]$SkipUniversalE2E
             skip_deploy_plan = [bool]$SkipDeployPlan
             skip_docker_support = [bool]$SkipDockerSupport
+            skip_distribution_hygiene = [bool]$SkipDistributionHygiene
             skip_real_device_ux = [bool]$SkipRealDeviceUX
             android_real_device_ux_preflight = [bool]$AndroidRealDeviceUXPreflight
             generate_android_real_device_ux_proof = [bool]$GenerateAndroidRealDeviceUXProof
@@ -392,6 +394,38 @@ if ((-not $SkipRealDeviceUX) -and (Test-Path -LiteralPath $resolvedRealDeviceUXP
 } elseif (-not $SkipRealDeviceUX) {
     Write-Host ""
     Write-Host "[echolabs-suite-gate] AIBenchie real-device UX proof skipped (no proof at $resolvedRealDeviceUXProofPath)" -ForegroundColor DarkYellow
+}
+
+if (-not $SkipDistributionHygiene) {
+    $distributionRoots = @(
+        [ordered]@{ Id = "aibenchie_distribution_hygiene"; Name = "AIBenchie distribution hygiene"; Owner = "AIBenchie"; Path = $aibenchieRoot },
+        [ordered]@{ Id = "web_distribution_hygiene"; Name = "EchoLabs web distribution hygiene"; Owner = "EchoLabs / NullXoid Chat"; Path = (Join-Path $workspaceRoot "NullXoid-live") },
+        [ordered]@{ Id = "android_distribution_hygiene"; Name = "NullXoid Android distribution hygiene"; Owner = "NullXoid Android"; Path = (Join-Path $workspaceRoot "NullXoidAndroid") },
+        [ordered]@{ Id = "desktop_distribution_hygiene"; Name = "NullXoid Desktop distribution hygiene"; Owner = "NullXoid Desktop / LV7"; Path = (Join-Path $workspaceRoot "AiAssistant") },
+        [ordered]@{ Id = "nullbridge_distribution_hygiene"; Name = "BridgeEcho / NullBridge distribution hygiene"; Owner = "BridgeEcho"; Path = (Join-Path $workspaceRoot "NullBridge") },
+        [ordered]@{ Id = "lv7_distribution_hygiene"; Name = "Lv-7 distribution hygiene"; Owner = "Lv-7"; Path = (Join-Path $workspaceRoot "Lv-7") }
+    )
+
+    foreach ($target in $distributionRoots) {
+        if (-not (Test-Path -LiteralPath $target.Path)) {
+            Write-Host ""
+            Write-Host "[echolabs-suite-gate] $($target.Name) skipped (repo not found at $($target.Path))" -ForegroundColor DarkYellow
+            continue
+        }
+        Invoke-SuiteGate `
+            -Id $target.Id `
+            -Name $target.Name `
+            -Owner $target.Owner `
+            -WorkingDirectory $aibenchieRoot `
+            -Command "python" `
+            -Arguments @(
+                "aibenchie_local.py",
+                "--distribution-hygiene",
+                "--distribution-hygiene-root",
+                $target.Path,
+                "--json"
+            )
+    }
 }
 
 Write-Host ""

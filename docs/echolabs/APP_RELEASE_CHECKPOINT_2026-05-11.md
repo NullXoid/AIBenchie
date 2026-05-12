@@ -24,7 +24,7 @@ Full suite gate:
 
 Result: `PASS`
 
-Evidence path: `C:\Users\kasom\projects\_validation\echolabs_suite_gate_latest.json`
+Evidence path: `<workspace>\_validation\echolabs_suite_gate_latest.json`
 
 Surfaces:
 

@@ -19,6 +19,7 @@ from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
 from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check, verify_deploy_plan
+from aibenchie.distribution_hygiene import run_distribution_hygiene_check
 from aibenchie.docker_support import run_docker_support_gate, validate_docker_support_proof
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.public_scoreboard import write_public_scoreboard
@@ -174,6 +175,22 @@ def build_parser() -> argparse.ArgumentParser:
         "--generated-output-policy",
         action="store_true",
         help="Run repo generated-output hygiene checks for reports/data paths.",
+    )
+    parser.add_argument(
+        "--distribution-hygiene",
+        action="store_true",
+        help="Run release-blocking distribution hygiene checks for private data, secrets, and package leaks.",
+    )
+    parser.add_argument(
+        "--distribution-hygiene-root",
+        default="",
+        help="Repository root for --distribution-hygiene. Defaults to AIBENCHIE_DISTRIBUTION_ROOT or this repo.",
+    )
+    parser.add_argument(
+        "--distribution-package",
+        action="append",
+        default=[],
+        help="Package file to scan with --distribution-hygiene. Repeat for multiple packages.",
     )
     parser.add_argument(
         "--public-scoreboard",
@@ -733,6 +750,28 @@ def main(argv: list[str] | None = None) -> int:
                 print("Dirty tracked generated outputs:")
                 for item in result["dirty_tracked_files"]:
                     print(f"- {item['path']} ({item['status']})")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.distribution_hygiene:
+        result = run_distribution_hygiene_check(
+            root=Path(args.distribution_hygiene_root) if args.distribution_hygiene_root else None,
+            packages=[Path(item) for item in args.distribution_package],
+        ).as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Distribution Hygiene Gate")
+            print(f"Root: {result['root']}")
+            print(f"Scanned files: {result['scanned_files']}")
+            print(f"Scanned packages: {result['scanned_packages']}")
+            if result["findings"]:
+                print("Findings:")
+                for finding in result["findings"]:
+                    print(
+                        f"- {finding['source']}:{finding['path']} "
+                        f"[{finding['rule']}] {finding['detail']}"
+                    )
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

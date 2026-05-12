@@ -37,6 +37,20 @@ Personal settings belong in session-only inputs or ignored local add-ons. They d
 
 Generated support bundles must be redacted before export.
 
+## Personal Local Data
+
+Owner-approved personal data can be used by local workstation adapters, including microphone, camera, transcript, screenshot, and local context data, when the runtime is explicitly configured for personal local use.
+
+That data must stay in ignored local runtime paths such as `_runtime/private/`. It must not be committed, bundled into release packages, copied into public exports, or emitted through test artifact downloads unless a redaction/export rule allows it.
+
+Run the distribution hygiene gate before packaging:
+
+```powershell
+python aibenchie_local.py --distribution-hygiene --distribution-hygiene-root <workspace>\Lv-7
+```
+
+The gate is credential-free and blocks tracked or packaged private runtime paths, raw owner media/transcripts, secret files, secret-like literals, signing material, and local machine paths in distribution metadata.
+
 ## Credential-Free Gates
 
 Some gates are intentionally credential-free and should run even during credential discovery or when live provider credentials are not configured yet.

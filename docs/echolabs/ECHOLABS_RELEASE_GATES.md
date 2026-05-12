@@ -29,7 +29,7 @@ That wrapper sets `AIBENCHIE_BACKEND_URL` to `https://api.echolabs.diy/nullxoid`
 The script auto-detects the parent workspace when AIBenchie is checked out next to the EchoLabs repos. Use `-SuiteRoot` for a different layout:
 
 ```powershell
-.\scripts\echolabs_suite_release_gate.ps1 -SuiteRoot C:\Users\kasom\projects
+.\scripts\echolabs_suite_release_gate.ps1 -SuiteRoot <workspace>
 ```
 
 Use `-ReportPath` to write a separate handoff artifact:
@@ -48,6 +48,7 @@ The suite gate runs each surface-owned gate in order:
 | BridgeEcho / NullBridge backend | `.\scripts\nullbridge_release_gate.ps1` | Service bridge compliance, approval routing, trust fabric, signed envelopes, observability redaction. |
 | AIBenchie Universal API/UX E2E | `python aibenchie_local.py --universal-e2e ... --universal-e2e-lane all --json` | Standalone manifest-driven API and UX validation across BridgeEcho, web, Android, and desktop surfaces. |
 | AIBenchie deploy plan proof | `python aibenchie_local.py --verify-deploy-plan --deploy-plan <path> --json` | Optional local deploy-plan proof. Runs only when the ignored local deploy plan exists unless `-DeployPlanPath` points elsewhere. |
+| Distribution hygiene | `python aibenchie_local.py --distribution-hygiene --distribution-hygiene-root <repo> --json` | Blocks private runtime data, raw owner media/transcripts, secrets, signing material, and local distribution metadata leaks across available suite repos. |
 
 Useful options:
 
@@ -59,6 +60,7 @@ Useful options:
 .\scripts\echolabs_suite_release_gate.ps1 -DesktopIncludeUi
 .\scripts\echolabs_suite_release_gate.ps1 -BridgeFull
 .\scripts\echolabs_suite_release_gate.ps1 -DeployPlanPath .suite\local\aibenchie\deploy-plan.json
+.\scripts\echolabs_suite_release_gate.ps1 -SkipDistributionHygiene
 .\scripts\echolabs_suite_release_gate.ps1 -SkipWeb -SkipAndroid -SkipDesktop -SkipBridge -SkipUniversalE2E -SkipDeployPlan -SkipDockerSupport -AndroidRealDeviceUXPreflight
 .\scripts\echolabs_suite_release_gate.ps1 -GenerateAndroidRealDeviceUXProof -AndroidRealDeviceUXSigninPassed -AndroidRealDeviceUXChatPassed -RealDeviceUXRuntimeProvider llamacpp -RealDeviceUXRuntimeModel "Qwen/Qwen3-4B-GGUF" -RealDeviceUXRuntimeEndpointLabel ct729-text-8081 -CaptureAndroidRealDeviceUXScreenshot
 ```

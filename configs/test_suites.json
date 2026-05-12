@@ -30,6 +30,14 @@
       ],
       "pytest_args": []
     },
+    "distribution_hygiene": {
+      "kind": "release",
+      "description": "Validate distribution hygiene checks for private runtime data, secrets, local paths, and package leaks.",
+      "paths": [
+        "tests/test_distribution_hygiene.py"
+      ],
+      "pytest_args": []
+    },
     "fast": {
       "kind": "local",
       "description": "Run quick parser, adapter, scoring, and harness checks.",
