@@ -21,6 +21,15 @@
       ],
       "pytest_args": []
     },
+    "lv7_autonomy": {
+      "kind": "release",
+      "description": "Validate Lv-7 autonomy evidence gate behavior.",
+      "paths": [
+        "tests/test_lv7_autonomy_gate.py",
+        "tests/test_lv7_autonomy_gate_runner.py"
+      ],
+      "pytest_args": []
+    },
     "fast": {
       "kind": "local",
       "description": "Run quick parser, adapter, scoring, and harness checks.",

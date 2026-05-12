@@ -37,6 +37,18 @@ Personal settings belong in session-only inputs or ignored local add-ons. They d
 
 Generated support bundles must be redacted before export.
 
+## Credential-Free Gates
+
+Some gates are intentionally credential-free and should run even during credential discovery or when live provider credentials are not configured yet.
+
+The Lv-7 autonomy gate is one of these:
+
+```powershell
+python scripts\run_lv7_autonomy_gate.py --lv7-root C:\Users\kasom\projects\Lv-7
+```
+
+It generates deterministic Lv-7 autonomy evidence and validates it with AIBenchie. It does not require live Forgejo tokens, Android credentials, NullBridge service secrets, provider tokens, or signing material. Agents checking credentials should treat this as a baseline release gate that remains runnable without secrets; missing live credentials should only block credentialed live-route gates.
+
 ## NullBridge Boundary
 
 AIBenchie can test NullBridge policy enforcement, but it does not replace NullBridge.
