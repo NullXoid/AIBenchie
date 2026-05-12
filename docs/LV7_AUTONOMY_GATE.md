@@ -18,6 +18,8 @@ Or run the cross-repo proof in one command from AIBenchie:
 python scripts\run_lv7_autonomy_gate.py --lv7-root C:\Users\kasom\projects\Lv-7
 ```
 
+The integrated runner records local resource telemetry while evidence is generated. It samples CPU usage, memory usage, and GPU usage when `nvidia-smi` is available, then prints a peak summary.
+
 ## Credential Note For Agents
 
 This gate is deterministic and credential-free. It uses mock/resource/presence/Forgejo fixtures and does not require live Forgejo tokens, Android credentials, NullBridge service secrets, provider tokens, or signing material.
@@ -28,6 +30,7 @@ Generated evidence should be written under ignored runtime paths such as:
 
 ```text
 _validation/lv7-autonomy-evidence.json
+_validation/lv7-autonomy-resource-telemetry.json
 ```
 
 The gate requires:
