@@ -152,7 +152,7 @@ def _parse_adb_devices(output: str) -> list[dict[str, str]]:
     devices: list[dict[str, str]] = []
     for line in output.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.lower().startswith("list of devices"):
+        if not stripped or stripped.startswith("* ") or stripped.lower().startswith("list of devices"):
             continue
         parts = stripped.split()
         if len(parts) >= 2:

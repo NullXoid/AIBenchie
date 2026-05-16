@@ -394,6 +394,27 @@ def test_android_real_device_ux_preflight_hashes_connected_device_and_checks_pac
     assert "OFFLINE-DEVICE" not in json.dumps(result)
 
 
+def test_android_real_device_ux_preflight_ignores_adb_daemon_lines():
+    def fake_adb(args):
+        command = " ".join(args)
+        if command == "devices":
+            return (
+                "* daemon not running; starting now at tcp:5037\n"
+                "* daemon started successfully\n"
+                "List of devices attached\n"
+                "RAW-DEVICE-123\tdevice\n"
+            )
+        if command == "shell dumpsys package com.nullxoid.android":
+            return "Package [com.nullxoid.android]\n  versionName=1.2.3\n"
+        raise AssertionError(f"unexpected adb command: {command}")
+
+    result = check_android_real_device_ux_preflight(adb_reader=fake_adb).as_dict()
+
+    assert result["ok"] is True
+    assert result["device_count"] == 1
+    assert result["devices"][0]["state"] == "device"
+
+
 def test_android_real_device_ux_preflight_supports_selected_adb_serial_without_leaking_it():
     def fake_adb(args):
         command = " ".join(args)
