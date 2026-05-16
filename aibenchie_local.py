@@ -22,6 +22,7 @@ from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check,
 from aibenchie.distribution_hygiene import run_distribution_hygiene_check
 from aibenchie.docker_support import run_docker_support_gate, validate_docker_support_proof
 from aibenchie.generated_output_policy import run_generated_output_policy_check
+from aibenchie.android_release_gate import DEFAULT_ANDROID_RELEASE_VERDICT_OUTPUT, run_android_release_gate
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.real_device_ux import (
     DEFAULT_ANDROID_BASE_URL,
@@ -348,6 +349,52 @@ def build_parser() -> argparse.ArgumentParser:
         "--android-real-device-ux-preflight",
         action="store_true",
         help="Check adb device/package readiness for Android real-device UX proof without generating release proof.",
+    )
+    parser.add_argument(
+        "--android-release-gate",
+        action="store_true",
+        help="Run the Android app release verdict gate for update notes, APK evidence, and optional device preflight.",
+    )
+    parser.add_argument(
+        "--android-release-repo",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_REPO", "."),
+        help="Repository root for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-apk",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_APK", ""),
+        help="Android APK artifact path for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-update-notes",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_UPDATE_NOTES", "frontend/app/UPDATE_NOTES.md"),
+        help="Android update notes path for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-output",
+        default=str(DEFAULT_ANDROID_RELEASE_VERDICT_OUTPUT),
+        help="Output path for the Android release verdict JSON.",
+    )
+    parser.add_argument(
+        "--android-release-package",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_PACKAGE", ""),
+        help="Android package name for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-base-url",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_BASE_URL", ""),
+        help="Backend base URL used by the Android release candidate.",
+    )
+    parser.add_argument("--android-release-adb", default="adb", help="adb executable for Android release gate.")
+    parser.add_argument(
+        "--android-release-adb-serial",
+        default=os.environ.get("AIBENCHIE_ANDROID_SERIAL", ""),
+        help="Optional adb serial for Android release gate. The raw value is not written to verdict output.",
+    )
+    parser.add_argument(
+        "--android-release-require-device",
+        action="store_true",
+        help="Fail --android-release-gate unless the selected connected Android device has the candidate package installed.",
     )
     parser.add_argument(
         "--real-device-ux-proof",
@@ -1004,6 +1051,44 @@ def main(argv: list[str] | None = None) -> int:
             for check in result["checks"]:
                 status = "PASS" if check["ok"] else f"FAIL ({check['failure']})"
                 print(f"{check['name']}: {status}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.android_release_gate:
+        result = run_android_release_gate(
+            repo=args.android_release_repo,
+            apk=args.android_release_apk,
+            update_notes=args.android_release_update_notes,
+            package_name=args.android_release_package,
+            base_url=args.android_release_base_url,
+            output=args.android_release_output,
+            adb=args.android_release_adb,
+            adb_serial=args.android_release_adb_serial,
+            require_device=args.android_release_require_device,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Android Release Gate")
+            print(f"Repo: {result['repo']['name']} ({result['repo']['branch']} {str(result['repo']['commit'])[:12]})")
+            print(f"Package: {result['android']['package'] or '(missing)'}")
+            print(f"Base URL: {result['android']['base_url'] or '(missing)'}")
+            if result.get("artifacts"):
+                artifact = result["artifacts"][0]
+                print(f"APK: {artifact['path']} sha256={artifact['sha256'][:12]}...")
+            else:
+                print("APK: missing")
+            if result.get("notes"):
+                print(f"Update notes: {result['notes'].get('latest_entry') or '(missing latest entry)'}")
+            if result["android"].get("device_checked"):
+                print(f"Device preflight: checked, installed={result['android'].get('installed_version') or 'unknown'}")
+            else:
+                print("Device preflight: skipped")
+            for check in result["checks"]:
+                label = check["status"].upper()
+                suffix = f" ({check['failure']})" if check.get("failure") else ""
+                print(f"{check['name']}: {label}{suffix}")
+            print(f"Verdict: {result['verdict'].upper()}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 

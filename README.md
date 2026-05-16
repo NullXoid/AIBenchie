@@ -288,6 +288,14 @@ python aibenchie_local.py --real-device-ux-proof .suite/local/aibenchie/android-
 
 The Android preflight checks whether `adb` can see a ready device and whether the target package exposes an installed version, while hashing device handles in output. If multiple adb devices are attached, pass `--real-device-ux-adb-serial <adb-serial>`; the raw selector is used only for adb targeting and is not written to proof output. The generator reads public-safe metadata from the connected `adb` device, hashes the adb device handle, requires a known installed package version, and writes the ignored proof file at `.suite/local/aibenchie/android-real-device-ux.json`. Optional screenshot capture stores the image only under ignored local evidence and records its hash in the proof. Label the runtime with provider, model, and endpoint label so result reports can distinguish model performance. Only include environment fields that affect the run, such as app version/build type, API base URL, and network label. Only pass `--real-device-ux-signin-passed` and `--real-device-ux-chat-passed` after those physical workflows were completed on the device. Use `configs/aibenchie_real_device_ux.example.json` as the manual template for ignored runtime evidence. The verifier rejects template proofs, raw device identifiers, token/session fields, unsafe artifact paths, failing workflows, unknown app versions, Android chat proofs without a runtime model label, and Android proofs that do not include both sign-in and chat workflows.
 
+Run the Android release verdict gate when a mobile repo needs AIBenchie to judge update readiness rather than only run local repo checks:
+
+```powershell
+python aibenchie_local.py --android-release-gate --android-release-repo ..\NullBridge --android-release-apk ..\NullBridge\frontend\app\build\outputs\apk\debug\app-debug.apk --android-release-update-notes ..\NullBridge\frontend\app\UPDATE_NOTES.md --android-release-package com.nullxoid.nullbridge --android-release-base-url http://127.0.0.1:18880/ --android-release-adb-serial <adb-serial> --android-release-require-device --json
+```
+
+This gate emits `aibenchie.android-release-verdict.v1` under `.suite/local/aibenchie/android-release-verdict.json` by default. It checks update-note completeness, APK digest evidence, package/base URL identity, and optional connected-device package readiness. Raw adb serials are used only for targeting and are not written to verdict output.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell
