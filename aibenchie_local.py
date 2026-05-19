@@ -23,6 +23,7 @@ from aibenchie.distribution_hygiene import run_distribution_hygiene_check
 from aibenchie.docker_support import run_docker_support_gate, validate_docker_support_proof
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.android_release_gate import DEFAULT_ANDROID_RELEASE_VERDICT_OUTPUT, run_android_release_gate
+from aibenchie.android_onboarding_e2e import DEFAULT_ANDROID_ONBOARDING_E2E_OUTPUT, run_android_onboarding_e2e
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.real_device_ux import (
     DEFAULT_ANDROID_BASE_URL,
@@ -354,6 +355,35 @@ def build_parser() -> argparse.ArgumentParser:
         "--android-release-gate",
         action="store_true",
         help="Run the Android app release verdict gate for update notes, APK evidence, and optional device preflight.",
+    )
+    parser.add_argument(
+        "--android-onboarding-e2e",
+        action="store_true",
+        help="Run the Android onboarding setup QR/deep-link E2E contract gate.",
+    )
+    parser.add_argument(
+        "--android-onboarding-repo",
+        default=os.environ.get(
+            "AIBENCHIE_ANDROID_ONBOARDING_REPO",
+            os.environ.get("AIBENCHIE_ECHOLABS_ANDROID_ROOT", "../NullXoidAndroid"),
+        ),
+        help="Android repository root for --android-onboarding-e2e.",
+    )
+    parser.add_argument(
+        "--android-onboarding-output",
+        default=str(DEFAULT_ANDROID_ONBOARDING_E2E_OUTPUT),
+        help="Output path for the Android onboarding E2E verdict JSON.",
+    )
+    parser.add_argument(
+        "--android-onboarding-run-gradle",
+        action="store_true",
+        help="Also run the focused Gradle OnboardingUxTest as part of --android-onboarding-e2e.",
+    )
+    parser.add_argument(
+        "--android-onboarding-gradle-timeout",
+        type=int,
+        default=240,
+        help="Timeout in seconds for --android-onboarding-run-gradle.",
     )
     parser.add_argument(
         "--android-release-repo",
@@ -1084,6 +1114,28 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Device preflight: checked, installed={result['android'].get('installed_version') or 'unknown'}")
             else:
                 print("Device preflight: skipped")
+            for check in result["checks"]:
+                label = check["status"].upper()
+                suffix = f" ({check['failure']})" if check.get("failure") else ""
+                print(f"{check['name']}: {label}{suffix}")
+            print(f"Verdict: {result['verdict'].upper()}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.android_onboarding_e2e:
+        result = run_android_onboarding_e2e(
+            repo=args.android_onboarding_repo,
+            output=args.android_onboarding_output,
+            run_gradle=args.android_onboarding_run_gradle,
+            gradle_timeout_seconds=args.android_onboarding_gradle_timeout,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Android Onboarding E2E Gate")
+            print(f"Repo: {result['repo']['name']} ({result['repo'].get('branch', 'unknown')} {str(result['repo'].get('commit', 'unknown'))[:12]})")
+            print(f"Contract: {result['contract']['name']}")
+            print(f"Gradle requested: {result['contract']['gradle_requested']}")
             for check in result["checks"]:
                 label = check["status"].upper()
                 suffix = f" ({check['failure']})" if check.get("failure") else ""

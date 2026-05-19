@@ -44,6 +44,7 @@ The suite gate runs each surface-owned gate in order:
 | --- | --- | --- |
 | EchoLabs web shell | `npm run release:gate` | Add-on manifests, readiness policy, AIBenchie security gates, NullXoid UI verification, build, dependency audit. |
 | NullXoid Android | `.\scripts\android_release_gate.ps1` | Model policy, chat/store contracts, 3D prerelease polish, E2EE, NullBridge adapter, product IA, debug APK build. |
+| AIBenchie Android onboarding E2E | `python aibenchie_local.py --android-onboarding-e2e --android-onboarding-repo <NullXoidAndroid> --json` | Release-blocking onboarding setup QR/deep-link contract. Verifies manual setup stays available, QR setup is additive, OIDC is preserved, and the Android release gate includes onboarding coverage. |
 | NullXoid Desktop | `.\scripts\desktop_release_gate.ps1` | Desktop model policy regression, unit tests, bridge tests, smoke tests. |
 | BridgeEcho / NullBridge backend | `.\scripts\nullbridge_release_gate.ps1` | Service bridge compliance, approval routing, trust fabric, signed envelopes, observability redaction. |
 | AIBenchie Universal API/UX E2E | `python aibenchie_local.py --universal-e2e ... --universal-e2e-lane all --json` | Standalone manifest-driven API and UX validation across BridgeEcho, web, Android, and desktop surfaces. |

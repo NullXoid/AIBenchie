@@ -63,6 +63,14 @@ python -m playwright install chromium
 
 The same UX lane also runs the Android release gate through `scripts/android_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_ANDROID_ROOT` when the Android checkout is outside the default sibling `NullXoidAndroid` path.
 
+The Android onboarding setup QR/deep-link contract is release-blocking through AIBenchie itself:
+
+```powershell
+python aibenchie_local.py --android-onboarding-e2e --android-onboarding-repo ..\NullXoidAndroid --json
+```
+
+That gate checks the onboarding QR button, approved setup-link parser, manual setup fallback, OIDC callback preservation, documentation, and the Android release-gate test entry. Add `--android-onboarding-run-gradle` when the runner should execute the focused `OnboardingUxTest` too.
+
 It also runs the desktop release gate through `scripts/desktop_release_gate.ps1`. Set `AIBENCHIE_ECHOLABS_DESKTOP_ROOT` when the desktop checkout is outside the default sibling `AiAssistant` path.
 
 ## Manifest Shape
@@ -109,6 +117,7 @@ Implemented now:
 - EchoLabs web UX command target.
 - Release-blocking EchoLabs web browser UX target with screenshot, HTML, and trace evidence.
 - EchoLabs Android UX command target.
+- Release-blocking EchoLabs Android onboarding setup QR/deep-link E2E contract target.
 - EchoLabs desktop UX command target.
 - Unified verdict with lane, target, evidence, and summary data.
 

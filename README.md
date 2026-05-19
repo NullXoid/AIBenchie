@@ -296,6 +296,15 @@ python aibenchie_local.py --android-release-gate --android-release-repo ..\NullB
 
 This gate emits `aibenchie.android-release-verdict.v1` under `.suite/local/aibenchie/android-release-verdict.json` by default. It checks update-note completeness, APK digest evidence, package/base URL identity, and optional connected-device package readiness. Raw adb serials are used only for targeting and are not written to verdict output.
 
+Run the Android onboarding setup QR/deep-link E2E contract gate when onboarding changes:
+
+```powershell
+python aibenchie_local.py --android-onboarding-e2e --android-onboarding-repo ..\NullXoidAndroid --json
+python aibenchie_local.py --android-onboarding-e2e --android-onboarding-repo ..\NullXoidAndroid --android-onboarding-run-gradle --json
+```
+
+This gate emits `aibenchie.android-onboarding-e2e.v1` under `.suite/local/aibenchie/android-onboarding-e2e.json` by default. It verifies that QR setup remains additive, manual backend setup still exists, approved setup links are parsed, OIDC callback handling is preserved, the onboarding unit contract exists, and the Android release gate includes that contract. Use `--android-onboarding-run-gradle` when the runner should also execute `OnboardingUxTest`.
+
 Run the credentialed chat stream gate only when you can provide credentials at runtime:
 
 ```powershell

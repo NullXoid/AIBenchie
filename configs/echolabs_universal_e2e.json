@@ -242,6 +242,24 @@
           "notes": "Runs Android unit contracts and debug APK build until the ADB/instrumentation user workflow is promoted."
         },
         {
+          "id": "android-onboarding-e2e",
+          "name": "Android onboarding setup workflow",
+          "type": "android",
+          "adapter": "command",
+          "required": true,
+          "cwd": "..",
+          "command": [
+            "python",
+            "aibenchie_local.py",
+            "--android-onboarding-e2e",
+            "--android-onboarding-repo",
+            "${ENV:AIBENCHIE_ECHOLABS_ANDROID_ROOT:-../NullXoidAndroid}",
+            "--json"
+          ],
+          "timeout_seconds": 120,
+          "notes": "Release-blocking AIBenchie onboarding setup QR/deep-link contract. Keeps QR setup additive beside manual setup and preserves OIDC callbacks."
+        },
+        {
           "id": "desktop-ux",
           "name": "Desktop user workflow",
           "type": "desktop",

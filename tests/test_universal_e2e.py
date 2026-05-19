@@ -763,6 +763,17 @@ def test_echolabs_manifest_has_executable_ux_targets():
         "-File",
         "scripts/android_release_gate.ps1",
     ]
+    assert targets["android-onboarding-e2e"]["adapter"] == "command"
+    assert targets["android-onboarding-e2e"]["required"] is True
+    assert targets["android-onboarding-e2e"]["cwd"] == ".."
+    assert targets["android-onboarding-e2e"]["command"] == [
+        "python",
+        "aibenchie_local.py",
+        "--android-onboarding-e2e",
+        "--android-onboarding-repo",
+        "${ENV:AIBENCHIE_ECHOLABS_ANDROID_ROOT:-../NullXoidAndroid}",
+        "--json",
+    ]
     assert targets["desktop-ux"]["adapter"] == "command"
     assert targets["desktop-ux"]["required"] is True
     assert targets["desktop-ux"]["command"] == [
