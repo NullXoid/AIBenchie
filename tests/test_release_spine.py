@@ -24,6 +24,9 @@ def _matrix(path: Path, *, blocked_prerelease: bool = False) -> Path:
                 "display_name": "Text to Video",
                 "release_stage": "prerelease",
                 "state": "blocked" if blocked_prerelease else "prerelease",
+                "store_profile_id": "video-text-alpha",
+                "provider_workflow": "video_default",
+                "artifact_kind": "video",
                 "proof_path": "workflow-proofs/text-to-video",
                 "blocked_reason": "not ready" if blocked_prerelease else None,
             }
@@ -75,10 +78,26 @@ def _proof(evidence_root: Path, build_id: str, *, expires_at: str | None = None)
         "android_submit_proof": True,
         "job_status_proof": True,
         "gallery_artifact_proof": True,
+        "artifact_open_proof": True,
+        "artifact_save_proof": True,
         "failure_message_proof": True,
         "aibenchie_verdict": "pass",
         "primary_device": "S23 FE",
         "secondary_device": "A17",
+        "device_proof_order": ["S23 FE", "A17"],
+        "devices": [{"alias": "S23 FE"}, {"alias": "A17"}],
+        "store_profile_id": "video-text-alpha",
+        "provider_workflow": "video_default",
+        "provider_backing": "real",
+        "real_provider_proof": True,
+        "mock_backed": False,
+        "artifact_kind": "video",
+        "artifact_validation": {
+            "ok": True,
+            "artifact_kind": "video",
+            "validationStatus": "passed",
+            "videoStreamCount": 1,
+        },
         "blocked_reason": None,
         "generated_at": "2026-05-20T00:00:00Z",
         "build_id": build_id,
@@ -219,6 +238,57 @@ def test_workflow_matrix_rejects_stale_proof(tmp_path):
 
     assert result["ok"] is False
     assert "text-to-video:proof_stale" in result["failures"]
+
+
+def test_workflow_matrix_rejects_mock_backed_proof(tmp_path):
+    proof_dir = _proof(tmp_path / "evidence", "build-001")
+    proof = json.loads((proof_dir / "workflow-proof.json").read_text(encoding="utf-8"))
+    proof["provider_backing"] = "mock"
+    _write_json(proof_dir / "workflow-proof.json", proof)
+
+    result = release.validate_workflow_matrix(
+        matrix=_matrix(tmp_path / "matrix.json"),
+        store_capabilities=_store(tmp_path / "store.json"),
+        evidence_root=tmp_path / "evidence",
+        build_id="build-001",
+    )
+
+    assert result["ok"] is False
+    assert "text-to-video:mock_provider_detected:provider_backing" in result["failures"]
+
+
+def test_workflow_matrix_rejects_wrong_device_order(tmp_path):
+    proof_dir = _proof(tmp_path / "evidence", "build-001")
+    proof = json.loads((proof_dir / "workflow-proof.json").read_text(encoding="utf-8"))
+    proof["device_proof_order"] = ["A17", "S23 FE"]
+    _write_json(proof_dir / "workflow-proof.json", proof)
+
+    result = release.validate_workflow_matrix(
+        matrix=_matrix(tmp_path / "matrix.json"),
+        store_capabilities=_store(tmp_path / "store.json"),
+        evidence_root=tmp_path / "evidence",
+        build_id="build-001",
+    )
+
+    assert result["ok"] is False
+    assert "text-to-video:device_order_invalid" in result["failures"]
+
+
+def test_workflow_matrix_writes_aggregate_verdict(tmp_path):
+    _proof(tmp_path / "evidence", "build-001")
+
+    result = release.validate_workflow_matrix(
+        matrix=_matrix(tmp_path / "matrix.json"),
+        store_capabilities=_store(tmp_path / "store.json"),
+        evidence_root=tmp_path / "evidence",
+        build_id="build-001",
+    )
+
+    verdict_path = tmp_path / "evidence" / "build-001" / "workflow-matrix-verdict.json"
+    payload = json.loads(verdict_path.read_text(encoding="utf-8"))
+    assert result["ok"] is True
+    assert payload["schema"] == release.WORKFLOW_MATRIX_VERDICT_SCHEMA
+    assert payload["aibenchie_verdict"] == "pass"
 
 
 def test_website_status_export_is_public_safe(tmp_path):

@@ -15,11 +15,53 @@ SUITE_STATUS_SCHEMA = "aibenchie.suite-status.v1"
 ANDROID_RELEASE_STATUS_SCHEMA = "aibenchie.android-release-status.v1"
 STORE_CAPABILITY_STAGES_SCHEMA = "aibenchie.store-capability-stages.v1"
 WORKFLOW_MATRIX_SCHEMA = "aibenchie.workflow-matrix.v1"
+WORKFLOW_MATRIX_VERDICT_SCHEMA = "aibenchie.workflow-matrix-verdict.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
 DEFAULT_WORKFLOW_MATRIX = Path("configs/echolabs_workflow_matrix.json")
 DEFAULT_STORE_CAPABILITIES = Path("configs/echolabs_store_capabilities.json")
+EXPECTED_MS3_PRERELEASE_WORKFLOWS = {
+    "standard-prompt-image": {
+        "store_profile_id": "image-standard",
+        "provider_workflow": "image_default",
+        "artifact_kind": "image",
+    },
+    "reference-image-edit": {
+        "store_profile_id": "image-reference-edit",
+        "provider_workflow": "image_reference_edit",
+        "artifact_kind": "image",
+    },
+    "text-to-video": {
+        "store_profile_id": "video-text-alpha",
+        "provider_workflow": "video_default",
+        "artifact_kind": "video",
+    },
+    "image-to-video": {
+        "store_profile_id": "video-image-alpha",
+        "provider_workflow": "ltx_fp8_i2v_test",
+        "artifact_kind": "video",
+    },
+    "video-generated-audio": {
+        "store_profile_id": "video-audio-prerelease",
+        "provider_workflow": "ltx_fp8_i2v_test",
+        "artifact_kind": "video",
+        "audio_mode": "auto_generated",
+    },
+    "video-recorded-voice": {
+        "store_profile_id": "video-audio-prerelease",
+        "provider_workflow": "ltx_fp8_i2v_test",
+        "artifact_kind": "video",
+        "audio_mode": "recorded_voice",
+    },
+    "image-to-3d-export": {
+        "store_profile_id": "model-standard",
+        "provider_workflow": "3d_default",
+        "artifact_kind": "model3d",
+    },
+}
+AUDIO_WORKFLOW_IDS = {"video-generated-audio", "video-recorded-voice"}
+VIDEO_WORKFLOW_IDS = {"text-to-video", "image-to-video", *AUDIO_WORKFLOW_IDS}
 
 STATUS_VALUES = {
     "draft",
@@ -71,6 +113,14 @@ REQUIRED_WORKFLOW_PROOF_FILES = (
     "failure-message.png",
     "aibenchie-verdict.json",
     "notes.md",
+)
+REQUIRED_WORKFLOW_PROOF_FLAGS = (
+    "android_submit_proof",
+    "job_status_proof",
+    "gallery_artifact_proof",
+    "artifact_open_proof",
+    "artifact_save_proof",
+    "failure_message_proof",
 )
 
 
@@ -388,6 +438,12 @@ def _assert_public_safe(payload: dict[str, Any]) -> None:
         raise ValueError(f"public output contains forbidden marker(s): {', '.join(leaked)}")
 
 
+def _public_safety_failures(label: str, payload: Any) -> list[str]:
+    text = json.dumps(payload, sort_keys=True).lower() if not isinstance(payload, str) else payload.lower()
+    leaked = [marker for marker in PUBLIC_FORBIDDEN_MARKERS if marker in text]
+    return [f"{label}:public_safety_marker:{marker}" for marker in leaked]
+
+
 def _load_workflow_matrix(path: str | Path) -> dict[str, Any]:
     payload = _read_json(Path(path))
     workflows = payload.get("workflows")
@@ -413,6 +469,91 @@ def _resolve_build_root(evidence_root: str | Path, build_id: str = "") -> Path:
     return root / latest_build_id if latest_build_id and latest_build_id != "unverified" else root
 
 
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "yes", "pass", "passed", "ok", "1"}
+    return bool(value)
+
+
+def _proof_verdict_value(payload: dict[str, Any]) -> str:
+    value = payload.get("aibenchie_verdict") or payload.get("verdict")
+    if value:
+        return str(value)
+    if payload.get("ok") is True:
+        return "pass"
+    return ""
+
+
+def _device_aliases(proof: dict[str, Any]) -> list[str]:
+    order = proof.get("device_proof_order")
+    if isinstance(order, list):
+        return [str(item) for item in order if str(item).strip()]
+    devices = proof.get("devices")
+    if isinstance(devices, list):
+        aliases: list[str] = []
+        for item in devices:
+            if not isinstance(item, dict):
+                continue
+            alias = item.get("alias") or item.get("device_alias") or item.get("label") or item.get("model")
+            if alias:
+                aliases.append(str(alias))
+        return aliases
+    return []
+
+
+def _artifact_validation_failures(workflow_id: str, proof: dict[str, Any], expected: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    validation = proof.get("artifact_validation")
+    if not isinstance(validation, dict):
+        return [f"{workflow_id}:artifact_validation_missing"]
+    if not (_truthy(validation.get("ok")) or str(validation.get("validationStatus") or "").lower() in {"pass", "passed"}):
+        failures.append(f"{workflow_id}:artifact_validation_not_pass")
+    expected_kind = str(expected.get("artifact_kind") or "")
+    actual_kind = str(validation.get("artifact_kind") or proof.get("artifact_kind") or "")
+    if expected_kind and actual_kind and actual_kind != expected_kind:
+        failures.append(f"{workflow_id}:artifact_kind_mismatch:{actual_kind}")
+    if workflow_id in VIDEO_WORKFLOW_IDS:
+        if int(validation.get("videoStreamCount") or validation.get("video_stream_count") or 0) < 1:
+            failures.append(f"{workflow_id}:video_stream_missing")
+    if workflow_id in AUDIO_WORKFLOW_IDS:
+        if not _truthy(validation.get("hasAudio") if "hasAudio" in validation else validation.get("has_audio")):
+            failures.append(f"{workflow_id}:audio_flag_missing")
+        if int(validation.get("audioStreamCount") or validation.get("audio_stream_count") or 0) < 1:
+            failures.append(f"{workflow_id}:audio_stream_missing")
+        if int(validation.get("audioDurationMs") or validation.get("audio_duration_ms") or 0) <= 0:
+            failures.append(f"{workflow_id}:audio_duration_missing")
+        if int(validation.get("videoDurationMs") or validation.get("video_duration_ms") or 0) <= 0:
+            failures.append(f"{workflow_id}:video_duration_missing")
+        if not _truthy(
+            validation.get("nonSilentAudio")
+            if "nonSilentAudio" in validation
+            else validation.get("non_silent_audio")
+            if "non_silent_audio" in validation
+            else validation.get("audio_not_silent")
+        ):
+            failures.append(f"{workflow_id}:non_silent_audio_missing")
+        if not _truthy(
+            validation.get("durationCompatible")
+            if "durationCompatible" in validation
+            else validation.get("duration_compatible")
+        ):
+            failures.append(f"{workflow_id}:duration_compatibility_missing")
+        if str(validation.get("validationFailureReason") or validation.get("validation_failure_reason") or "").strip():
+            failures.append(f"{workflow_id}:validation_failure_reason_present")
+    if workflow_id == "video-recorded-voice":
+        if _truthy(validation.get("voice_truncated") or validation.get("recordedVoiceTruncated")):
+            failures.append(f"{workflow_id}:recorded_voice_truncated")
+    if expected_kind == "model3d":
+        formats = validation.get("output_formats") or validation.get("outputFormats") or []
+        if isinstance(formats, str):
+            formats = [formats]
+        if not any(str(item).lower() in {"glb", "gltf"} for item in formats):
+            failures.append(f"{workflow_id}:model3d_export_format_missing")
+    return failures
+
+
 def _validate_workflow_proof(proof_dir: Path, workflow: dict[str, Any], build_id: str) -> list[str]:
     workflow_id = str(workflow.get("workflow_id") or "")
     failures: list[str] = []
@@ -430,11 +571,46 @@ def _validate_workflow_proof(proof_dir: Path, workflow: dict[str, Any], build_id
         failures.append(f"{workflow_id}:proof_workflow_id_mismatch")
     if build_id and proof.get("build_id") != build_id:
         failures.append(f"{workflow_id}:proof_build_id_mismatch")
-    for field in ("android_submit_proof", "job_status_proof", "gallery_artifact_proof", "failure_message_proof"):
+    failures.extend(_public_safety_failures(f"{workflow_id}:proof", proof))
+    notes_path = proof_dir / "notes.md"
+    if notes_path.exists():
+        failures.extend(_public_safety_failures(f"{workflow_id}:notes", notes_path.read_text(encoding="utf-8", errors="replace")))
+    verdict_path = proof_dir / "aibenchie-verdict.json"
+    if verdict_path.exists():
+        verdict = _read_json(verdict_path)
+        if verdict.get("__load_error__"):
+            failures.append(f"{workflow_id}:verdict_json_invalid")
+        else:
+            failures.extend(_public_safety_failures(f"{workflow_id}:verdict", verdict))
+            if _proof_verdict_value(verdict) != "pass":
+                failures.append(f"{workflow_id}:verdict_file_not_pass")
+    for field in REQUIRED_WORKFLOW_PROOF_FLAGS:
         if proof.get(field) is not True:
             failures.append(f"{workflow_id}:proof_field_not_true:{field}")
     if proof.get("aibenchie_verdict") != "pass":
         failures.append(f"{workflow_id}:proof_verdict_not_pass")
+    expected = EXPECTED_MS3_PRERELEASE_WORKFLOWS.get(workflow_id, {})
+    if expected:
+        for field in ("store_profile_id", "provider_workflow", "audio_mode"):
+            expected_value = expected.get(field)
+            if expected_value and str(proof.get(field) or workflow.get(field) or "") != str(expected_value):
+                failures.append(f"{workflow_id}:proof_{field}_mismatch")
+        if proof.get("real_provider_proof") is not True:
+            failures.append(f"{workflow_id}:real_provider_proof_missing")
+        for field in ("provider_backing", "provider_kind", "provider_mode"):
+            value = str(proof.get(field) or "").lower()
+            if "mock" in value:
+                failures.append(f"{workflow_id}:mock_provider_detected:{field}")
+        if proof.get("mock_backed") is True:
+            failures.append(f"{workflow_id}:mock_backed_proof")
+        aliases = _device_aliases(proof)
+        if str(proof.get("primary_device") or "") != "S23 FE":
+            failures.append(f"{workflow_id}:primary_device_not_s23_fe")
+        if str(proof.get("secondary_device") or "") != "A17":
+            failures.append(f"{workflow_id}:secondary_device_not_a17")
+        if aliases[:2] != ["S23 FE", "A17"]:
+            failures.append(f"{workflow_id}:device_order_invalid")
+        failures.extend(_artifact_validation_failures(workflow_id, proof, expected))
     expires = _parse_iso(proof.get("expires_at"))
     if expires and expires <= _now():
         failures.append(f"{workflow_id}:proof_stale")
@@ -447,6 +623,8 @@ def validate_workflow_matrix(
     store_capabilities: str | Path = DEFAULT_STORE_CAPABILITIES,
     evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
     build_id: str = "",
+    out: str | Path = "",
+    write_verdict: bool = True,
 ) -> dict[str, Any]:
     matrix_payload = _load_workflow_matrix(matrix)
     store_payload = _load_store_capabilities(store_capabilities)
@@ -456,6 +634,7 @@ def validate_workflow_matrix(
     build_root = _resolve_build_root(evidence_root, build_id)
     actual_build_id = build_id or build_root.name
     failures: list[str] = []
+    frozen_prerelease = [str(item) for item in matrix_payload.get("frozen_prerelease_workflows") or []]
 
     if matrix_payload.get("__load_error__"):
         failures.append(f"workflow_matrix_load_error:{matrix_payload['__load_error__']}")
@@ -467,6 +646,7 @@ def validate_workflow_matrix(
         failures.append(f"store_capabilities_schema_invalid:{store_payload.get('schema')}")
 
     prerelease_count = 0
+    prerelease_workflow_ids: list[str] = []
     for workflow in workflows:
         workflow_id = str(workflow.get("workflow_id") or "")
         release_stage = str(workflow.get("release_stage") or "")
@@ -476,29 +656,64 @@ def validate_workflow_matrix(
             continue
         if workflow_id not in capabilities_by_workflow:
             failures.append(f"{workflow_id}:missing_store_capability_mapping")
+        else:
+            capability = capabilities_by_workflow[workflow_id]
+            if str(capability.get("proof_path") or "") != str(workflow.get("proof_path") or ""):
+                failures.append(f"{workflow_id}:store_capability_proof_path_mismatch")
         if release_stage == "prerelease":
             prerelease_count += 1
+            prerelease_workflow_ids.append(workflow_id)
             if state == "blocked" or workflow.get("blocked_reason"):
                 failures.append(f"{workflow_id}:blocked_workflow_marked_prerelease")
+            capability = capabilities_by_workflow.get(workflow_id)
+            if capability and str(capability.get("release_stage") or "") != "prerelease":
+                failures.append(f"{workflow_id}:store_capability_not_prerelease")
+            expected = EXPECTED_MS3_PRERELEASE_WORKFLOWS.get(workflow_id)
+            if expected:
+                for field in ("store_profile_id", "provider_workflow", "artifact_kind", "audio_mode"):
+                    expected_value = expected.get(field)
+                    if expected_value and str(workflow.get(field) or "") != str(expected_value):
+                        failures.append(f"{workflow_id}:matrix_{field}_mismatch")
             proof_dir = build_root / str(workflow.get("proof_path") or f"workflow-proofs/{workflow_id}")
             failures.extend(_validate_workflow_proof(proof_dir, workflow, actual_build_id))
         elif state in {"installable", "enabled"} and release_stage in {"blocked", "later"}:
             failures.append(f"{workflow_id}:blocked_or_later_workflow_installable")
+        if release_stage in {"blocked", "later"} and not workflow.get("blocked_reason"):
+            failures.append(f"{workflow_id}:blocked_or_later_missing_reason")
 
-    return {
-        "schema": "aibenchie.workflow-matrix-validation.v1",
+    if frozen_prerelease:
+        expected_set = set(frozen_prerelease)
+        actual_set = set(prerelease_workflow_ids)
+        for workflow_id in sorted(expected_set - actual_set):
+            failures.append(f"{workflow_id}:frozen_prerelease_missing")
+        for workflow_id in sorted(actual_set - expected_set):
+            failures.append(f"{workflow_id}:unexpected_prerelease_workflow")
+        if expected_set != set(EXPECTED_MS3_PRERELEASE_WORKFLOWS):
+            failures.append("frozen_prerelease_contract_drift")
+
+    result = {
+        "schema": WORKFLOW_MATRIX_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,
         "generated_at": _iso(_now()),
         "ok": not failures,
+        "aibenchie_verdict": "pass" if not failures else "blocked",
         "matrix": str(Path(matrix).as_posix()),
         "store_capabilities": str(Path(store_capabilities).as_posix()),
         "evidence_root": str(Path(evidence_root).as_posix()),
         "build_id": actual_build_id,
         "workflow_count": len(workflows),
         "prerelease_count": prerelease_count,
+        "frozen_prerelease_workflows": frozen_prerelease,
+        "validated_prerelease_workflows": prerelease_workflow_ids,
         "capability_count": len(capabilities),
         "failures": failures,
     }
+    if write_verdict:
+        output_path = Path(out).expanduser() if out else build_root / "workflow-matrix-verdict.json"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        _write_json(output_path, result)
+        result["output"] = str(output_path.as_posix())
+    return result
 
 
 def export_website_status(
@@ -631,6 +846,7 @@ def build_parser() -> argparse.ArgumentParser:
     workflows.add_argument("--matrix", default=str(DEFAULT_WORKFLOW_MATRIX))
     workflows.add_argument("--store-capabilities", default=str(DEFAULT_STORE_CAPABILITIES))
     workflows.add_argument("--build-id", default="")
+    workflows.add_argument("--out", default="")
 
     website = subparsers.add_parser("export-website-status", help="Export public-safe suite status JSON.")
     add_common(website)
@@ -688,6 +904,7 @@ def main(argv: list[str] | None = None) -> int:
             store_capabilities=args.store_capabilities,
             evidence_root=args.evidence_root,
             build_id=args.build_id,
+            out=args.out,
         )
         _print_result(result, json_output=args.json, title="AIBenchie Workflow Matrix Validation")
         return 0 if result["ok"] else 1

@@ -12,6 +12,9 @@
       "requires_backend": true,
       "requires_approval": false,
       "workflow_id": "standard-prompt-image",
+      "store_profile_id": "image-standard",
+      "provider_workflow": "image_default",
+      "artifact_kind": "image",
       "proof_path": "workflow-proofs/standard-prompt-image",
       "blocked_reason": null
     },
@@ -24,6 +27,9 @@
       "requires_backend": true,
       "requires_approval": false,
       "workflow_id": "reference-image-edit",
+      "store_profile_id": "image-reference-edit",
+      "provider_workflow": "image_reference_edit",
+      "artifact_kind": "image",
       "proof_path": "workflow-proofs/reference-image-edit",
       "blocked_reason": null
     },
@@ -36,6 +42,9 @@
       "requires_backend": true,
       "requires_approval": false,
       "workflow_id": "text-to-video",
+      "store_profile_id": "video-text-alpha",
+      "provider_workflow": "video_default",
+      "artifact_kind": "video",
       "proof_path": "workflow-proofs/text-to-video",
       "blocked_reason": null
     },
@@ -48,6 +57,9 @@
       "requires_backend": true,
       "requires_approval": false,
       "workflow_id": "image-to-video",
+      "store_profile_id": "video-image-alpha",
+      "provider_workflow": "ltx_fp8_i2v_test",
+      "artifact_kind": "video",
       "proof_path": "workflow-proofs/image-to-video",
       "blocked_reason": null
     },
@@ -60,6 +72,10 @@
       "requires_backend": true,
       "requires_approval": true,
       "workflow_id": "video-generated-audio",
+      "store_profile_id": "video-audio-prerelease",
+      "provider_workflow": "ltx_fp8_i2v_test",
+      "artifact_kind": "video",
+      "audio_mode": "auto_generated",
       "proof_path": "workflow-proofs/video-generated-audio",
       "blocked_reason": null
     },
@@ -72,6 +88,10 @@
       "requires_backend": true,
       "requires_approval": true,
       "workflow_id": "video-recorded-voice",
+      "store_profile_id": "video-audio-prerelease",
+      "provider_workflow": "ltx_fp8_i2v_test",
+      "artifact_kind": "video",
+      "audio_mode": "recorded_voice",
       "proof_path": "workflow-proofs/video-recorded-voice",
       "blocked_reason": null
     },
@@ -84,6 +104,9 @@
       "requires_backend": true,
       "requires_approval": false,
       "workflow_id": "image-to-3d-export",
+      "store_profile_id": "model-standard",
+      "provider_workflow": "3d_default",
+      "artifact_kind": "model3d",
       "proof_path": "workflow-proofs/image-to-3d-export",
       "blocked_reason": null
     },
