@@ -296,6 +296,22 @@ python aibenchie_local.py --android-release-gate --android-release-repo ..\NullB
 
 This gate emits `aibenchie.android-release-verdict.v1` under `.suite/local/aibenchie/android-release-verdict.json` by default. It checks update-note completeness, APK digest evidence, package/base URL identity, and optional connected-device package readiness. Raw adb serials are used only for targeting and are not written to verdict output.
 
+Run the EchoLabs release truth spine when the suite needs a single local evidence root for build identity, latest verdict, latest passing candidate, workflow proof validation, and generated status exports:
+
+```powershell
+python -m aibenchie.release verify --suite echolabs --json
+python aibenchie_local.py --release-spine-verify --json
+python -m aibenchie.release validate-workflows --matrix configs\echolabs_workflow_matrix.json --store-capabilities configs\echolabs_store_capabilities.json --json
+```
+
+The default evidence root is ignored local state:
+
+```text
+.suite/local/aibenchie/release/evidence/
+```
+
+`verify` writes `latest-build.json`, `latest-verdict.json`, `<build-id>/aibenchie-verdict.json`, and `<build-id>/repo-commits.json`. `promote-passing` is the only command that updates `latest-passing.json`, and it rejects missing, stale, malformed, or non-passing builds. Workflow validation is intentionally strict: prerelease workflows fail until real Android submit, job, gallery/artifact, open/save, failure, verdict, and notes proof files exist.
+
 Run the EchoLabs Store video + sound prerelease gate as part of `--echolabs-store` when real Android evidence exists for both generated audio and recorded voice:
 
 ```powershell

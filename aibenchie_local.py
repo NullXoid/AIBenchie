@@ -33,6 +33,15 @@ from aibenchie.real_device_ux import (
     emit_android_real_device_ux_proof,
     validate_real_device_ux_proof,
 )
+from aibenchie.release import (
+    DEFAULT_EVIDENCE_ROOT as DEFAULT_RELEASE_SPINE_EVIDENCE_ROOT,
+    DEFAULT_STORE_CAPABILITIES as DEFAULT_RELEASE_SPINE_STORE_CAPABILITIES,
+    DEFAULT_SUITE_VERSION as DEFAULT_RELEASE_SPINE_SUITE_VERSION,
+    DEFAULT_WORKFLOW_MATRIX as DEFAULT_RELEASE_SPINE_WORKFLOW_MATRIX,
+    promote_passing_candidate,
+    validate_workflow_matrix,
+    verify_release_spine,
+)
 from aibenchie.release_artifacts import emit_release_artifacts_manifest, verify_release_artifacts_manifest
 from aibenchie.release_bundle import package_release_artifacts
 from aibenchie.resource_budget import run_resource_budget_check
@@ -98,6 +107,42 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--release-confidence", default="high", help="Confidence label for release details.")
     parser.add_argument("--release-operator", default="", help="Operator label for release details.")
     parser.add_argument("--release-reviewer", default="", help="Reviewer label for release details.")
+    parser.add_argument(
+        "--release-spine-verify",
+        action="store_true",
+        help="Write release truth spine latest-build/latest-verdict evidence.",
+    )
+    parser.add_argument(
+        "--release-spine-promote-passing",
+        action="store_true",
+        help="Promote a passing release truth spine build to latest-passing.json.",
+    )
+    parser.add_argument(
+        "--release-spine-validate-workflows",
+        action="store_true",
+        help="Validate EchoLabs workflow proof folders and Store mappings.",
+    )
+    parser.add_argument("--release-spine-build-id", default="", help="Build id for release-spine commands.")
+    parser.add_argument(
+        "--release-spine-evidence-root",
+        default=str(DEFAULT_RELEASE_SPINE_EVIDENCE_ROOT),
+        help="Evidence root for release-spine commands.",
+    )
+    parser.add_argument(
+        "--release-spine-suite-version",
+        default=DEFAULT_RELEASE_SPINE_SUITE_VERSION,
+        help="Suite version recorded by --release-spine-verify.",
+    )
+    parser.add_argument(
+        "--release-spine-workflow-matrix",
+        default=str(DEFAULT_RELEASE_SPINE_WORKFLOW_MATRIX),
+        help="Workflow matrix path for --release-spine-validate-workflows.",
+    )
+    parser.add_argument(
+        "--release-spine-store-capabilities",
+        default=str(DEFAULT_RELEASE_SPINE_STORE_CAPABILITIES),
+        help="Store capability mapping path for --release-spine-validate-workflows.",
+    )
     parser.add_argument(
         "--release-artifacts",
         default="",
@@ -585,6 +630,62 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrong recovery secret rejected: {result['wrong_recovery_secret_rejected']}")
             print(f"Revoked device rejected after rotation: {result['revoked_device_rejected_after_rotation']}")
             print(f"Audit redacted: {result['audit_redacted']}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.release_spine_verify:
+        result = verify_release_spine(
+            suite="echolabs",
+            evidence_root=args.release_spine_evidence_root,
+            build_id=args.release_spine_build_id,
+            suite_version=args.release_spine_suite_version,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Release Truth Spine")
+            print(f"Build: {result['build_id']}")
+            print(f"Status: {result['status']}")
+            print(f"Verdict: {result['aibenchie_verdict']}")
+            print(f"Evidence: {result['build_evidence_dir']}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.release_spine_promote_passing:
+        result = promote_passing_candidate(
+            build_id=args.release_spine_build_id,
+            evidence_root=args.release_spine_evidence_root,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Release Truth Spine Promotion")
+            print(f"Build: {result['build_id'] or '(missing)'}")
+            if result.get("failures"):
+                print("Failures:")
+                for failure in result["failures"]:
+                    print(f"- {failure}")
+            print("Result: PASS" if result["ok"] else "Result: FAIL")
+        return 0 if result["ok"] else 1
+
+    if args.release_spine_validate_workflows:
+        result = validate_workflow_matrix(
+            matrix=args.release_spine_workflow_matrix,
+            store_capabilities=args.release_spine_store_capabilities,
+            evidence_root=args.release_spine_evidence_root,
+            build_id=args.release_spine_build_id,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("AIBenchie Workflow Matrix Validation")
+            print(f"Build: {result['build_id']}")
+            print(f"Workflows: {result['workflow_count']}")
+            print(f"Prerelease workflows: {result['prerelease_count']}")
+            if result["failures"]:
+                print("Failures:")
+                for failure in result["failures"]:
+                    print(f"- {failure}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
