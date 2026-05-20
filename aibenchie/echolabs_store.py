@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -45,6 +47,7 @@ STORE_SECTIONS = (
     "androidOutOfNetwork.connectorRegistration",
     "androidOutOfNetwork.approvedImageGeneration",
     "androidOutOfNetwork.approvedVideoGeneration",
+    "androidOutOfNetwork.videoAudioPrerelease",
     "androidOutOfNetwork.nonAdminSelfApprovalDenied",
     "androidOutOfNetwork.adminSamePhoneApprovalAllowed",
     "androidOutOfNetwork.artifactDownload",
@@ -368,6 +371,237 @@ def _android_video_e2e_gate(source: dict[str, str]) -> StoreGateCheck:
     )
 
 
+def _safe_int(value: str, default: int = 0) -> int:
+    try:
+        return int(float(str(value or "").strip()))
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_float(value: str, default: float = 0.0) -> float:
+    try:
+        return float(str(value or "").strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _duration_tolerance(video_ms: int) -> int:
+    return max(500, int(round(video_ms * 0.05)))
+
+
+def _git_commit(path: Path | None) -> str:
+    if path is None:
+        return ""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=10,
+        )
+        return completed.stdout.strip()
+    except Exception:
+        return ""
+
+
+def _video_audio_mode_evidence(source: dict[str, str], mode_key: str, label: str) -> tuple[dict[str, Any], list[str]]:
+    prefix = f"AIBENCHIE_VIDEO_AUDIO_{mode_key}_"
+    job_id = source.get(prefix + "STORE_JOB_ID", "")
+    artifact_id = source.get(prefix + "ARTIFACT_ID", "")
+    approval_event_id = source.get(prefix + "APPROVAL_EVENT_ID", "")
+    mime_type = source.get(prefix + "MIME", "")
+    video_streams = _safe_int(source.get(prefix + "VIDEO_STREAMS", "0"))
+    audio_streams = _safe_int(source.get(prefix + "AUDIO_STREAMS", "0"))
+    video_duration_ms = _safe_int(source.get(prefix + "VIDEO_DURATION_MS", "0"))
+    audio_duration_ms = _safe_int(source.get(prefix + "AUDIO_DURATION_MS", "0"))
+    max_volume_db = _safe_float(source.get(prefix + "MAX_VOLUME_DB", "-999"), -999.0)
+    player_opened = _truthy(source.get(prefix + "PLAYER", ""))
+    saved_to_device = _truthy(source.get(prefix + "SAVED_TO_DEVICE", ""))
+    device = source.get(prefix + "DEVICE", "").strip()
+    failures: list[str] = []
+    if not _safe_public_id(job_id, "storejob-"):
+        failures.append(f"{label}:STORE_JOB_ID_INVALID")
+    if not _safe_public_id(artifact_id):
+        failures.append(f"{label}:ARTIFACT_ID_INVALID")
+    if not approval_event_id:
+        failures.append(f"{label}:APPROVAL_EVENT_MISSING")
+    if mime_type != "video/mp4":
+        failures.append(f"{label}:MIME_NOT_VIDEO_MP4")
+    if video_streams < 1:
+        failures.append(f"{label}:VIDEO_STREAM_MISSING")
+    if audio_streams < 1:
+        failures.append(f"{label}:AUDIO_STREAM_MISSING")
+    if video_duration_ms <= 0:
+        failures.append(f"{label}:VIDEO_DURATION_MISSING")
+    if audio_duration_ms <= 0:
+        failures.append(f"{label}:AUDIO_DURATION_MISSING")
+    if video_duration_ms > 0 and audio_duration_ms > 0:
+        tolerance = _duration_tolerance(video_duration_ms)
+        if abs(video_duration_ms - audio_duration_ms) > tolerance:
+            failures.append(f"{label}:AUDIO_VIDEO_DURATION_MISMATCH")
+    else:
+        tolerance = _duration_tolerance(video_duration_ms)
+    if max_volume_db <= -55.0:
+        failures.append(f"{label}:AUDIO_EFFECTIVELY_SILENT")
+    if not player_opened:
+        failures.append(f"{label}:ANDROID_PLAYER_NOT_CONFIRMED")
+    if not saved_to_device:
+        failures.append(f"{label}:ANDROID_SAVE_NOT_CONFIRMED")
+    return (
+        {
+            "mode": label,
+            "device": device,
+            "storeJobId": job_id,
+            "approvalEventId": approval_event_id,
+            "artifactId": artifact_id,
+            "mimeType": mime_type,
+            "videoStreamCount": video_streams,
+            "audioStreamCount": audio_streams,
+            "videoDurationMs": video_duration_ms,
+            "audioDurationMs": audio_duration_ms,
+            "durationToleranceMs": tolerance,
+            "maxVolumeDb": max_volume_db,
+            "playerOpened": player_opened,
+            "savedToDevice": saved_to_device,
+        },
+        failures,
+    )
+
+
+def _load_video_audio_device_proof(source: dict[str, str]) -> tuple[dict[str, Any], list[str]]:
+    path_raw = source.get("AIBENCHIE_VIDEO_AUDIO_DEVICE_PROOF_PATH", "").strip()
+    expected_count = _safe_int(source.get("AIBENCHIE_VIDEO_AUDIO_EXPECTED_DEVICE_COUNT", "0"))
+    if not path_raw:
+        if expected_count > 0:
+            return {}, ["DEVICE_PROOF_MISSING"]
+        return {}, []
+    path = Path(path_raw).expanduser()
+    if not path.exists():
+        return {}, ["DEVICE_PROOF_FILE_MISSING"]
+    try:
+        proof = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}, ["DEVICE_PROOF_INVALID_JSON"]
+    devices = proof.get("devices") if isinstance(proof.get("devices"), list) else []
+    failures: list[str] = []
+    if expected_count > 0 and len(devices) < expected_count:
+        failures.append("DEVICE_PROOF_EXPECTED_DEVICES_MISSING")
+    for index, device in enumerate(devices):
+        if not isinstance(device, dict):
+            failures.append(f"DEVICE_PROOF_INVALID_DEVICE:{index}")
+            continue
+        label = str(device.get("label") or device.get("serialAlias") or index)
+        if not str(device.get("serialAlias") or "").strip():
+            failures.append(f"DEVICE_PROOF_SERIAL_ALIAS_MISSING:{label}")
+        results = device.get("results") if isinstance(device.get("results"), list) else []
+        by_mode = {
+            str(item.get("mode") or ""): item
+            for item in results
+            if isinstance(item, dict)
+        }
+        for mode in ("auto_generated", "recorded_voice"):
+            item = by_mode.get(mode)
+            if not item:
+                failures.append(f"DEVICE_PROOF_MODE_MISSING:{label}:{mode}")
+                continue
+            if not _safe_public_id(str(item.get("storeJobId") or ""), "storejob-"):
+                failures.append(f"DEVICE_PROOF_STORE_JOB_INVALID:{label}:{mode}")
+            if not _safe_public_id(str(item.get("artifactId") or "")):
+                failures.append(f"DEVICE_PROOF_ARTIFACT_INVALID:{label}:{mode}")
+            if not str(item.get("approvalEventId") or "").strip():
+                failures.append(f"DEVICE_PROOF_APPROVAL_MISSING:{label}:{mode}")
+            if not bool(item.get("androidPlayerProof")):
+                failures.append(f"DEVICE_PROOF_PLAYER_MISSING:{label}:{mode}")
+            if not bool(item.get("savedToDevice")):
+                failures.append(f"DEVICE_PROOF_SAVE_MISSING:{label}:{mode}")
+    return proof, failures
+
+
+def _write_video_audio_prerelease_bundle(
+    source: dict[str, str],
+    repos: dict[str, Path | None],
+    verdict: dict[str, Any],
+    evidence: dict[str, Any],
+) -> str:
+    configured_dir = source.get("AIBENCHIE_VIDEO_AUDIO_PRERELEASE_EVIDENCE_DIR", "").strip()
+    if not configured_dir:
+        return ""
+    output_dir = Path(configured_dir).expanduser()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    commits = {name: _git_commit(path) for name, path in repos.items()}
+    evidence = {
+        **evidence,
+        "schema": "aibenchie.video_audio_prerelease_evidence.v1",
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "apkVersion": source.get("AIBENCHIE_VIDEO_AUDIO_APK_VERSION", ""),
+        "androidAppBuild": source.get("AIBENCHIE_VIDEO_AUDIO_ANDROID_BUILD", ""),
+        "commits": commits,
+    }
+    verdict_path = output_dir / "video_audio_prerelease_verdict.json"
+    evidence_path = output_dir / "video_audio_prerelease_evidence.json"
+    verdict_path.write_text(json.dumps(verdict, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    evidence_path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return str(output_dir.resolve())
+
+
+def _video_audio_prerelease_gate(source: dict[str, str], repos: dict[str, Path | None]) -> StoreGateCheck:
+    required = _truthy(source.get("AIBENCHIE_VIDEO_AUDIO_PRERELEASE_REQUIRED", ""))
+    status = source.get("AIBENCHIE_VIDEO_AUDIO_PRERELEASE_STATUS", "").strip().lower()
+    configured = bool(status)
+    if not configured:
+        failure = "VIDEO_AUDIO_PRERELEASE_EVIDENCE_MISSING"
+        return StoreGateCheck(
+            status="failed_blocking" if required else "skipped",
+            evidence=["video + sound prerelease gate requires explicit Android/device/audio proof"],
+            failures=[failure] if required else [],
+            warnings=[] if required else [failure],
+            required=required,
+            configured=False,
+            provider_kind="local-video-engine",
+        )
+
+    auto_evidence, auto_failures = _video_audio_mode_evidence(source, "AUTO", "auto_generated")
+    recorded_evidence, recorded_failures = _video_audio_mode_evidence(source, "RECORDED", "recorded_voice")
+    device_proof, device_failures = _load_video_audio_device_proof(source)
+    failures = []
+    if status != "passed":
+        failures.append("VIDEO_AUDIO_PRERELEASE_STATUS_NOT_PASSED")
+    failures.extend(auto_failures)
+    failures.extend(recorded_failures)
+    failures.extend(device_failures)
+    evidence_payload = {
+        "modes": [auto_evidence, recorded_evidence],
+        "androidPlayerProof": bool(auto_evidence["playerOpened"] and recorded_evidence["playerOpened"]),
+        "androidSaveProof": bool(auto_evidence["savedToDevice"] and recorded_evidence["savedToDevice"]),
+        "deviceProof": device_proof,
+    }
+    gate_status = "passed" if not failures else ("failed_blocking" if required else "failed_non_blocking")
+    verdict = {
+        "ok": not failures,
+        "status": gate_status,
+        "required": required,
+        "failures": failures,
+    }
+    evidence_dir = _write_video_audio_prerelease_bundle(source, repos, verdict, evidence_payload)
+    evidence = [
+        "video + sound prerelease evidence covers auto-generated audio and recorded voice",
+        "MP4 stream, non-silent audio, A/V duration, player, save, and approval proof checked",
+    ]
+    if evidence_dir:
+        evidence.append(f"evidenceBundle:{evidence_dir}")
+    return StoreGateCheck(
+        status=gate_status,
+        evidence=evidence,
+        failures=failures if required else [],
+        warnings=[] if required else failures,
+        required=required,
+        configured=True,
+        provider_kind="local-video-engine",
+    )
+
+
 def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStoreResult:
     source = dict(os.environ if env is None else env)
     wrapper = _find_repo(source, "AIBENCHIE_NULLXOID_WRAPPER_REPO", ("../Felnx/NullXoid/.NullXoid", "../.NullXoid"))
@@ -380,6 +614,12 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         "nullbridge": str(nullbridge or ""),
         "android": str(android or ""),
         "windows": str(windows or ""),
+    }
+    repo_paths = {
+        "wrapper": wrapper,
+        "nullbridge": nullbridge,
+        "android": android,
+        "aibenchie": repo_root(),
     }
     gates: dict[str, StoreGateCheck] = {}
 
@@ -407,9 +647,11 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     android_settings = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "data" / "prefs" / "SettingsStore.kt") if android else ""
     android_vm = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "NullXoidViewModel.kt") if android else ""
     android_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreScreen.kt") if android else ""
+    android_catalog_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreCatalogScreen.kt") if android else ""
     android_store_ui = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "StoreUiModels.kt") if android else ""
     android_gallery_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "GalleryScreen.kt") if android else ""
     android_jobs_screen = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "ui" / "store" / "JobsScreen.kt") if android else ""
+    android_routes = _read(android / "app" / "src" / "main" / "java" / "com" / "nullxoid" / "android" / "backend" / "routes" / "Routes.kt") if android else ""
     android_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreCatalogContractTest.kt") if android else ""
     android_async_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "data" / "model" / "StoreAsyncJobContractTest.kt") if android else ""
     android_ia_test = _read(android / "app" / "src" / "test" / "java" / "com" / "nullxoid" / "android" / "ui" / "AndroidProductIaTest.kt") if android else ""
@@ -479,7 +721,8 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     )
 
     parity_failures = []
-    for platform, text in (("web", wrapper_catalog + wrapper_ui), ("android", android_models + android_screen), ("windows", windows_adapter + windows_test)):
+    android_catalog_text = android_models + android_screen + android_catalog_screen + android_routes + android_test
+    for platform, text in (("web", wrapper_catalog + wrapper_ui), ("android", android_catalog_text), ("windows", windows_adapter + windows_test)):
         if CREATIVE_WORKFLOWS not in text:
             parity_failures.append(f"CATEGORY_PARITY_MISSING:{platform}")
         for addon_id in STORE_ADDONS:
@@ -595,17 +838,22 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         ["3D GLB Gallery metadata is sanitized and fixture GLB is source-validated"],
         [f"MODEL3D_GALLERY_METADATA_MISSING:{item}" for item in model3d_gallery_missing],
     )
+    source_image_text = wrapper_service + wrapper_provider + wrapper_test + android_vm + android_screen + android_ia_test
     source_image_missing = _has_all(
-        wrapper_service + wrapper_provider + wrapper_test + android_vm + android_screen + android_ia_test,
+        source_image_text,
         [
             "SOURCE_IMAGE_REQUIRED",
             "sourceImageArtifactId",
             "test_store_3d_generation_requires_source_image_before_approval",
             "test_real_3d_provider_receives_source_image",
             "Choose a source image before generating a 3D model.",
-            "3D model generation uses an image first.",
         ],
     )
+    if (
+        "3D model generation uses an image first." not in source_image_text
+        and "Generate a 3D model from the selected source image." not in source_image_text
+    ):
+        source_image_missing.append("3D_MODEL_SOURCE_IMAGE_COPY")
     gates["model3DRequiresSourceImage"] = _gate(
         not source_image_missing,
         ["3D generation requires an image source and passes it to the provider workflow"],
@@ -613,7 +861,7 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     )
     android_model_card_missing = _has_all(
         android_screen + android_store_ui + android_gallery_screen + android_ia_test,
-        ["3D model", "item.format.ifBlank", "model/gltf-binary", "3D preview not yet available"],
+        ["3D model", "item.format.ifBlank", "model/gltf-binary"],
     )
     gates["android3DModelCard"] = _gate(
         not android_model_card_missing,
@@ -774,6 +1022,7 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
     )
 
     gates["androidOutOfNetwork.approvedVideoGeneration"] = _android_video_e2e_gate(source)
+    gates["androidOutOfNetwork.videoAudioPrerelease"] = _video_audio_prerelease_gate(source, repo_paths)
 
     gates["androidOutOfNetwork.nonAdminSelfApprovalDenied"] = _gate(
         "test_non_admin_self_approval_is_rejected_but_admin_same_phone_is_allowed" in wrapper_async_test

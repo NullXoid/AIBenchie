@@ -296,6 +296,49 @@ python aibenchie_local.py --android-release-gate --android-release-repo ..\NullB
 
 This gate emits `aibenchie.android-release-verdict.v1` under `.suite/local/aibenchie/android-release-verdict.json` by default. It checks update-note completeness, APK digest evidence, package/base URL identity, and optional connected-device package readiness. Raw adb serials are used only for targeting and are not written to verdict output.
 
+Run the EchoLabs Store video + sound prerelease gate as part of `--echolabs-store` when real Android evidence exists for both generated audio and recorded voice:
+
+```powershell
+$env:AIBENCHIE_VIDEO_AUDIO_PRERELEASE_REQUIRED="1"
+$env:AIBENCHIE_VIDEO_AUDIO_PRERELEASE_STATUS="passed"
+$env:AIBENCHIE_VIDEO_AUDIO_PRERELEASE_EVIDENCE_DIR=".suite\local\aibenchie\video-audio-prerelease"
+$env:AIBENCHIE_VIDEO_AUDIO_DEVICE_PROOF_PATH=".suite\local\aibenchie\video-audio-prerelease\device_proof_manifest.json"
+$env:AIBENCHIE_VIDEO_AUDIO_EXPECTED_DEVICE_COUNT="2"
+$env:AIBENCHIE_VIDEO_AUDIO_APK_VERSION="<apk-version>"
+$env:AIBENCHIE_VIDEO_AUDIO_ANDROID_BUILD="<android-build>"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_STORE_JOB_ID="storejob-..."
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_ARTIFACT_ID="artifact..."
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_APPROVAL_EVENT_ID="approval..."
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_MIME="video/mp4"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_VIDEO_STREAMS="1"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_AUDIO_STREAMS="1"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_VIDEO_DURATION_MS="5000"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_AUDIO_DURATION_MS="5000"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_MAX_VOLUME_DB="-12"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_PLAYER="true"
+$env:AIBENCHIE_VIDEO_AUDIO_AUTO_SAVED_TO_DEVICE="true"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_STORE_JOB_ID="storejob-..."
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_ARTIFACT_ID="artifact..."
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_APPROVAL_EVENT_ID="approval..."
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_MIME="video/mp4"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_VIDEO_STREAMS="1"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_AUDIO_STREAMS="1"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_VIDEO_DURATION_MS="5000"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_AUDIO_DURATION_MS="5000"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_MAX_VOLUME_DB="-12"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_PLAYER="true"
+$env:AIBENCHIE_VIDEO_AUDIO_RECORDED_SAVED_TO_DEVICE="true"
+python aibenchie_local.py --echolabs-store --json
+```
+
+The NullXoid Android helper can produce this evidence from connected phones:
+
+```powershell
+..\NullXoidAndroid\scripts\run_video_audio_prerelease_e2e.ps1
+```
+
+The gate emits `video_audio_prerelease_verdict.json` and `video_audio_prerelease_evidence.json`. It blocks prerelease when Android proof, expected device proof, NullBridge approval proof, MP4 video/audio streams, non-silent audio, compatible A/V duration, player proof, or save proof is missing.
+
 Run the Android onboarding setup QR/deep-link E2E contract gate when onboarding changes:
 
 ```powershell

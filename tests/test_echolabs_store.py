@@ -423,6 +423,178 @@ def test_echolabs_store_android_video_e2e_manual_evidence_marks_passed(tmp_path)
     assert gate["providerKind"] == "local-video-engine"
 
 
+def _video_audio_prerelease_env(tmp_path: Path) -> dict[str, str]:
+    env = _fixture_repos(tmp_path)
+    env.update(
+        {
+            "AIBENCHIE_VIDEO_AUDIO_PRERELEASE_REQUIRED": "1",
+            "AIBENCHIE_VIDEO_AUDIO_PRERELEASE_STATUS": "passed",
+            "AIBENCHIE_VIDEO_AUDIO_PRERELEASE_EVIDENCE_DIR": str(tmp_path / "video-audio-evidence"),
+            "AIBENCHIE_VIDEO_AUDIO_APK_VERSION": "0.9.0-prerelease",
+            "AIBENCHIE_VIDEO_AUDIO_ANDROID_BUILD": "debug-123",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_STORE_JOB_ID": "storejob-auto-123",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_ARTIFACT_ID": "artifactauto",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_APPROVAL_EVENT_ID": "approval-auto",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_MIME": "video/mp4",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_VIDEO_STREAMS": "1",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_AUDIO_STREAMS": "1",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_VIDEO_DURATION_MS": "5000",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_AUDIO_DURATION_MS": "5050",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_MAX_VOLUME_DB": "-12",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_PLAYER": "true",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_SAVED_TO_DEVICE": "true",
+            "AIBENCHIE_VIDEO_AUDIO_AUTO_DEVICE": "Samsung S23 FE",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_STORE_JOB_ID": "storejob-recorded-123",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_ARTIFACT_ID": "artifactrecorded",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_APPROVAL_EVENT_ID": "approval-recorded",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_MIME": "video/mp4",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_VIDEO_STREAMS": "1",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_AUDIO_STREAMS": "1",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_VIDEO_DURATION_MS": "5000",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_AUDIO_DURATION_MS": "4900",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_MAX_VOLUME_DB": "-9",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_PLAYER": "true",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_SAVED_TO_DEVICE": "true",
+            "AIBENCHIE_VIDEO_AUDIO_RECORDED_DEVICE": "Samsung Galaxy A17",
+        }
+    )
+    return env
+
+
+def _video_audio_device_proof(tmp_path: Path) -> Path:
+    proof = {
+        "schema": "aibenchie.video_audio_prerelease_device_proof.v1",
+        "testOrder": ["S23 FE", "A17"],
+        "devices": [
+            {
+                "serialAlias": "R5CWA36MWSF",
+                "label": "S23 FE",
+                "results": [
+                    {
+                        "mode": "auto_generated",
+                        "storeJobId": "storejob-s23-auto",
+                        "artifactId": "artifact-s23-auto",
+                        "approvalEventId": "approval-s23-auto",
+                        "androidPlayerProof": True,
+                        "savedToDevice": True,
+                    },
+                    {
+                        "mode": "recorded_voice",
+                        "storeJobId": "storejob-s23-recorded",
+                        "artifactId": "artifact-s23-recorded",
+                        "approvalEventId": "approval-s23-recorded",
+                        "androidPlayerProof": True,
+                        "savedToDevice": True,
+                    },
+                ],
+            },
+            {
+                "serialAlias": "R5GYC1KBN7T",
+                "label": "A17",
+                "results": [
+                    {
+                        "mode": "auto_generated",
+                        "storeJobId": "storejob-a17-auto",
+                        "artifactId": "artifact-a17-auto",
+                        "approvalEventId": "approval-a17-auto",
+                        "androidPlayerProof": True,
+                        "savedToDevice": True,
+                    },
+                    {
+                        "mode": "recorded_voice",
+                        "storeJobId": "storejob-a17-recorded",
+                        "artifactId": "artifact-a17-recorded",
+                        "approvalEventId": "approval-a17-recorded",
+                        "androidPlayerProof": True,
+                        "savedToDevice": True,
+                    },
+                ],
+            },
+        ],
+    }
+    path = tmp_path / "device-proof.json"
+    path.write_text(json.dumps(proof), encoding="utf-8")
+    return path
+
+
+def test_echolabs_store_video_audio_prerelease_skips_without_required_evidence(tmp_path):
+    result = echolabs_store.run_echolabs_store_check(env=_fixture_repos(tmp_path)).as_dict()
+
+    gate = result["echolabsStore"]["androidOutOfNetwork.videoAudioPrerelease"]
+    assert result["ok"] is True
+    assert gate["status"] == "skipped"
+    assert gate["required"] is False
+    assert gate["configured"] is False
+
+
+def test_echolabs_store_video_audio_prerelease_required_evidence_blocks_when_missing(tmp_path):
+    env = _fixture_repos(tmp_path)
+    env["AIBENCHIE_VIDEO_AUDIO_PRERELEASE_REQUIRED"] = "1"
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    gate = result["echolabsStore"]["androidOutOfNetwork.videoAudioPrerelease"]
+    assert result["ok"] is False
+    assert gate["status"] == "failed_blocking"
+    assert any(
+        failure == "androidOutOfNetwork.videoAudioPrerelease:VIDEO_AUDIO_PRERELEASE_EVIDENCE_MISSING"
+        for failure in result["blockingFailures"]
+    )
+
+
+def test_echolabs_store_video_audio_prerelease_passes_and_writes_evidence_bundle(tmp_path):
+    env = _video_audio_prerelease_env(tmp_path)
+    env["AIBENCHIE_VIDEO_AUDIO_DEVICE_PROOF_PATH"] = str(_video_audio_device_proof(tmp_path))
+    env["AIBENCHIE_VIDEO_AUDIO_EXPECTED_DEVICE_COUNT"] = "2"
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    gate = result["echolabsStore"]["androidOutOfNetwork.videoAudioPrerelease"]
+    evidence_dir = Path(env["AIBENCHIE_VIDEO_AUDIO_PRERELEASE_EVIDENCE_DIR"])
+    verdict = json.loads((evidence_dir / "video_audio_prerelease_verdict.json").read_text(encoding="utf-8"))
+    evidence = json.loads((evidence_dir / "video_audio_prerelease_evidence.json").read_text(encoding="utf-8"))
+    assert result["ok"] is True
+    assert gate["status"] == "passed"
+    assert gate["required"] is True
+    assert gate["configured"] is True
+    assert verdict["ok"] is True
+    assert evidence["schema"] == "aibenchie.video_audio_prerelease_evidence.v1"
+    assert [mode["mode"] for mode in evidence["modes"]] == ["auto_generated", "recorded_voice"]
+    assert evidence["androidPlayerProof"] is True
+    assert evidence["androidSaveProof"] is True
+    assert len(evidence["deviceProof"]["devices"]) == 2
+
+
+def test_echolabs_store_video_audio_prerelease_blocks_missing_expected_device_proof(tmp_path):
+    env = _video_audio_prerelease_env(tmp_path)
+    env["AIBENCHIE_VIDEO_AUDIO_EXPECTED_DEVICE_COUNT"] = "2"
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    gate = result["echolabsStore"]["androidOutOfNetwork.videoAudioPrerelease"]
+    assert result["ok"] is False
+    assert gate["status"] == "failed_blocking"
+    assert any(
+        failure == "androidOutOfNetwork.videoAudioPrerelease:DEVICE_PROOF_MISSING"
+        for failure in result["blockingFailures"]
+    )
+
+
+def test_echolabs_store_video_audio_prerelease_blocks_silent_audio(tmp_path):
+    env = _video_audio_prerelease_env(tmp_path)
+    env["AIBENCHIE_VIDEO_AUDIO_AUTO_MAX_VOLUME_DB"] = "-90"
+
+    result = echolabs_store.run_echolabs_store_check(env=env).as_dict()
+
+    gate = result["echolabsStore"]["androidOutOfNetwork.videoAudioPrerelease"]
+    assert result["ok"] is False
+    assert gate["status"] == "failed_blocking"
+    assert any(
+        failure == "androidOutOfNetwork.videoAudioPrerelease:auto_generated:AUDIO_EFFECTIVELY_SILENT"
+        for failure in result["blockingFailures"]
+    )
+
+
 def test_echolabs_store_gate_fails_client_secret_leak(tmp_path):
     env = _fixture_repos(tmp_path)
     app = Path(env["AIBENCHIE_NULLXOID_WRAPPER_REPO"]) / "frontend" / "src" / "App.jsx"
