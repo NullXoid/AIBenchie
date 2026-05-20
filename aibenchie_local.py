@@ -23,6 +23,10 @@ from aibenchie.distribution_hygiene import run_distribution_hygiene_check
 from aibenchie.docker_support import run_docker_support_gate, validate_docker_support_proof
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.android_release_gate import DEFAULT_ANDROID_RELEASE_VERDICT_OUTPUT, run_android_release_gate
+from aibenchie.android_release_device_proof import (
+    DEFAULT_ANDROID_RELEASE_DEVICE_PROOF_OUTPUT,
+    emit_android_release_device_proof,
+)
 from aibenchie.android_onboarding_e2e import DEFAULT_ANDROID_ONBOARDING_E2E_OUTPUT, run_android_onboarding_e2e
 from aibenchie.public_scoreboard import write_public_scoreboard
 from aibenchie.real_device_ux import (
@@ -402,6 +406,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run the Android app release verdict gate for update notes, APK evidence, and optional device preflight.",
     )
     parser.add_argument(
+        "--emit-android-release-device-proof",
+        action="store_true",
+        help="Emit sanitized local Android device proof for a release gate.",
+    )
+    parser.add_argument(
         "--android-onboarding-e2e",
         action="store_true",
         help="Run the Android onboarding setup QR/deep-link E2E contract gate.",
@@ -456,6 +465,52 @@ def build_parser() -> argparse.ArgumentParser:
         help="Android package name for --android-release-gate.",
     )
     parser.add_argument(
+        "--android-release-app-id",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_APP_ID", ""),
+        help="Release app id for --android-release-gate, such as nullxoid_android or nullbridge_android.",
+    )
+    parser.add_argument(
+        "--android-release-app-version",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_APP_VERSION", ""),
+        help="Android app version name for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-version-code",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_VERSION_CODE", ""),
+        help="Android app version code for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-signing-fingerprint",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_SIGNING_FINGERPRINT", ""),
+        help="Actual Android signing certificate SHA-256 fingerprint for --android-release-gate.",
+    )
+    parser.add_argument(
+        "--android-release-expected-fingerprint",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_EXPECTED_FINGERPRINT", ""),
+        help="Expected Android signing certificate SHA-256 fingerprint from local/CI secret config.",
+    )
+    parser.add_argument(
+        "--android-release-expected-fingerprint-source",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_EXPECTED_FINGERPRINT_SOURCE", ""),
+        help="Public-safe label for the expected signing fingerprint source.",
+    )
+    parser.add_argument(
+        "--android-release-primary-device-proof",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_PRIMARY_DEVICE_PROOF", ""),
+        help="S23 FE proof JSON path for publish/latest-debug Android release gates.",
+    )
+    parser.add_argument(
+        "--android-release-secondary-device-proof",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_SECONDARY_DEVICE_PROOF", ""),
+        help="A17 proof JSON path for publish/latest-debug Android release gates.",
+    )
+    parser.add_argument(
+        "--android-release-publish-action",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_PUBLISH_ACTION", "diagnostic"),
+        choices=("diagnostic", "publish", "latest-debug"),
+        help="Release action being gated. publish/latest-debug require complete device proof.",
+    )
+    parser.add_argument(
         "--android-release-base-url",
         default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_BASE_URL", ""),
         help="Backend base URL used by the Android release candidate.",
@@ -470,6 +525,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--android-release-require-device",
         action="store_true",
         help="Fail --android-release-gate unless the selected connected Android device has the candidate package installed.",
+    )
+    parser.add_argument(
+        "--android-release-device-proof-output",
+        default=str(DEFAULT_ANDROID_RELEASE_DEVICE_PROOF_OUTPUT),
+        help="Output path for --emit-android-release-device-proof.",
+    )
+    parser.add_argument(
+        "--android-release-device-proof-alias",
+        default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_DEVICE_ALIAS", ""),
+        help="Public-safe device alias for --emit-android-release-device-proof, such as s23fe or a17.",
     )
     parser.add_argument(
         "--real-device-ux-proof",
@@ -1185,6 +1250,28 @@ def main(argv: list[str] | None = None) -> int:
             print("Result: PASS" if result["ok"] else "Result: FAIL")
         return 0 if result["ok"] else 1
 
+    if args.emit_android_release_device_proof:
+        if not args.android_release_device_proof_alias:
+            failure = {"ok": False, "failure": "android_release_device_alias_missing"}
+            print(json.dumps(failure, indent=2, sort_keys=True) if args.json else "Result: FAIL (device alias missing)")
+            return 1
+        result = emit_android_release_device_proof(
+            output=args.android_release_device_proof_output,
+            app_id=args.android_release_app_id,
+            package_name=args.android_release_package,
+            device_alias=args.android_release_device_proof_alias,
+            verdict_path=args.android_release_output,
+            adb=args.android_release_adb,
+            adb_serial=args.android_release_adb_serial,
+        )
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print(f"Android release device proof: {result['output']}")
+            print(f"Device: {result['serial_alias']} {result['model']}")
+            print(f"Package: {result['package_name']} {result['install_state']}")
+        return 0 if result["install_state"] == "installed" else 1
+
     if args.android_release_gate:
         result = run_android_release_gate(
             repo=args.android_release_repo,
@@ -1192,6 +1279,15 @@ def main(argv: list[str] | None = None) -> int:
             update_notes=args.android_release_update_notes,
             package_name=args.android_release_package,
             base_url=args.android_release_base_url,
+            app_id=args.android_release_app_id,
+            app_version=args.android_release_app_version,
+            version_code=args.android_release_version_code,
+            signing_fingerprint_sha256=args.android_release_signing_fingerprint,
+            expected_signing_fingerprint=args.android_release_expected_fingerprint,
+            expected_signing_fingerprint_source=args.android_release_expected_fingerprint_source,
+            primary_device_proof=args.android_release_primary_device_proof,
+            secondary_device_proof=args.android_release_secondary_device_proof,
+            publish_action=args.android_release_publish_action,
             output=args.android_release_output,
             adb=args.android_release_adb,
             adb_serial=args.android_release_adb_serial,
@@ -1202,7 +1298,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print("AIBenchie Android Release Gate")
             print(f"Repo: {result['repo']['name']} ({result['repo']['branch']} {str(result['repo']['commit'])[:12]})")
+            print(f"App: {result['android'].get('app_id') or '(missing)'}")
             print(f"Package: {result['android']['package'] or '(missing)'}")
+            print(f"Version: {result['android'].get('app_version') or '(missing)'} ({result['android'].get('version_code') or 'missing'})")
             print(f"Base URL: {result['android']['base_url'] or '(missing)'}")
             if result.get("artifacts"):
                 artifact = result["artifacts"][0]
