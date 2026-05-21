@@ -16,6 +16,8 @@ ANDROID_RELEASE_STATUS_SCHEMA = "aibenchie.android-release-status.v1"
 STORE_CAPABILITY_STAGES_SCHEMA = "aibenchie.store-capability-stages.v1"
 WORKFLOW_MATRIX_SCHEMA = "aibenchie.workflow-matrix.v1"
 WORKFLOW_MATRIX_VERDICT_SCHEMA = "aibenchie.workflow-matrix-verdict.v1"
+WORKFLOW_MATRIX_SUMMARY_SCHEMA = "aibenchie.workflow-matrix-summary.v1"
+WORKFLOW_SUMMARY_SCHEMA = "aibenchie.workflow-summary.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
@@ -81,10 +83,16 @@ MANUAL_OVERRIDE_STATUSES = {"manual-review", "blocked", "stale", "failed"}
 PUBLIC_FORBIDDEN_MARKERS = (
     "authorization",
     "bearer ",
+    "localhost",
+    "127.0.0.1",
     "service_token",
     "nullbridge_service_token",
+    "service jwt",
+    "service_jwt",
     "cookie",
     "jwt",
+    "token",
+    "secret",
     "private_key",
     "c:\\users\\",
     "/users/",
@@ -821,6 +829,272 @@ def export_store_capabilities(
     return payload
 
 
+def _assert_public_safe_value(label: str, payload: Any) -> None:
+    failures = _public_safety_failures(label, payload)
+    if failures:
+        raise ValueError(f"public output contains forbidden marker(s): {', '.join(failures)}")
+
+
+def _artifact_validation_status(validation: dict[str, Any]) -> str:
+    status = str(validation.get("validationStatus") or validation.get("validation_status") or "").strip().lower()
+    if status in {"pass", "passed"} or validation.get("ok") is True:
+        return "pass"
+    if status:
+        return status
+    return "unknown"
+
+
+def _bool_field(payload: dict[str, Any], *names: str) -> bool:
+    for name in names:
+        if name in payload:
+            return _truthy(payload.get(name))
+    return False
+
+
+def _int_field(payload: dict[str, Any], *names: str) -> int | None:
+    for name in names:
+        value = payload.get(name)
+        if value in ("", None):
+            continue
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _audio_summary(workflow_id: str, validation: dict[str, Any]) -> dict[str, Any] | None:
+    if workflow_id not in AUDIO_WORKFLOW_IDS:
+        return None
+    audio_stream_count = _int_field(validation, "audioStreamCount", "audio_stream_count") or 0
+    return {
+        "audio_stream_present": audio_stream_count >= 1,
+        "non_silent_audio": _bool_field(validation, "nonSilentAudio", "non_silent_audio", "audio_not_silent"),
+        "duration_compatible": _bool_field(validation, "durationCompatible", "duration_compatible"),
+        "audio_duration_ms": _int_field(validation, "audioDurationMs", "audio_duration_ms"),
+        "video_duration_ms": _int_field(validation, "videoDurationMs", "video_duration_ms"),
+    }
+
+
+def _safe_device_aliases(proof: dict[str, Any]) -> list[str]:
+    aliases = _device_aliases(proof)
+    return [alias for alias in aliases if alias in {"S23 FE", "A17"}]
+
+
+def _workflow_summary(
+    *,
+    workflow: dict[str, Any],
+    proof: dict[str, Any],
+    capability: dict[str, Any] | None,
+    build_id: str,
+    source_verdict_ref: str,
+) -> dict[str, Any]:
+    workflow_id = str(workflow.get("workflow_id") or proof.get("workflow_id") or "")
+    validation = proof.get("artifact_validation") if isinstance(proof.get("artifact_validation"), dict) else {}
+    aliases = _safe_device_aliases(proof)
+    audio = _audio_summary(workflow_id, validation)
+    summary = {
+        "schema": WORKFLOW_SUMMARY_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "source_evidence_build_id": build_id,
+        "source_aibenchie_verdict_ref": source_verdict_ref,
+        "generated_at": _iso(_now()),
+        "workflow_id": workflow_id,
+        "display_name": str(workflow.get("display_name") or workflow_id),
+        "release_stage": str(workflow.get("release_stage") or proof.get("release_stage") or ""),
+        "verdict": _proof_verdict_value(proof) or str(proof.get("aibenchie_verdict") or "not-run"),
+        "proof_device_aliases": aliases,
+        "device_order_pass": aliases[:2] == ["S23 FE", "A17"],
+        "provider_backing": "real"
+        if proof.get("real_provider_proof") is True and proof.get("mock_backed") is not True
+        else "not-public-prerelease-proof",
+        "artifact_kind": str(workflow.get("artifact_kind") or proof.get("artifact_kind") or ""),
+        "artifact_validation_status": _artifact_validation_status(validation),
+        "failure_message_proof_present": proof.get("failure_message_proof") is True,
+        "store_mapping_present": capability is not None,
+        "store_stage": str((capability or {}).get("release_stage") or workflow.get("release_stage") or ""),
+    }
+    if audio is not None:
+        summary["audio_validation"] = audio
+    _assert_public_safe_value(workflow_id, summary)
+    return summary
+
+
+def _blocked_workflow_summary(workflows: list[dict[str, Any]], capabilities_by_workflow: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    blocked: list[dict[str, Any]] = []
+    for workflow in workflows:
+        workflow_id = str(workflow.get("workflow_id") or "")
+        release_stage = str(workflow.get("release_stage") or "")
+        if release_stage == "prerelease":
+            continue
+        capability = capabilities_by_workflow.get(workflow_id) or {}
+        item = {
+            "workflow_id": workflow_id,
+            "display_name": str(workflow.get("display_name") or workflow_id),
+            "release_stage": release_stage,
+            "state": str(workflow.get("state") or capability.get("state") or ""),
+            "store_stage": str(capability.get("release_stage") or release_stage),
+            "blocked_reason": str(workflow.get("blocked_reason") or capability.get("blocked_reason") or ""),
+        }
+        _assert_public_safe_value(f"{workflow_id}:blocked_summary", item)
+        blocked.append(item)
+    return blocked
+
+
+def _workflow_summary_markdown(summary: dict[str, Any]) -> str:
+    lines = [
+        f"# EchoLabs MS3 Workflow Evidence Summary",
+        "",
+        f"Build: `{summary['build_id']}`",
+        f"Verdict: `{summary['verdict']}`",
+        f"Generated: `{summary['generated_at']}`",
+        "",
+        "Raw screenshots, videos, logs, device serials, local paths, private endpoints, and prompts are not exported.",
+        "",
+        "## Prerelease Workflows",
+        "",
+        "| Workflow | Verdict | Devices | Provider | Artifact | Validation | Failure proof | Store mapping |",
+        "|---|---:|---|---|---|---|---:|---:|",
+    ]
+    for item in summary["workflows"]:
+        audio = item.get("audio_validation") if isinstance(item.get("audio_validation"), dict) else None
+        validation = item["artifact_validation_status"]
+        if audio:
+            validation = (
+                f"{validation}; audio={str(audio['audio_stream_present']).lower()}, "
+                f"non-silent={str(audio['non_silent_audio']).lower()}, "
+                f"duration={str(audio['duration_compatible']).lower()}"
+            )
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    item["display_name"],
+                    item["verdict"],
+                    ", ".join(item["proof_device_aliases"]),
+                    item["provider_backing"],
+                    item["artifact_kind"],
+                    validation,
+                    "yes" if item["failure_message_proof_present"] else "no",
+                    "yes" if item["store_mapping_present"] else "no",
+                ]
+            )
+            + " |"
+        )
+    lines.extend(["", "## Blocked Or Later Workflows", ""])
+    for item in summary["blocked_later_workflows"]:
+        lines.append(f"- `{item['workflow_id']}`: {item['release_stage']} - {item['blocked_reason']}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def export_workflow_summary(
+    *,
+    build_id: str,
+    out: str | Path,
+    evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    matrix: str | Path = DEFAULT_WORKFLOW_MATRIX,
+    store_capabilities: str | Path = DEFAULT_STORE_CAPABILITIES,
+) -> dict[str, Any]:
+    validation = validate_workflow_matrix(
+        matrix=matrix,
+        store_capabilities=store_capabilities,
+        evidence_root=evidence_root,
+        build_id=build_id,
+        write_verdict=False,
+    )
+    if not validation["ok"]:
+        return {
+            "schema": WORKFLOW_MATRIX_SUMMARY_SCHEMA,
+            "schema_version": SCHEMA_VERSION,
+            "ok": False,
+            "build_id": build_id,
+            "generated_at": _iso(_now()),
+            "failures": validation.get("failures", []),
+            "outputs": {},
+        }
+
+    matrix_payload = _load_workflow_matrix(matrix)
+    store_payload = _load_store_capabilities(store_capabilities)
+    workflows = [item for item in matrix_payload.get("workflows", []) if isinstance(item, dict)]
+    capabilities = [item for item in store_payload.get("capabilities", []) if isinstance(item, dict)]
+    capabilities_by_workflow = {str(item.get("workflow_id") or ""): item for item in capabilities}
+    prerelease_workflows = [item for item in workflows if str(item.get("release_stage") or "") == "prerelease"]
+    build_root = _resolve_build_root(evidence_root, build_id)
+    output_root = Path(out)
+    workflows_out = output_root / "workflows"
+    source_verdict_ref = f"aibenchie-release-evidence/{build_id}/workflow-matrix-verdict.json"
+
+    workflow_summaries: list[dict[str, Any]] = []
+    for workflow in prerelease_workflows:
+        workflow_id = str(workflow.get("workflow_id") or "")
+        proof_path = build_root / str(workflow.get("proof_path") or f"workflow-proofs/{workflow_id}") / "workflow-proof.json"
+        proof = _read_json(proof_path)
+        workflow_summaries.append(
+            _workflow_summary(
+                workflow=workflow,
+                proof=proof,
+                capability=capabilities_by_workflow.get(workflow_id),
+                build_id=build_id,
+                source_verdict_ref=source_verdict_ref,
+            )
+        )
+
+    device_order_pass = all(item["device_order_pass"] for item in workflow_summaries)
+    summary = {
+        "schema": WORKFLOW_MATRIX_SUMMARY_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "public_safe": True,
+        "ok": True,
+        "build_id": build_id,
+        "source_evidence_build_id": build_id,
+        "source_aibenchie_verdict_ref": source_verdict_ref,
+        "generated_at": _iso(_now()),
+        "verdict": "pass",
+        "workflow_count": len(workflow_summaries),
+        "passed": sum(1 for item in workflow_summaries if item["verdict"] == "pass"),
+        "device_order": ["S23 FE", "A17"],
+        "device_order_pass": device_order_pass,
+        "provider_backing": "real",
+        "raw_evidence_exported": False,
+        "media_files_exported": False,
+        "workflows": workflow_summaries,
+        "blocked_later_workflows": _blocked_workflow_summary(workflows, capabilities_by_workflow),
+        "outputs": {
+            "summary_json": "workflow-matrix-summary.json",
+            "summary_markdown": "workflow-matrix-summary.md",
+            "index_json": "index.json",
+            "workflow_json_dir": "workflows/",
+        },
+    }
+    _assert_public_safe_value("workflow_matrix_summary", summary)
+    markdown = _workflow_summary_markdown(summary)
+    _assert_public_safe_value("workflow_matrix_summary_markdown", markdown)
+
+    workflows_out.mkdir(parents=True, exist_ok=True)
+    for item in workflow_summaries:
+        _write_json(workflows_out / f"{item['workflow_id']}.json", item)
+    _write_json(output_root / "workflow-matrix-summary.json", summary)
+    (output_root / "workflow-matrix-summary.md").write_text(markdown, encoding="utf-8")
+    index = {
+        "schema": "aibenchie.workflow-evidence-index.v1",
+        "schema_version": SCHEMA_VERSION,
+        "public_safe": True,
+        "build_id": build_id,
+        "generated_at": summary["generated_at"],
+        "summary": "workflow-matrix-summary.json",
+        "summary_markdown": "workflow-matrix-summary.md",
+        "workflows": [f"workflows/{item['workflow_id']}.json" for item in workflow_summaries],
+    }
+    _assert_public_safe_value("workflow_evidence_index", index)
+    _write_json(output_root / "index.json", index)
+
+    result = dict(summary)
+    result["output"] = str(output_root.as_posix())
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage AIBenchie release truth spine evidence.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -860,6 +1134,16 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(store)
     store.add_argument("--store-capabilities", default=str(DEFAULT_STORE_CAPABILITIES))
     store.add_argument("--out", required=True)
+
+    workflow_summary = subparsers.add_parser(
+        "export-workflow-summary",
+        help="Export public-safe MS3 workflow evidence summaries.",
+    )
+    add_common(workflow_summary)
+    workflow_summary.add_argument("--build-id", required=True)
+    workflow_summary.add_argument("--matrix", default=str(DEFAULT_WORKFLOW_MATRIX))
+    workflow_summary.add_argument("--store-capabilities", default=str(DEFAULT_STORE_CAPABILITIES))
+    workflow_summary.add_argument("--out", required=True)
 
     return parser
 
@@ -924,6 +1208,16 @@ def main(argv: list[str] | None = None) -> int:
         )
         _print_result(result, json_output=args.json, title="AIBenchie Store Capabilities Export")
         return 0
+    if args.command == "export-workflow-summary":
+        result = export_workflow_summary(
+            build_id=args.build_id,
+            out=args.out,
+            evidence_root=args.evidence_root,
+            matrix=args.matrix,
+            store_capabilities=args.store_capabilities,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie Workflow Summary Export")
+        return 0 if result.get("ok") else 1
     return 1
 
 
