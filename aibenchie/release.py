@@ -19,6 +19,7 @@ WORKFLOW_MATRIX_VERDICT_SCHEMA = "aibenchie.workflow-matrix-verdict.v1"
 WORKFLOW_MATRIX_SUMMARY_SCHEMA = "aibenchie.workflow-matrix-summary.v1"
 WORKFLOW_SUMMARY_SCHEMA = "aibenchie.workflow-summary.v1"
 NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA = "aibenchie.nullbridge-prerelease-verdict.v1"
+LV7_OPERATOR_LOOP_VERDICT_SCHEMA = "aibenchie.lv7-operator-loop-verdict.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
@@ -156,6 +157,52 @@ NULLBRIDGE_REQUIRED_PROOF_FIELDS = (
     "aibenchie_verdict",
     "blocked_reason",
 )
+LV7_REQUIRED_PROOFS = {
+    "approval-result-history-proof.json": "approval-result-history",
+    "repair-preflight-proof.json": "repair-preflight",
+    "repair-approval-boundary-proof.json": "repair-approval-boundary",
+    "artifact-package-proof.json": "artifact-package",
+    "sanitized-status-proof.json": "sanitized-status",
+    "policy-resource-memory-proof.json": "policy-resource-memory",
+    "android-visible-history-proof.json": "android-visible-history",
+    "gcli-proof.json": "gcli",
+}
+LV7_REQUIRED_PROOF_FIELDS = (
+    "schema_version",
+    "build_id",
+    "component",
+    "proof_type",
+    "status",
+    "generated_at",
+    "source_commit",
+    "public_safe",
+    "raw_evidence_local_only",
+    "aibenchie_verdict",
+    "blocked_reason",
+)
+LV7_REQUIRED_HISTORY_STATES = {
+    "pending",
+    "approved",
+    "denied",
+    "expired",
+    "blocked",
+    "completed",
+    "failed",
+    "artifact_available",
+    "artifact_package_ready",
+}
+LV7_REQUIRED_OPERATION_FIELDS = {
+    "operation_id",
+    "target",
+    "reason",
+    "risk",
+    "required_approval",
+    "expected_result",
+    "rollback_or_undo_note",
+    "resource_requirements",
+    "policy_gate_result",
+    "preflight_result",
+}
 
 
 def repo_root() -> Path:
@@ -1271,6 +1318,270 @@ def validate_nullbridge_prerelease(
     return result
 
 
+def _lv7_proof_root(evidence_root: str | Path, build_id: str) -> Path:
+    root = Path(evidence_root).expanduser()
+    if root.name == "lv7-proof":
+        return root
+    candidate = root / build_id / "lv7-proof"
+    if candidate.exists() or build_id:
+        return candidate
+    return root / "lv7-proof"
+
+
+def _state_failures(label: str, payload: dict[str, Any], required: set[str]) -> list[str]:
+    states = payload.get("states")
+    if not isinstance(states, list):
+        return [f"{label}:states:missing"]
+    missing = sorted(required - {str(item) for item in states})
+    return [f"{label}:states:missing:{item}" for item in missing]
+
+
+def _operation_failures(label: str, payload: dict[str, Any]) -> list[str]:
+    operations = payload.get("operations")
+    if not isinstance(operations, list) or not operations:
+        return [f"{label}:operations:missing"]
+    failures: list[str] = []
+    for index, operation in enumerate(operations):
+        if not isinstance(operation, dict):
+            failures.append(f"{label}:operations[{index}]:not_object")
+            continue
+        missing = sorted(LV7_REQUIRED_OPERATION_FIELDS - set(operation))
+        failures.extend(f"{label}:operations[{index}]:{field}:missing" for field in missing)
+        if operation.get("required_approval") is not True:
+            failures.append(f"{label}:operations[{index}]:required_approval:not_true")
+        if operation.get("preflight_result") != "pass":
+            failures.append(f"{label}:operations[{index}]:preflight_result:not_pass")
+    return failures
+
+
+def _lv7_specific_failures(filename: str, proof_type: str, payload: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if proof_type == "approval-result-history":
+        failures.extend(_state_failures(filename, payload, LV7_REQUIRED_HISTORY_STATES))
+        if payload.get("android_visible") is not True:
+            failures.append(f"{filename}:android_visible:not_true")
+    if proof_type == "repair-preflight":
+        if payload.get("dry_run_required") is not True:
+            failures.append(f"{filename}:dry_run_required:not_true")
+        if payload.get("exact_operations_required") is not True:
+            failures.append(f"{filename}:exact_operations_required:not_true")
+        if payload.get("hidden_mutation_blocked") is not True:
+            failures.append(f"{filename}:hidden_mutation_blocked:not_true")
+        failures.extend(_operation_failures(filename, payload))
+    if proof_type == "repair-approval-boundary":
+        if payload.get("execution_without_approval_blocked") is not True:
+            failures.append(f"{filename}:execution_without_approval_blocked:not_true")
+        if payload.get("hidden_mutation_blocked") is not True:
+            failures.append(f"{filename}:hidden_mutation_blocked:not_true")
+        fail_closed = payload.get("fail_closed")
+        if not isinstance(fail_closed, dict):
+            failures.append(f"{filename}:fail_closed:missing")
+        else:
+            for state in ("denied", "expired", "missing", "revoked"):
+                if fail_closed.get(state) is not True:
+                    failures.append(f"{filename}:fail_closed:{state}:not_true")
+    if proof_type == "artifact-package":
+        if payload.get("export_mode") != "local":
+            failures.append(f"{filename}:export_mode:not_local")
+        if payload.get("public_safe_manifest") is not True:
+            failures.append(f"{filename}:public_safe_manifest:not_true")
+        if payload.get("checksums_present") is not True:
+            failures.append(f"{filename}:checksums_present:not_true")
+        nextcloud = payload.get("nextcloud")
+        if not isinstance(nextcloud, dict):
+            failures.append(f"{filename}:nextcloud:missing")
+        elif nextcloud.get("required") is True:
+            failures.append(f"{filename}:nextcloud:required_by_default")
+    if proof_type == "policy-resource-memory":
+        required_true = (
+            "uses_existing_resource_manager",
+            "does_not_create_second_lease_system",
+            "model_intent_policy_gated",
+            "model_intent_resource_aware",
+            "memory_sanitized_summary_only",
+        )
+        for field in required_true:
+            if payload.get(field) is not True:
+                failures.append(f"{filename}:{field}:not_true")
+    if proof_type == "android-visible-history":
+        failures.extend(_state_failures(filename, payload, LV7_REQUIRED_HISTORY_STATES))
+        if payload.get("messages_public_safe") is not True:
+            failures.append(f"{filename}:messages_public_safe:not_true")
+    if proof_type == "gcli":
+        if payload.get("compact_readable") is not True:
+            failures.append(f"{filename}:compact_readable:not_true")
+        if payload.get("normal_output_public_safe") is not True:
+            failures.append(f"{filename}:normal_output_public_safe:not_true")
+    if proof_type == "sanitized-status":
+        if payload.get("private_markers_rejected") is not True:
+            failures.append(f"{filename}:private_markers_rejected:not_true")
+        if payload.get("stale_not_healthy") is not True:
+            failures.append(f"{filename}:stale_not_healthy:not_true")
+    return failures
+
+
+def _validate_lv7_manifest(proof_root: Path, build_id: str) -> list[str]:
+    failures: list[str] = []
+    manifest_path = proof_root / "local-package-manifest.json"
+    checksum_path = proof_root / "local-package-checksums.json"
+    if not manifest_path.exists():
+        failures.append("local-package-manifest.json:missing")
+        return failures
+    manifest = _read_json(manifest_path)
+    failures.extend(_require_payload_fields("local-package-manifest.json", manifest, ("schema_version", "package_id", "build_id", "created_at", "export_mode", "artifact_count", "artifacts", "checksums", "public_safe", "retention", "nextcloud")))
+    failures.extend(_public_safety_failures("local-package-manifest.json", manifest))
+    if manifest.get("build_id") != build_id:
+        failures.append("local-package-manifest.json:build_id:mismatch")
+    if manifest.get("export_mode") != "local":
+        failures.append("local-package-manifest.json:export_mode:not_local")
+    if manifest.get("public_safe") is not True:
+        failures.append("local-package-manifest.json:public_safe:not_true")
+    checksums = manifest.get("checksums")
+    if not isinstance(checksums, dict) or not checksums:
+        failures.append("local-package-manifest.json:checksums:missing")
+    nextcloud = manifest.get("nextcloud")
+    if isinstance(nextcloud, dict) and nextcloud.get("required") is True:
+        failures.append("local-package-manifest.json:nextcloud:required_by_default")
+    if not checksum_path.exists():
+        failures.append("local-package-checksums.json:missing")
+        return failures
+    checksum_payload = _read_json(checksum_path)
+    failures.extend(_require_payload_fields("local-package-checksums.json", checksum_payload, ("schema_version", "package_id", "build_id", "created_at", "checksums", "public_safe")))
+    failures.extend(_public_safety_failures("local-package-checksums.json", checksum_payload))
+    if checksum_payload.get("build_id") != build_id:
+        failures.append("local-package-checksums.json:build_id:mismatch")
+    if checksum_payload.get("public_safe") is not True:
+        failures.append("local-package-checksums.json:public_safe:not_true")
+    if not isinstance(checksum_payload.get("checksums"), dict) or not checksum_payload.get("checksums"):
+        failures.append("local-package-checksums.json:checksums:missing")
+    return failures
+
+
+def validate_lv7_operator_loop(
+    *,
+    evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    build_id: str,
+    out: str | Path = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or _now()
+    proof_root = _lv7_proof_root(evidence_root, build_id)
+    failures: list[str] = []
+    proof_results: dict[str, str] = {}
+
+    if not proof_root.exists():
+        failures.append("lv7-proof:missing")
+    else:
+        for filename, expected_type in LV7_REQUIRED_PROOFS.items():
+            path = proof_root / filename
+            if not path.exists():
+                failures.append(f"{filename}:missing")
+                proof_results[expected_type] = "blocked"
+                continue
+            payload = _read_json(path)
+            if payload.get("__load_error__"):
+                failures.append(f"{filename}:malformed")
+                proof_results[expected_type] = "blocked"
+                continue
+            failures.extend(_require_payload_fields(filename, payload, LV7_REQUIRED_PROOF_FIELDS))
+            failures.extend(_public_safety_failures(filename, payload))
+            if payload.get("build_id") != build_id:
+                failures.append(f"{filename}:build_id:mismatch")
+            if payload.get("component") != "Lv-7":
+                failures.append(f"{filename}:component:mismatch")
+            if payload.get("proof_type") != expected_type:
+                failures.append(f"{filename}:proof_type:mismatch")
+            if payload.get("status") != "pass":
+                failures.append(f"{filename}:status:not_pass")
+            if payload.get("aibenchie_verdict") != "pass":
+                failures.append(f"{filename}:aibenchie_verdict:not_pass")
+            if payload.get("public_safe") is not True:
+                failures.append(f"{filename}:public_safe:not_true")
+            if payload.get("raw_evidence_local_only") is not True:
+                failures.append(f"{filename}:raw_evidence_local_only:not_true")
+            if _parse_iso(payload.get("generated_at")) is None:
+                failures.append(f"{filename}:generated_at:invalid")
+            failures.extend(_lv7_specific_failures(filename, expected_type, payload))
+            proof_results[expected_type] = "pass" if not any(failure.startswith(f"{filename}:") for failure in failures) else "blocked"
+
+        status_path = proof_root / "lv7-operator-status.json"
+        if not status_path.exists():
+            failures.append("lv7-operator-status.json:missing")
+        else:
+            status = _read_json(status_path)
+            failures.extend(_require_payload_fields("lv7-operator-status.json", status, ("schema_version", "build_id", "generated_at", "expires_at", "status", "freshness", "component")))
+            failures.extend(_public_safety_failures("lv7-operator-status.json", status))
+            if status.get("build_id") != build_id:
+                failures.append("lv7-operator-status.json:build_id:mismatch")
+            if status.get("component") != "Lv-7":
+                failures.append("lv7-operator-status.json:component:mismatch")
+            if status.get("status") != "pass":
+                failures.append("lv7-operator-status.json:status:not_pass")
+            if status.get("freshness") != "fresh":
+                failures.append("lv7-operator-status.json:freshness:not_fresh")
+            expires_at = _parse_iso(status.get("expires_at"))
+            if expires_at is None:
+                failures.append("lv7-operator-status.json:expires_at:invalid")
+            elif expires_at <= current:
+                failures.append("lv7-operator-status.json:expires_at:stale")
+            repair = status.get("repair_preflight") if isinstance(status.get("repair_preflight"), dict) else {}
+            if repair.get("hidden_mutation_blocked") is not True:
+                failures.append("lv7-operator-status.json:hidden_mutation_blocked:not_true")
+
+        verdict_path = proof_root / "lv7-operator-loop-verdict.json"
+        if not verdict_path.exists():
+            failures.append("lv7-operator-loop-verdict.json:missing")
+        else:
+            verdict = _read_json(verdict_path)
+            failures.extend(_require_payload_fields("lv7-operator-loop-verdict.json", verdict, ("schema_version", "build_id", "component", "verdict", "generated_at", "expires_at")))
+            failures.extend(_public_safety_failures("lv7-operator-loop-verdict.json", verdict))
+            if verdict.get("build_id") != build_id:
+                failures.append("lv7-operator-loop-verdict.json:build_id:mismatch")
+            if verdict.get("component") != "Lv-7":
+                failures.append("lv7-operator-loop-verdict.json:component:mismatch")
+            if verdict.get("verdict") != "pass":
+                failures.append("lv7-operator-loop-verdict.json:verdict:not_pass")
+
+        notes_path = proof_root / "notes.md"
+        if not notes_path.exists():
+            failures.append("notes.md:missing")
+        else:
+            failures.extend(_public_safety_failures("notes.md", notes_path.read_text(encoding="utf-8")))
+        failures.extend(_validate_lv7_manifest(proof_root, build_id))
+
+    sanitized_failures = _sanitize_failures(failures)
+    ok = not failures
+    result = {
+        "schema": LV7_OPERATOR_LOOP_VERDICT_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "suite": "echolabs",
+        "component": "Lv-7",
+        "verdict": "pass" if ok else "blocked",
+        "aibenchie_verdict": "pass" if ok else "blocked",
+        "generated_at": _iso(current),
+        "expires_at": _iso(current + timedelta(minutes=10)),
+        "proof_root_label": "lv7-proof",
+        "approval_result_history": proof_results.get("approval-result-history", "blocked"),
+        "repair_preflight": proof_results.get("repair-preflight", "blocked"),
+        "approval_boundary": proof_results.get("repair-approval-boundary", "blocked"),
+        "artifact_package_export": proof_results.get("artifact-package", "blocked"),
+        "sanitized_status": proof_results.get("sanitized-status", "blocked"),
+        "policy_resource_memory": proof_results.get("policy-resource-memory", "blocked"),
+        "android_visible_history": proof_results.get("android-visible-history", "blocked"),
+        "gcli": proof_results.get("gcli", "blocked"),
+        "public_safe_export": "pass" if ok else "blocked",
+        "ok": ok,
+        "failures": sanitized_failures,
+        "blocked_reason": None if ok else "lv7_operator_loop_evidence_incomplete",
+    }
+    _assert_public_safe(result)
+    output = Path(out).expanduser() if out else proof_root / "lv7-operator-loop-verdict.json"
+    if proof_root.exists() and (ok or out):
+        _write_json(output, result)
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage AIBenchie release truth spine evidence.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1328,6 +1639,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(nullbridge)
     nullbridge.add_argument("--build-id", required=True)
     nullbridge.add_argument("--out", default="")
+
+    lv7 = subparsers.add_parser(
+        "validate-lv7",
+        help="Validate Lv-7 MS5 operator-loop evidence.",
+    )
+    add_common(lv7)
+    lv7.add_argument("--build-id", required=True)
+    lv7.add_argument("--out", default="")
 
     return parser
 
@@ -1409,6 +1728,14 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
         )
         _print_result(result, json_output=args.json, title="AIBenchie NullBridge Prerelease Validation")
+        return 0 if result.get("ok") else 1
+    if args.command == "validate-lv7":
+        result = validate_lv7_operator_loop(
+            build_id=args.build_id,
+            evidence_root=args.evidence_root,
+            out=args.out,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie Lv-7 Operator Loop Validation")
         return 0 if result.get("ok") else 1
     return 1
 
