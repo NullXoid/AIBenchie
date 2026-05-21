@@ -20,6 +20,7 @@ WORKFLOW_MATRIX_SUMMARY_SCHEMA = "aibenchie.workflow-matrix-summary.v1"
 WORKFLOW_SUMMARY_SCHEMA = "aibenchie.workflow-summary.v1"
 NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA = "aibenchie.nullbridge-prerelease-verdict.v1"
 LV7_OPERATOR_LOOP_VERDICT_SCHEMA = "aibenchie.lv7-operator-loop-verdict.v1"
+STORE_ADDONS_VERDICT_SCHEMA = "aibenchie.store-addons-verdict.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
@@ -202,6 +203,45 @@ LV7_REQUIRED_OPERATION_FIELDS = {
     "resource_requirements",
     "policy_gate_result",
     "preflight_result",
+}
+STORE_ADDONS_REQUIRED_PROOFS = {
+    "capability-profile-proof.json": "capability-profile",
+    "install-proof.json": "install",
+    "uninstall-proof.json": "uninstall",
+    "enabled-disabled-proof.json": "enabled-disabled",
+    "unavailable-blocked-proof.json": "unavailable-blocked",
+    "release-stage-mapping-proof.json": "release-stage-mapping",
+    "android-store-proof.json": "android-store",
+    "public-safe-export-proof.json": "public-safe-export",
+    "optional-addons-proof.json": "optional-addons",
+}
+STORE_ADDONS_REQUIRED_PROOF_FIELDS = (
+    "schema_version",
+    "build_id",
+    "component",
+    "proof_type",
+    "status",
+    "generated_at",
+    "source_commit",
+    "public_safe",
+    "raw_evidence_local_only",
+    "aibenchie_verdict",
+    "blocked_reason",
+)
+STORE_ADDONS_REQUIRED_ANDROID_STATES = {
+    "installable",
+    "installed",
+    "uninstall",
+    "enabled",
+    "disabled",
+    "unavailable",
+    "blocked",
+    "experimental",
+    "prerelease",
+    "published",
+    "not_configured",
+    "failed",
+    "manual-review",
 }
 
 
@@ -1582,6 +1622,218 @@ def validate_lv7_operator_loop(
     return result
 
 
+def _store_addons_proof_root(evidence_root: str | Path, build_id: str) -> Path:
+    root = Path(evidence_root).expanduser()
+    if root.name == "store-proof":
+        return root
+    candidate = root / build_id / "store-proof"
+    if candidate.exists() or build_id:
+        return candidate
+    return root / "store-proof"
+
+
+def _normalized_state_set(values: Any) -> set[str]:
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip().lower().replace("_", "-") for value in values if str(value).strip()}
+
+
+def _store_config_mapping_failures(matrix_path: str | Path, store_capabilities_path: str | Path) -> list[str]:
+    failures: list[str] = []
+    matrix = _load_workflow_matrix(matrix_path)
+    store_config = _load_store_capabilities(store_capabilities_path)
+    workflows = {str(item.get("workflow_id") or item.get("id") or ""): item for item in matrix.get("workflows", [])}
+    prerelease_ids = set(EXPECTED_MS3_PRERELEASE_WORKFLOWS)
+    store_items = store_config.get("capabilities", [])
+    store_by_workflow = {str(item.get("workflow_id") or item.get("capability_id") or ""): item for item in store_items}
+
+    for workflow_id in prerelease_ids:
+        item = store_by_workflow.get(workflow_id)
+        if not item:
+            failures.append(f"store-config:{workflow_id}:missing")
+            continue
+        if item.get("state") != "installable":
+            failures.append(f"store-config:{workflow_id}:state:not_installable")
+        if item.get("release_stage") != "prerelease":
+            failures.append(f"store-config:{workflow_id}:release_stage:not_prerelease")
+        workflow = workflows.get(workflow_id)
+        if not workflow:
+            failures.append(f"workflow-matrix:{workflow_id}:missing")
+        elif workflow.get("release_stage") != "prerelease":
+            failures.append(f"workflow-matrix:{workflow_id}:release_stage:not_prerelease")
+
+    for item in store_items:
+        workflow_id = str(item.get("workflow_id") or item.get("capability_id") or "")
+        release_stage = str(item.get("release_stage") or "")
+        state = str(item.get("state") or "")
+        if release_stage in {"blocked", "later"} and state == "installable":
+            failures.append(f"store-config:{workflow_id}:blocked_or_later_installable")
+    return failures
+
+
+def _store_addons_specific_failures(filename: str, proof_type: str, payload: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    if proof_type == "capability-profile":
+        if payload.get("profiles_match_store_config") is not True:
+            failures.append(f"{filename}:profiles_match_store_config:not_true")
+        if payload.get("blocked_later_not_installable") is not True:
+            failures.append(f"{filename}:blocked_later_not_installable:not_true")
+    if proof_type == "install":
+        for field in ("install_succeeds", "installed_state_visible", "download_action_visible"):
+            if payload.get(field) is not True:
+                failures.append(f"{filename}:{field}:not_true")
+    if proof_type == "uninstall":
+        for field in ("uninstall_succeeds", "uninstalled_state_visible", "feature_owned_data_only"):
+            if payload.get(field) is not True:
+                failures.append(f"{filename}:{field}:not_true")
+    if proof_type == "enabled-disabled":
+        for field in ("enabled_state_visible", "disabled_state_visible", "state_consistency"):
+            if payload.get(field) is not True:
+                failures.append(f"{filename}:{field}:not_true")
+    if proof_type == "unavailable-blocked":
+        for field in ("gated_not_installable", "blocked_not_installable", "experimental_not_normal_installable"):
+            if payload.get(field) is not True:
+                failures.append(f"{filename}:{field}:not_true")
+    if proof_type == "release-stage-mapping":
+        for field in ("store_mapping_valid", "workflow_matrix_aligned", "blocked_later_not_installable"):
+            if payload.get(field) is not True:
+                failures.append(f"{filename}:{field}:not_true")
+    if proof_type == "android-store":
+        order = payload.get("device_order")
+        if order != ["S23 FE", "A17"]:
+            failures.append(f"{filename}:device_order:not_s23fe_then_a17")
+        device_proof = payload.get("device_proof") if isinstance(payload.get("device_proof"), dict) else {}
+        if device_proof.get("S23 FE") != "pass":
+            failures.append(f"{filename}:s23_fe:not_pass")
+        if device_proof.get("A17") != "pass":
+            failures.append(f"{filename}:a17:not_pass")
+        states = _normalized_state_set(payload.get("states"))
+        required_states = {state.replace("_", "-") for state in STORE_ADDONS_REQUIRED_ANDROID_STATES}
+        for missing in sorted(required_states - states):
+            failures.append(f"{filename}:states:missing:{missing}")
+        if payload.get("messages_public_safe") is not True:
+            failures.append(f"{filename}:messages_public_safe:not_true")
+    if proof_type == "public-safe-export":
+        if payload.get("private_markers_rejected") is not True:
+            failures.append(f"{filename}:private_markers_rejected:not_true")
+        if payload.get("raw_evidence_local_only") is not True:
+            failures.append(f"{filename}:raw_evidence_local_only:not_true")
+    if proof_type == "optional-addons":
+        nextcloud = payload.get("nextcloud") if isinstance(payload.get("nextcloud"), dict) else {}
+        if nextcloud.get("core_required") is True or nextcloud.get("required") is True:
+            failures.append(f"{filename}:nextcloud:required_by_default")
+        if nextcloud.get("credentials_exposed") is True:
+            failures.append(f"{filename}:nextcloud:credentials_exposed")
+        if nextcloud.get("private_server_exposed") is True:
+            failures.append(f"{filename}:nextcloud:private_server_exposed")
+        if str(nextcloud.get("status") or "") not in {"skipped_optional", "not_configured", "pass", "failed", "manual-review"}:
+            failures.append(f"{filename}:nextcloud:status:invalid")
+    return failures
+
+
+def validate_store_addons(
+    *,
+    evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    build_id: str,
+    matrix: str | Path = DEFAULT_WORKFLOW_MATRIX,
+    store_capabilities: str | Path = DEFAULT_STORE_CAPABILITIES,
+    out: str | Path = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or _now()
+    proof_root = _store_addons_proof_root(evidence_root, build_id)
+    failures: list[str] = []
+    proof_results: dict[str, str] = {}
+
+    failures.extend(_store_config_mapping_failures(matrix, store_capabilities))
+    if not proof_root.exists():
+        failures.append("store-proof:missing")
+    else:
+        for filename, expected_type in STORE_ADDONS_REQUIRED_PROOFS.items():
+            path = proof_root / filename
+            if not path.exists():
+                failures.append(f"{filename}:missing")
+                proof_results[expected_type] = "blocked"
+                continue
+            payload = _read_json(path)
+            if payload.get("__load_error__"):
+                failures.append(f"{filename}:malformed")
+                proof_results[expected_type] = "blocked"
+                continue
+            failures.extend(_require_payload_fields(filename, payload, STORE_ADDONS_REQUIRED_PROOF_FIELDS))
+            failures.extend(_public_safety_failures(filename, payload))
+            if payload.get("build_id") != build_id:
+                failures.append(f"{filename}:build_id:mismatch")
+            if payload.get("component") != "Store/Add-ons":
+                failures.append(f"{filename}:component:mismatch")
+            if payload.get("proof_type") != expected_type:
+                failures.append(f"{filename}:proof_type:mismatch")
+            if payload.get("status") != "pass":
+                failures.append(f"{filename}:status:not_pass")
+            if payload.get("aibenchie_verdict") != "pass":
+                failures.append(f"{filename}:aibenchie_verdict:not_pass")
+            if payload.get("public_safe") is not True:
+                failures.append(f"{filename}:public_safe:not_true")
+            if payload.get("raw_evidence_local_only") is not True:
+                failures.append(f"{filename}:raw_evidence_local_only:not_true")
+            if _parse_iso(payload.get("generated_at")) is None:
+                failures.append(f"{filename}:generated_at:invalid")
+            failures.extend(_store_addons_specific_failures(filename, expected_type, payload))
+            proof_results[expected_type] = "pass" if not any(failure.startswith(f"{filename}:") for failure in failures) else "blocked"
+
+        verdict_path = proof_root / "store-addons-verdict.json"
+        if not verdict_path.exists():
+            failures.append("store-addons-verdict.json:missing")
+        else:
+            verdict = _read_json(verdict_path)
+            failures.extend(_require_payload_fields("store-addons-verdict.json", verdict, ("schema_version", "build_id", "component", "verdict", "generated_at", "expires_at")))
+            failures.extend(_public_safety_failures("store-addons-verdict.json", verdict))
+            if verdict.get("build_id") != build_id:
+                failures.append("store-addons-verdict.json:build_id:mismatch")
+            if verdict.get("component") != "Store/Add-ons":
+                failures.append("store-addons-verdict.json:component:mismatch")
+            if verdict.get("verdict") != "pass":
+                failures.append("store-addons-verdict.json:verdict:not_pass")
+
+        notes_path = proof_root / "notes.md"
+        if not notes_path.exists():
+            failures.append("notes.md:missing")
+        else:
+            failures.extend(_public_safety_failures("notes.md", notes_path.read_text(encoding="utf-8")))
+
+    sanitized_failures = _sanitize_failures(failures)
+    ok = not failures
+    result = {
+        "schema": STORE_ADDONS_VERDICT_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "suite": "echolabs",
+        "component": "Store/Add-ons",
+        "verdict": "pass" if ok else "blocked",
+        "aibenchie_verdict": "pass" if ok else "blocked",
+        "generated_at": _iso(current),
+        "expires_at": _iso(current + timedelta(minutes=10)),
+        "proof_root_label": "store-proof",
+        "capability_profiles": proof_results.get("capability-profile", "blocked"),
+        "install": proof_results.get("install", "blocked"),
+        "uninstall": proof_results.get("uninstall", "blocked"),
+        "enabled_disabled": proof_results.get("enabled-disabled", "blocked"),
+        "unavailable_blocked": proof_results.get("unavailable-blocked", "blocked"),
+        "release_stage_mapping": proof_results.get("release-stage-mapping", "blocked"),
+        "android_store": proof_results.get("android-store", "blocked"),
+        "public_safe_export": proof_results.get("public-safe-export", "blocked"),
+        "optional_addons": proof_results.get("optional-addons", "blocked"),
+        "ok": ok,
+        "failures": sanitized_failures,
+        "blocked_reason": None if ok else "store_addons_evidence_incomplete",
+    }
+    _assert_public_safe(result)
+    output = Path(out).expanduser() if out else proof_root / "store-addons-verdict.json"
+    if proof_root.exists() and (ok or out):
+        _write_json(output, result)
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage AIBenchie release truth spine evidence.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1647,6 +1899,16 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(lv7)
     lv7.add_argument("--build-id", required=True)
     lv7.add_argument("--out", default="")
+
+    store_addons = subparsers.add_parser(
+        "validate-store-addons",
+        help="Validate Store/Add-ons MS6 evidence.",
+    )
+    add_common(store_addons)
+    store_addons.add_argument("--build-id", required=True)
+    store_addons.add_argument("--matrix", default=str(DEFAULT_WORKFLOW_MATRIX))
+    store_addons.add_argument("--store-capabilities", default=str(DEFAULT_STORE_CAPABILITIES))
+    store_addons.add_argument("--out", default="")
 
     return parser
 
@@ -1736,6 +1998,16 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
         )
         _print_result(result, json_output=args.json, title="AIBenchie Lv-7 Operator Loop Validation")
+        return 0 if result.get("ok") else 1
+    if args.command == "validate-store-addons":
+        result = validate_store_addons(
+            build_id=args.build_id,
+            evidence_root=args.evidence_root,
+            matrix=args.matrix,
+            store_capabilities=args.store_capabilities,
+            out=args.out,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie Store/Add-ons Validation")
         return 0 if result.get("ok") else 1
     return 1
 
