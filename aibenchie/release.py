@@ -18,6 +18,7 @@ WORKFLOW_MATRIX_SCHEMA = "aibenchie.workflow-matrix.v1"
 WORKFLOW_MATRIX_VERDICT_SCHEMA = "aibenchie.workflow-matrix-verdict.v1"
 WORKFLOW_MATRIX_SUMMARY_SCHEMA = "aibenchie.workflow-matrix-summary.v1"
 WORKFLOW_SUMMARY_SCHEMA = "aibenchie.workflow-summary.v1"
+NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA = "aibenchie.nullbridge-prerelease-verdict.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
@@ -129,6 +130,31 @@ REQUIRED_WORKFLOW_PROOF_FLAGS = (
     "artifact_open_proof",
     "artifact_save_proof",
     "failure_message_proof",
+)
+NULLBRIDGE_REQUIRED_PROOFS = {
+    "pairing-proof.json": "pairing",
+    "approval-proof.json": "approval",
+    "denial-proof.json": "denial",
+    "route-safety-proof.json": "route-safety",
+    "lease-proof.json": "lease",
+    "artifact-response-proof.json": "artifact-response",
+    "signed-envelope-proof.json": "signed-envelope",
+    "status-offline-proof.json": "status-offline",
+    "audit-redaction-proof.json": "audit-redaction",
+    "android-failure-messaging-proof.json": "android-failure-messaging",
+}
+NULLBRIDGE_REQUIRED_PROOF_FIELDS = (
+    "schema_version",
+    "build_id",
+    "component",
+    "proof_type",
+    "status",
+    "generated_at",
+    "source_commit",
+    "public_safe",
+    "raw_evidence_local_only",
+    "aibenchie_verdict",
+    "blocked_reason",
 )
 
 
@@ -441,14 +467,16 @@ def _load_latest_candidate(evidence_root: str | Path, *, prefer_passing: bool = 
 
 def _assert_public_safe(payload: dict[str, Any]) -> None:
     text = json.dumps(payload, sort_keys=True).lower()
-    leaked = [marker for marker in PUBLIC_FORBIDDEN_MARKERS if marker in text]
+    normalized = text.replace("\\\\", "\\")
+    leaked = [marker for marker in PUBLIC_FORBIDDEN_MARKERS if marker in text or marker in normalized]
     if leaked:
         raise ValueError(f"public output contains forbidden marker(s): {', '.join(leaked)}")
 
 
 def _public_safety_failures(label: str, payload: Any) -> list[str]:
     text = json.dumps(payload, sort_keys=True).lower() if not isinstance(payload, str) else payload.lower()
-    leaked = [marker for marker in PUBLIC_FORBIDDEN_MARKERS if marker in text]
+    normalized = text.replace("\\\\", "\\")
+    leaked = [marker for marker in PUBLIC_FORBIDDEN_MARKERS if marker in text or marker in normalized]
     return [f"{label}:public_safety_marker:{marker}" for marker in leaked]
 
 
@@ -1095,6 +1123,154 @@ def export_workflow_summary(
     return result
 
 
+def _nullbridge_proof_root(evidence_root: str | Path, build_id: str) -> Path:
+    root = Path(evidence_root).expanduser()
+    if root.name == "nullbridge-proof":
+        return root
+    candidate = root / build_id / "nullbridge-proof"
+    if candidate.exists() or build_id:
+        return candidate
+    return root / "nullbridge-proof"
+
+
+def _require_payload_fields(label: str, payload: dict[str, Any], fields: tuple[str, ...]) -> list[str]:
+    return [f"{label}:{field}:missing" for field in fields if field not in payload]
+
+
+def _sanitize_failures(failures: list[str]) -> list[str]:
+    sanitized: list[str] = []
+    for failure in failures:
+        if ":public_safety_marker:" in failure:
+            sanitized.append(failure.split(":public_safety_marker:", 1)[0] + ":public_safety_marker")
+        elif "C:" in failure or "\\" in failure:
+            sanitized.append(failure.split(":", 1)[0] + ":path_detail_redacted")
+        else:
+            sanitized.append(failure)
+    return sanitized
+
+
+def validate_nullbridge_prerelease(
+    *,
+    evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    build_id: str,
+    out: str | Path = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or _now()
+    proof_root = _nullbridge_proof_root(evidence_root, build_id)
+    failures: list[str] = []
+    proof_results: dict[str, str] = {}
+
+    if not proof_root.exists():
+        failures.append("nullbridge-proof:missing")
+    else:
+        for filename, expected_type in NULLBRIDGE_REQUIRED_PROOFS.items():
+            path = proof_root / filename
+            if not path.exists():
+                failures.append(f"{filename}:missing")
+                proof_results[expected_type] = "blocked"
+                continue
+            payload = _read_json(path)
+            if payload.get("__load_error__"):
+                failures.append(f"{filename}:malformed")
+                proof_results[expected_type] = "blocked"
+                continue
+            failures.extend(_require_payload_fields(filename, payload, NULLBRIDGE_REQUIRED_PROOF_FIELDS))
+            failures.extend(_public_safety_failures(filename, payload))
+            if payload.get("build_id") != build_id:
+                failures.append(f"{filename}:build_id:mismatch")
+            if payload.get("component") != "NullBridge":
+                failures.append(f"{filename}:component:mismatch")
+            if payload.get("proof_type") != expected_type:
+                failures.append(f"{filename}:proof_type:mismatch")
+            if payload.get("status") != "pass":
+                failures.append(f"{filename}:status:not_pass")
+            if payload.get("aibenchie_verdict") != "pass":
+                failures.append(f"{filename}:aibenchie_verdict:not_pass")
+            if payload.get("public_safe") is not True:
+                failures.append(f"{filename}:public_safe:not_true")
+            if payload.get("raw_evidence_local_only") is not True:
+                failures.append(f"{filename}:raw_evidence_local_only:not_true")
+            if _parse_iso(payload.get("generated_at")) is None:
+                failures.append(f"{filename}:generated_at:invalid")
+            proof_results[expected_type] = "pass" if not any(failure.startswith(f"{filename}:") for failure in failures) else "blocked"
+
+        status_path = proof_root / "nullbridge-status.json"
+        if not status_path.exists():
+            failures.append("nullbridge-status.json:missing")
+        else:
+            status = _read_json(status_path)
+            failures.extend(_require_payload_fields("nullbridge-status.json", status, ("schema_version", "build_id", "generated_at", "expires_at", "status", "verdict", "freshness")))
+            failures.extend(_public_safety_failures("nullbridge-status.json", status))
+            if status.get("build_id") != build_id:
+                failures.append("nullbridge-status.json:build_id:mismatch")
+            if status.get("status") != "pass":
+                failures.append("nullbridge-status.json:status:not_pass")
+            if status.get("verdict") != "pass":
+                failures.append("nullbridge-status.json:verdict:not_pass")
+            if status.get("freshness") != "fresh":
+                failures.append("nullbridge-status.json:freshness:not_fresh")
+            expires_at = _parse_iso(status.get("expires_at"))
+            if expires_at is None:
+                failures.append("nullbridge-status.json:expires_at:invalid")
+            elif expires_at <= current:
+                failures.append("nullbridge-status.json:expires_at:stale")
+
+        source_verdict_path = proof_root / "nullbridge-prerelease-verdict.json"
+        if not source_verdict_path.exists():
+            failures.append("nullbridge-prerelease-verdict.json:missing")
+        else:
+            source_verdict = _read_json(source_verdict_path)
+            failures.extend(_require_payload_fields("nullbridge-prerelease-verdict.json", source_verdict, ("schema_version", "build_id", "component", "verdict", "generated_at", "expires_at")))
+            failures.extend(_public_safety_failures("nullbridge-prerelease-verdict.json", source_verdict))
+            if source_verdict.get("build_id") != build_id:
+                failures.append("nullbridge-prerelease-verdict.json:build_id:mismatch")
+            if source_verdict.get("component") != "NullBridge":
+                failures.append("nullbridge-prerelease-verdict.json:component:mismatch")
+            if source_verdict.get("verdict") != "pass":
+                failures.append("nullbridge-prerelease-verdict.json:verdict:not_pass")
+
+        notes_path = proof_root / "notes.md"
+        if not notes_path.exists():
+            failures.append("notes.md:missing")
+        else:
+            failures.extend(_public_safety_failures("notes.md", notes_path.read_text(encoding="utf-8")))
+
+    sanitized_failures = _sanitize_failures(failures)
+    ok = not failures
+    result = {
+        "schema": NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "suite": "echolabs",
+        "component": "NullBridge",
+        "verdict": "pass" if ok else "blocked",
+        "aibenchie_verdict": "pass" if ok else "blocked",
+        "generated_at": _iso(current),
+        "expires_at": _iso(current + timedelta(minutes=10)),
+        "proof_root_label": "nullbridge-proof",
+        "pairing": proof_results.get("pairing", "blocked"),
+        "approval": proof_results.get("approval", "blocked"),
+        "denial": proof_results.get("denial", "blocked"),
+        "route_safety": proof_results.get("route-safety", "blocked"),
+        "leases": proof_results.get("lease", "blocked"),
+        "artifact_response": proof_results.get("artifact-response", "blocked"),
+        "signed_envelopes": proof_results.get("signed-envelope", "blocked"),
+        "status_offline_unavailable": proof_results.get("status-offline", "blocked"),
+        "audit_redaction": proof_results.get("audit-redaction", "blocked"),
+        "android_failure_messaging": proof_results.get("android-failure-messaging", "blocked"),
+        "public_safe_export": "pass" if ok else "blocked",
+        "ok": ok,
+        "failures": sanitized_failures,
+        "blocked_reason": None if ok else "nullbridge_prerelease_evidence_incomplete",
+    }
+    _assert_public_safe(result)
+    output = Path(out).expanduser() if out else proof_root / "nullbridge-prerelease-verdict.json"
+    if proof_root.exists() and (ok or out):
+        _write_json(output, result)
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage AIBenchie release truth spine evidence.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1144,6 +1320,14 @@ def build_parser() -> argparse.ArgumentParser:
     workflow_summary.add_argument("--matrix", default=str(DEFAULT_WORKFLOW_MATRIX))
     workflow_summary.add_argument("--store-capabilities", default=str(DEFAULT_STORE_CAPABILITIES))
     workflow_summary.add_argument("--out", required=True)
+
+    nullbridge = subparsers.add_parser(
+        "validate-nullbridge",
+        help="Validate NullBridge MS4 prerelease evidence.",
+    )
+    add_common(nullbridge)
+    nullbridge.add_argument("--build-id", required=True)
+    nullbridge.add_argument("--out", default="")
 
     return parser
 
@@ -1217,6 +1401,14 @@ def main(argv: list[str] | None = None) -> int:
             store_capabilities=args.store_capabilities,
         )
         _print_result(result, json_output=args.json, title="AIBenchie Workflow Summary Export")
+        return 0 if result.get("ok") else 1
+    if args.command == "validate-nullbridge":
+        result = validate_nullbridge_prerelease(
+            build_id=args.build_id,
+            evidence_root=args.evidence_root,
+            out=args.out,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie NullBridge Prerelease Validation")
         return 0 if result.get("ok") else 1
     return 1
 
