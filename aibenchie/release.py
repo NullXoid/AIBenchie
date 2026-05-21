@@ -21,6 +21,7 @@ WORKFLOW_SUMMARY_SCHEMA = "aibenchie.workflow-summary.v1"
 NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA = "aibenchie.nullbridge-prerelease-verdict.v1"
 LV7_OPERATOR_LOOP_VERDICT_SCHEMA = "aibenchie.lv7-operator-loop-verdict.v1"
 STORE_ADDONS_VERDICT_SCHEMA = "aibenchie.store-addons-verdict.v1"
+SUITE_CANDIDATE_VERDICT_SCHEMA = "aibenchie.suite-candidate-verdict.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
@@ -243,6 +244,40 @@ STORE_ADDONS_REQUIRED_ANDROID_STATES = {
     "failed",
     "manual-review",
 }
+SUITE_REQUIRED_JSON_FILES = (
+    "repo-commits.json",
+    "suite-status.json",
+    "android-release-status.json",
+    "store-capability-stages.json",
+    "workflow-matrix-verdict.json",
+    "public-safe-scan.json",
+    "release-rehearsal.json",
+    "failed-candidate-rehearsal.json",
+    "status-agreement.json",
+)
+SUITE_REQUIRED_TEXT_FILES = ("release-notes.md", "notes.md")
+SUITE_SUBGATE_VERDICTS = {
+    "workflow_matrix": ("workflow-matrix-verdict.json", "aibenchie_verdict"),
+    "nullbridge_gate": ("nullbridge-proof/nullbridge-prerelease-verdict.json", "aibenchie_verdict"),
+    "lv7_gate": ("lv7-proof/lv7-operator-loop-verdict.json", "aibenchie_verdict"),
+    "store_addons_gate": ("store-proof/store-addons-verdict.json", "aibenchie_verdict"),
+}
+FAILED_CANDIDATE_REQUIRED_BLOCKS = (
+    "missing_proof_blocks",
+    "stale_proof_blocks",
+    "missing_release_notes_blocks",
+    "missing_repo_commit_evidence_blocks",
+    "public_unsafe_export_blocks",
+    "failed_android_gate_blocks",
+    "failed_workflow_matrix_blocks",
+    "failed_nullbridge_gate_blocks",
+    "failed_lv7_gate_blocks",
+    "failed_store_gate_blocks",
+    "manual_review_blocks_promotion",
+    "blocked_status_blocks_promotion",
+    "failed_build_can_be_latest_attempted",
+    "failed_build_cannot_be_latest_passing",
+)
 
 
 def repo_root() -> Path:
@@ -1834,6 +1869,263 @@ def validate_store_addons(
     return result
 
 
+def _suite_candidate_root(evidence_root: str | Path, build_id: str) -> Path:
+    root = Path(evidence_root).expanduser()
+    if root.name == build_id:
+        return root
+    return root / build_id
+
+
+def _passish(payload: dict[str, Any]) -> str:
+    for field in ("result", "status", "verdict", "aibenchie_verdict"):
+        value = str(payload.get(field) or "").strip()
+        if value:
+            return value
+    if payload.get("ok") is True:
+        return "pass"
+    return ""
+
+
+def _suite_json_payload(path: Path, label: str, failures: list[str]) -> dict[str, Any]:
+    if not path.exists():
+        failures.append(f"{label}:missing")
+        return {}
+    payload = _read_json(path)
+    if payload.get("__load_error__"):
+        failures.append(f"{label}:malformed")
+        return payload
+    failures.extend(_public_safety_failures(label, payload))
+    return payload
+
+
+def _suite_require_build_id(label: str, payload: dict[str, Any], build_id: str, failures: list[str]) -> None:
+    if "build_id" not in payload:
+        failures.append(f"{label}:build_id:missing")
+    elif payload.get("build_id") != build_id:
+        failures.append(f"{label}:build_id:mismatch")
+
+
+def _suite_require_pass(label: str, payload: dict[str, Any], failures: list[str]) -> None:
+    value = _passish(payload)
+    if value != "pass":
+        failures.append(f"{label}:not_pass:{value or 'missing'}")
+    if payload.get("ok") is False:
+        failures.append(f"{label}:ok:false")
+
+
+def _validate_repo_commit_evidence(payload: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    repos = payload.get("repos")
+    if not isinstance(repos, list) or not repos:
+        return ["repo-commits.json:repos:missing"]
+    for item in repos:
+        if not isinstance(item, dict):
+            failures.append("repo-commits.json:repo:not_object")
+            continue
+        name = str(item.get("name") or "unknown")
+        dirty = item.get("dirty")
+        preserved_only = item.get("known_preserved_untracked_only") is True
+        if dirty not in {False, "false"} and not preserved_only:
+            failures.append(f"repo-commits.json:{name}:dirty")
+        if item.get("commit") in {"", "missing", None}:
+            failures.append(f"repo-commits.json:{name}:commit:missing")
+        pushed = item.get("pushed")
+        if pushed is False:
+            failures.append(f"repo-commits.json:{name}:not_pushed")
+    return failures
+
+
+def _validate_failed_candidate_rehearsal(payload: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    for field in FAILED_CANDIDATE_REQUIRED_BLOCKS:
+        if payload.get(field) is not True:
+            failures.append(f"failed-candidate-rehearsal.json:{field}:not_true")
+    if payload.get("latest_passing_changed") is not False:
+        failures.append("failed-candidate-rehearsal.json:latest_passing_changed:not_false")
+    return failures
+
+
+def _validate_status_agreement(payload: dict[str, Any], build_id: str) -> list[str]:
+    failures: list[str] = []
+    if payload.get("build_id") != build_id:
+        failures.append("status-agreement.json:build_id:mismatch")
+    if payload.get("aibenchie_verdict") != "pass":
+        failures.append("status-agreement.json:aibenchie_verdict:not_pass")
+    surfaces = payload.get("surfaces")
+    if not isinstance(surfaces, dict) or not surfaces:
+        return [*failures, "status-agreement.json:surfaces:missing"]
+    for name, surface in surfaces.items():
+        if not isinstance(surface, dict):
+            failures.append(f"status-agreement.json:{name}:not_object")
+            continue
+        if surface.get("build_id") != build_id:
+            failures.append(f"status-agreement.json:{name}:build_id:mismatch")
+        state = str(surface.get("status") or surface.get("verdict") or "")
+        if state in {"stale", "offline", "manual", "manual-review"} and surface.get("healthy") is True:
+            failures.append(f"status-agreement.json:{name}:stale_manual_or_offline_marked_healthy")
+        if surface.get("intentionally_stale") is not True and str(surface.get("verdict") or "pass") != "pass":
+            failures.append(f"status-agreement.json:{name}:verdict:not_pass")
+    return failures
+
+
+def _validate_release_movement_guard(payload: dict[str, Any], label: str) -> list[str]:
+    failures: list[str] = []
+    forbidden_true = (
+        "apk_publish_occurred",
+        "latest_debug_moved",
+        "website_deploy_occurred",
+        "home_deploy_occurred",
+        "latest_passing_promoted",
+        "prerelease_promotion_occurred",
+        "ms8_work_started",
+    )
+    for field in forbidden_true:
+        if payload.get(field) is True:
+            failures.append(f"{label}:{field}:not_allowed")
+    if str(payload.get("promotion_status") or "not_promoted") != "not_promoted":
+        failures.append(f"{label}:promotion_status:not_not_promoted")
+    if str(payload.get("publish_state") or "gated") == "published":
+        failures.append(f"{label}:publish_state:published")
+    return failures
+
+
+def validate_suite_candidate(
+    *,
+    evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    build_id: str,
+    out: str | Path = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or _now()
+    build_root = _suite_candidate_root(evidence_root, build_id)
+    failures: list[str] = []
+    payloads: dict[str, dict[str, Any]] = {}
+
+    if not build_root.exists():
+        failures.append("candidate_evidence_root:missing")
+    for filename in SUITE_REQUIRED_JSON_FILES:
+        payload = _suite_json_payload(build_root / filename, filename, failures)
+        payloads[filename] = payload
+        if payload and filename != "repo-commits.json":
+            _suite_require_build_id(filename, payload, build_id, failures)
+    for filename in SUITE_REQUIRED_TEXT_FILES:
+        path = build_root / filename
+        if not path.exists():
+            failures.append(f"{filename}:missing")
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        failures.extend(_public_safety_failures(filename, text))
+        if build_id not in text:
+            failures.append(f"{filename}:build_id:missing")
+
+    repo_payload = payloads.get("repo-commits.json") or {}
+    if repo_payload:
+        failures.extend(_validate_repo_commit_evidence(repo_payload))
+
+    pass_files = (
+        "suite-status.json",
+        "android-release-status.json",
+        "store-capability-stages.json",
+        "workflow-matrix-verdict.json",
+        "public-safe-scan.json",
+        "release-rehearsal.json",
+        "failed-candidate-rehearsal.json",
+        "status-agreement.json",
+    )
+    for filename in pass_files:
+        payload = payloads.get(filename) or {}
+        if payload:
+            _suite_require_pass(filename, payload, failures)
+            failures.extend(_validate_release_movement_guard(payload, filename))
+
+    public_scan = payloads.get("public-safe-scan.json") or {}
+    if public_scan:
+        if public_scan.get("public_safe") is not True:
+            failures.append("public-safe-scan.json:public_safe:not_true")
+        if int(public_scan.get("private_markers_found") or 0) != 0:
+            failures.append("public-safe-scan.json:private_markers_found:not_zero")
+
+    failed_rehearsal = payloads.get("failed-candidate-rehearsal.json") or {}
+    if failed_rehearsal:
+        failures.extend(_validate_failed_candidate_rehearsal(failed_rehearsal))
+
+    status_agreement = payloads.get("status-agreement.json") or {}
+    if status_agreement:
+        failures.extend(_validate_status_agreement(status_agreement, build_id))
+
+    release_rehearsal = payloads.get("release-rehearsal.json") or {}
+    if release_rehearsal:
+        if release_rehearsal.get("clean_worktree_rehearsal") is not True:
+            failures.append("release-rehearsal.json:clean_worktree_rehearsal:not_true")
+        if release_rehearsal.get("uncommitted_source_required") is True:
+            failures.append("release-rehearsal.json:uncommitted_source_required:not_allowed")
+
+    for gate, (relative_path, verdict_field) in SUITE_SUBGATE_VERDICTS.items():
+        payload = _suite_json_payload(build_root / relative_path, relative_path, failures)
+        if not payload:
+            continue
+        if payload.get("build_id") not in {build_id, "ms3-live-20260520-193450", "ms4-nullbridge-postcommit", "ms5-lv7-local", "ms6-store-20260521-0001"}:
+            failures.append(f"{relative_path}:build_id:unexpected")
+        if payload.get(verdict_field) != "pass" and payload.get("verdict") != "pass":
+            failures.append(f"{relative_path}:verdict:not_pass")
+        if payload.get("ok") is False:
+            failures.append(f"{relative_path}:ok:false")
+
+    android_status = payloads.get("android-release-status.json") or {}
+    if android_status:
+        for field in ("apk_hashes_present", "signing_continuity", "s23_fe_proof", "a17_proof", "update_notes_present"):
+            if android_status.get(field) != "pass":
+                failures.append(f"android-release-status.json:{field}:not_pass")
+        if android_status.get("publish_state") == "published":
+            failures.append("android-release-status.json:publish_state:published")
+
+    ok = not failures
+    result = {
+        "schema": SUITE_CANDIDATE_VERDICT_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "suite": "echolabs",
+        "verdict": "pass" if ok else "blocked",
+        "aibenchie_verdict": "pass" if ok else "blocked",
+        "generated_at": _iso(current),
+        "expires_at": _iso(current + timedelta(days=7)),
+        "candidate_status": "local_candidate_ready" if ok else "blocked",
+        "promotion_status": "not_promoted",
+        "android_release_gate": "pass" if ok else "blocked",
+        "workflow_matrix": "pass" if ok else "blocked",
+        "nullbridge_gate": "pass" if ok else "blocked",
+        "lv7_gate": "pass" if ok else "blocked",
+        "store_addons_gate": "pass" if ok else "blocked",
+        "website_export": "pass" if ok else "blocked",
+        "home_export": "pass" if ok else "blocked",
+        "public_safe_scan": "pass" if ok else "blocked",
+        "repo_commits": "pass" if ok else "blocked",
+        "release_notes": "pass" if ok else "blocked",
+        "failed_candidate_rehearsal": "pass" if ok else "blocked",
+        "clean_checkout_rehearsal": "pass" if ok else "blocked",
+        "status_agreement": "pass" if ok else "blocked",
+        "latest_passing_promoted": False,
+        "apk_publish_occurred": False,
+        "latest_debug_moved": False,
+        "website_deploy_occurred": False,
+        "home_deploy_occurred": False,
+        "prerelease_promotion_occurred": False,
+        "ms8_work_started": False,
+        "ok": ok,
+        "failures": _sanitize_failures(failures),
+        "blocked_reason": None if ok else "suite_candidate_evidence_incomplete",
+    }
+    _assert_public_safe(result)
+    if build_root.exists() and (ok or out):
+        suite_out = Path(out).expanduser() if out else build_root / "suite-verdict.json"
+        _write_json(suite_out, result)
+        aibenchie_out = build_root / "aibenchie-verdict.json"
+        _write_json(aibenchie_out, {**result, "schema": RELEASE_VERDICT_SCHEMA, "status": "prerelease-candidate" if ok else "blocked"})
+        result["output"] = str(suite_out.as_posix())
+        result["aibenchie_verdict_path"] = str(aibenchie_out.as_posix())
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage AIBenchie release truth spine evidence.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1909,6 +2201,14 @@ def build_parser() -> argparse.ArgumentParser:
     store_addons.add_argument("--matrix", default=str(DEFAULT_WORKFLOW_MATRIX))
     store_addons.add_argument("--store-capabilities", default=str(DEFAULT_STORE_CAPABILITIES))
     store_addons.add_argument("--out", default="")
+
+    suite = subparsers.add_parser(
+        "validate-suite",
+        help="Validate an aggregate MS7 prerelease candidate evidence bundle.",
+    )
+    add_common(suite)
+    suite.add_argument("--build-id", required=True)
+    suite.add_argument("--out", default="")
 
     return parser
 
@@ -2008,6 +2308,14 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
         )
         _print_result(result, json_output=args.json, title="AIBenchie Store/Add-ons Validation")
+        return 0 if result.get("ok") else 1
+    if args.command == "validate-suite":
+        result = validate_suite_candidate(
+            build_id=args.build_id,
+            evidence_root=args.evidence_root,
+            out=args.out,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie Suite Candidate Validation")
         return 0 if result.get("ok") else 1
     return 1
 
