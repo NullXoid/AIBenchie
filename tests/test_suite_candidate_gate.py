@@ -98,6 +98,14 @@ def _valid_suite_evidence(evidence_root: Path, build_id: str) -> Path:
         },
     )
     _write_json(
+        root / "website-export" / "summary.json",
+        {**common, "npm_export_public": "pass", "npm_build": "pass", "npm_verify_public": "pass", "website_deploy_occurred": False},
+    )
+    _write_json(
+        root / "home-export" / "summary.json",
+        {**common, "nullbridge_status_export": "pass", "suite_status_export": "pass", "topology_verification": "pass", "home_deploy_occurred": False},
+    )
+    _write_json(
         root / "nullbridge-proof" / "nullbridge-prerelease-verdict.json",
         {
             "schema_version": release.SCHEMA_VERSION,

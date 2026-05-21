@@ -262,6 +262,10 @@ SUITE_SUBGATE_VERDICTS = {
     "lv7_gate": ("lv7-proof/lv7-operator-loop-verdict.json", "aibenchie_verdict"),
     "store_addons_gate": ("store-proof/store-addons-verdict.json", "aibenchie_verdict"),
 }
+SUITE_EXPORT_SUMMARIES = {
+    "website_export": "website-export/summary.json",
+    "home_export": "home-export/summary.json",
+}
 FAILED_CANDIDATE_REQUIRED_BLOCKS = (
     "missing_proof_blocks",
     "stale_proof_blocks",
@@ -2070,6 +2074,14 @@ def validate_suite_candidate(
             failures.append(f"{relative_path}:verdict:not_pass")
         if payload.get("ok") is False:
             failures.append(f"{relative_path}:ok:false")
+
+    for gate, relative_path in SUITE_EXPORT_SUMMARIES.items():
+        payload = _suite_json_payload(build_root / relative_path, relative_path, failures)
+        if not payload:
+            continue
+        _suite_require_build_id(relative_path, payload, build_id, failures)
+        _suite_require_pass(relative_path, payload, failures)
+        failures.extend(_validate_release_movement_guard(payload, relative_path))
 
     android_status = payloads.get("android-release-status.json") or {}
     if android_status:
