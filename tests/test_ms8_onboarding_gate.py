@@ -19,6 +19,7 @@ def _valid_nullxoid(root: Path) -> None:
     _write(root / "echolabs.cmd", "@echo off\n")
     _write(root / "echolabs.sh", "#!/usr/bin/env sh\n")
     _write(root / "echolabs", "#!/usr/bin/env sh\n")
+    _write(root / ".gitignore", ".suite/local/nullxoid/bootstrap.env\n")
     _write(
         root / "backend" / "auth_store.py",
         "Bootstrap admin user created. username='admin'. Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD.\n",
@@ -29,13 +30,15 @@ def _valid_nullxoid(root: Path) -> None:
             [
                 "git clone http://git.echolabs.diy/EchoLabs/.NullXoid.git",
                 "Permission denied (publickey)",
-                "$env:NX_BOOTSTRAP_ADMIN_PASSWORD=\"<your-own-password>\"",
+                ".\\echolabs.cmd setup",
                 ".\\echolabs.cmd start app",
+                "http://127.0.0.1:5174/setup",
                 "Terminal 1",
                 "Terminal 2",
             ]
         ),
     )
+    _write(root / "START_HERE.md", ".\\echolabs.cmd setup\nhttp://127.0.0.1:5174/setup\n")
     _write(
         root / "frontend" / "src" / "App.jsx",
         "\n".join(
@@ -66,6 +69,7 @@ def _valid_nullxoid(root: Path) -> None:
     )
     for relative in release.MS8_REQUIRED_DOCS:
         _write(root / relative, doc)
+    _write(root / "START_HERE.md", f"{doc}\n.\\echolabs.cmd setup\nhttp://127.0.0.1:5174/setup\n")
 
 
 def test_ms8_onboarding_validator_accepts_valid_contract(tmp_path):
@@ -140,6 +144,18 @@ def test_ms8_onboarding_validator_blocks_missing_start_app_readme_flow(tmp_path)
     assert result["ok"] is False
     assert "README.md:http_clone_beginner_path_missing" in result["failures"]
     assert "README.md:start_app_quickstart_missing" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_missing_setup_route(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    readme = root / "README.md"
+    readme.write_text(readme.read_text(encoding="utf-8").replace("http://127.0.0.1:5174/setup", ""), encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "README.md:direct_setup_url_missing" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_missing_protected_action_marker(tmp_path):

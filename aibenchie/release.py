@@ -326,6 +326,10 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "Guest mode",
     "Backend disconnected",
     "Unavailable",
+    'const SETUP_ROUTE_PATH = "/setup";',
+    "routeToSetup",
+    "routeToAppHome",
+    "isSetupRoutePath",
 )
 MS8_REQUIRED_STORE_ASSISTANT_MARKERS = (
     "Store Assistant",
@@ -363,14 +367,17 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "NullBridge was not found.",
     "Backend-only mode is still available.",
     'sub.add_parser("scout"',
+    'sub.add_parser("setup"',
     'sub.add_parser("status"',
     'start_sub.add_parser("backend"',
     'start_sub.add_parser("frontend"',
     'start_sub.add_parser("app"',
     'start_sub.add_parser("core"',
-    "Complete first-run onboarding in the browser.",
-    "Backend is not running.",
-    "Run echolabs start backend or use echolabs start app.",
+    "Complete first-run onboarding in the browser setup page.",
+    "Setup:",
+    ".suite/local/nullxoid/bootstrap.env",
+    "Do not commit",
+    "Backend is not running. Run echolabs start backend or echolabs start app first.",
 )
 MS8_REQUIRED_FRONTEND_PROTECTED_ACTION_MARKERS = (
     "setAddonError(SIGN_IN_REQUIRED_MESSAGE)",
@@ -2345,6 +2352,9 @@ def validate_ms8_onboarding(
         failures.append("backend/auth_store.py:bootstrap_password_value_logged")
     if "Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD." not in auth_store_text:
         failures.append("backend/auth_store.py:bootstrap_password_safe_message_missing")
+    gitignore_text = _read_text_or_empty(root / ".gitignore")
+    if ".suite/local/nullxoid/bootstrap.env" not in gitignore_text:
+        failures.append(".gitignore:bootstrap_secret_not_ignored")
     for wrapper in wrappers:
         if not wrapper.exists():
             failures.append(f"{wrapper.name}:missing")
@@ -2367,12 +2377,21 @@ def validate_ms8_onboarding(
         failures.append("README.md:ssh_publickey_guidance_missing")
     if "start app" not in readme_text:
         failures.append("README.md:start_app_quickstart_missing")
-    password_index = readme_text.find("NX_BOOTSTRAP_ADMIN_PASSWORD")
+    if "echolabs.cmd setup" not in readme_text and "./echolabs setup" not in readme_text:
+        failures.append("README.md:setup_quickstart_missing")
+    setup_index = readme_text.find("setup")
     app_index = readme_text.find("start app")
-    if password_index == -1 or app_index == -1 or password_index > app_index:
-        failures.append("README.md:bootstrap_password_not_before_start_app")
+    if setup_index == -1 or app_index == -1 or setup_index > app_index:
+        failures.append("README.md:setup_not_before_start_app")
+    if "http://127.0.0.1:5174/setup" not in readme_text:
+        failures.append("README.md:direct_setup_url_missing")
     if "Terminal 1" not in readme_text or "Terminal 2" not in readme_text:
         failures.append("README.md:manual_terminal_fallback_missing")
+    start_here_text = _read_text_or_empty(root / "START_HERE.md")
+    if "echolabs.cmd setup" not in start_here_text and "./echolabs setup" not in start_here_text:
+        failures.append("START_HERE.md:setup_quickstart_missing")
+    if "http://127.0.0.1:5174/setup" not in start_here_text:
+        failures.append("START_HERE.md:direct_setup_url_missing")
     store_assistant_text = _read_text_or_empty(frontend_store_assistant)
     if not frontend_store_assistant.exists():
         failures.append("frontend/src/components/StoreAssistant.jsx:missing")
