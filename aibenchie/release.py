@@ -22,6 +22,7 @@ NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA = "aibenchie.nullbridge-prerelease-verdict.
 LV7_OPERATOR_LOOP_VERDICT_SCHEMA = "aibenchie.lv7-operator-loop-verdict.v1"
 STORE_ADDONS_VERDICT_SCHEMA = "aibenchie.store-addons-verdict.v1"
 SUITE_CANDIDATE_VERDICT_SCHEMA = "aibenchie.suite-candidate-verdict.v1"
+MS8_ONBOARDING_VERDICT_SCHEMA = "aibenchie.ms8-onboarding-verdict.v1"
 STORE_CAPABILITIES_SCHEMA = "aibenchie.store-capabilities.v1"
 DEFAULT_SUITE_VERSION = "0.9.0-prerelease.1"
 DEFAULT_EVIDENCE_ROOT = Path(".suite/local/aibenchie/release/evidence")
@@ -281,6 +282,40 @@ FAILED_CANDIDATE_REQUIRED_BLOCKS = (
     "blocked_status_blocks_promotion",
     "failed_build_can_be_latest_attempted",
     "failed_build_cannot_be_latest_passing",
+)
+MS8_REQUIRED_DOCS = (
+    "START_HERE.md",
+    "docs/LOCAL_PRERELEASE.md",
+    "docs/REPO_MAP.md",
+    "docs/WHAT_IS_REQUIRED.md",
+    "docs/WINDOWS_QUICKSTART.md",
+    "docs/LINUX_QUICKSTART.md",
+    "docs/FRONTEND_QUICKSTART.md",
+    "docs/STARTER_CHAT_CODE_PACK.md",
+)
+MS8_REQUIRED_FRONTEND_MARKERS = (
+    "ms8-first-run-onboarding",
+    "Welcome to EchoLabs / .NullXoid",
+    "Mark backend-only setup complete",
+    "Reopen setup guide",
+    "Guest mode is active. Sign in to use protected actions.",
+    "Sign in required",
+    "No model installed yet",
+    "Install Starter Chat + Code Pack",
+    "Qwen2.5-Coder-1.5B-Instruct-GGUF Q4_K_M",
+    "Phase 1 does not download model binaries automatically",
+    "Android: optional remote/mobile access.",
+    "AIBenchie: release validator/evidence tool, not runtime.",
+    "Nextcloud: optional export add-on.",
+)
+MS8_REQUIRED_LAUNCHER_MARKERS = (
+    "EchoLabs Scout",
+    "EXIT_NULLBRIDGE_MISSING = 6",
+    "EXIT_SETUP_INCOMPLETE = 7",
+    "NX_BOOTSTRAP_ADMIN_PASSWORD",
+    "--no-use-colors",
+    "Starter Chat + Code Pack",
+    "EchoLabs Core requires .NullXoid + NullBridge",
 )
 
 
@@ -2138,6 +2173,102 @@ def validate_suite_candidate(
     return result
 
 
+def _read_text_or_empty(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except Exception:
+        return ""
+
+
+def validate_ms8_onboarding(
+    *,
+    nullxoid_root: str | Path = "",
+    out: str | Path = "",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or _now()
+    root = Path(nullxoid_root).expanduser() if nullxoid_root else repo_root().parent / ".NullXoid"
+    failures: list[str] = []
+
+    launcher = root / "scripts" / "echolabs.py"
+    wrappers = [root / "echolabs.cmd", root / "echolabs.sh", root / "echolabs"]
+    frontend_app = root / "frontend" / "src" / "App.jsx"
+    frontend_styles = root / "frontend" / "src" / "styles.css"
+    frontend_package = root / "frontend" / "package.json"
+    vite_config = root / "frontend" / "vite.config.js"
+
+    if not root.exists():
+        failures.append("nullxoid_root:missing")
+    if not launcher.exists():
+        failures.append("scripts/echolabs.py:missing")
+    launcher_text = _read_text_or_empty(launcher)
+    for marker in MS8_REQUIRED_LAUNCHER_MARKERS:
+        if marker not in launcher_text:
+            failures.append(f"scripts/echolabs.py:marker_missing:{marker}")
+    for wrapper in wrappers:
+        if not wrapper.exists():
+            failures.append(f"{wrapper.name}:missing")
+
+    app_text = _read_text_or_empty(frontend_app)
+    styles_text = _read_text_or_empty(frontend_styles)
+    for marker in MS8_REQUIRED_FRONTEND_MARKERS:
+        if marker not in app_text:
+            failures.append(f"frontend/src/App.jsx:marker_missing:{marker}")
+    for forbidden in ("Sign out / Exit", "Checking sign-in...", "No models</option>"):
+        if forbidden in app_text:
+            failures.append(f"frontend/src/App.jsx:stale_marker:{forbidden}")
+    for marker in (".setup-onboarding", ".setup-reminder-card", ".starter-pack-cta", ".setup-checklist"):
+        if marker not in styles_text:
+            failures.append(f"frontend/src/styles.css:marker_missing:{marker}")
+
+    package_text = _read_text_or_empty(frontend_package)
+    vite_text = _read_text_or_empty(vite_config)
+    if "--port 5174" not in package_text:
+        failures.append("frontend/package.json:port_5174_missing")
+    if "port: 5174" not in vite_text:
+        failures.append("frontend/vite.config.js:port_5174_missing")
+    if "NX_BACKEND_URL" not in vite_text:
+        failures.append("frontend/vite.config.js:nx_backend_url_missing")
+    if "http://127.0.0.1:8090" not in vite_text:
+        failures.append("frontend/vite.config.js:backend_8090_missing")
+
+    for relative in MS8_REQUIRED_DOCS:
+        path = root / relative
+        text = _read_text_or_empty(path)
+        if not path.exists():
+            failures.append(f"{relative}:missing")
+            continue
+        for marker in (
+            "EchoLabs Core is .NullXoid + NullBridge",
+            "AIBenchie is validator",
+            "127.0.0.1:8090",
+            "127.0.0.1:5174",
+        ):
+            if marker not in text:
+                failures.append(f"{relative}:marker_missing:{marker}")
+    ok = not failures
+    command_failure_prefixes = ("scripts/echolabs.py", "echolabs.cmd", "echolabs.sh", "echolabs")
+    result = {
+        "schema": MS8_ONBOARDING_VERDICT_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "suite": "echolabs",
+        "component": ".NullXoid",
+        "verdict": "pass" if ok else "blocked",
+        "aibenchie_verdict": "pass" if ok else "blocked",
+        "generated_at": _iso(current),
+        "nullxoid_root_label": ".NullXoid",
+        "command_surface": "pass" if not any(item.startswith(command_failure_prefixes) for item in failures) else "blocked",
+        "frontend_onboarding": "pass" if not any(item.startswith("frontend/src/App.jsx") for item in failures) else "blocked",
+        "docs": "pass" if not any(item.startswith(relative) for relative in MS8_REQUIRED_DOCS for item in failures) else "blocked",
+        "ok": ok,
+        "failures": _sanitize_failures(failures),
+        "blocked_reason": None if ok else "ms8_onboarding_contract_incomplete",
+    }
+    if out:
+        _write_json(Path(out).expanduser(), result)
+    return result
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Manage AIBenchie release truth spine evidence.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -2221,6 +2352,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(suite)
     suite.add_argument("--build-id", required=True)
     suite.add_argument("--out", default="")
+
+    ms8 = subparsers.add_parser(
+        "validate-ms8-onboarding",
+        help="Validate .NullXoid MS8 Phase 1 setup/onboarding contracts.",
+    )
+    ms8.add_argument("--json", action="store_true")
+    ms8.add_argument("--nullxoid-root", default="")
+    ms8.add_argument("--out", default="")
 
     return parser
 
@@ -2328,6 +2467,13 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
         )
         _print_result(result, json_output=args.json, title="AIBenchie Suite Candidate Validation")
+        return 0 if result.get("ok") else 1
+    if args.command == "validate-ms8-onboarding":
+        result = validate_ms8_onboarding(
+            nullxoid_root=args.nullxoid_root,
+            out=args.out,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie MS8 Onboarding Validation")
         return 0 if result.get("ok") else 1
     return 1
 
