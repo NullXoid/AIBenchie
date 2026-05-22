@@ -24,6 +24,7 @@ def _valid_nullxoid(root: Path) -> None:
         root / "backend" / "auth_store.py",
         "Bootstrap admin user created. username='admin'. Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD.\n",
     )
+    _write(root / "backend" / "main.py", '"bootstrap"\nskip_model_setup\n')
     _write(
         root / "README.md",
         "\n".join(

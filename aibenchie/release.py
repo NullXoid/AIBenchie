@@ -301,6 +301,9 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "FIRST_RUN_REQUIRED_MESSAGE",
     "First-run setup is required before sign-in.",
     "Continue setup",
+    "/auth/first-run/complete",
+    'admin: { mode: "bootstrap"',
+    'model_setup: "skip"',
     "Mark backend-only setup complete",
     "Reopen setup guide",
     "Skip for now",
@@ -2352,6 +2355,9 @@ def validate_ms8_onboarding(
         failures.append("backend/auth_store.py:bootstrap_password_value_logged")
     if "Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD." not in auth_store_text:
         failures.append("backend/auth_store.py:bootstrap_password_safe_message_missing")
+    backend_main_text = _read_text_or_empty(root / "backend" / "main.py")
+    if '"bootstrap"' not in backend_main_text or "skip_model_setup" not in backend_main_text:
+        failures.append("backend/main.py:first_run_bootstrap_skip_contract_missing")
     gitignore_text = _read_text_or_empty(root / ".gitignore")
     if ".suite/local/nullxoid/bootstrap.env" not in gitignore_text:
         failures.append(".gitignore:bootstrap_secret_not_ignored")
