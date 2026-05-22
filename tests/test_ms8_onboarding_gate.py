@@ -20,6 +20,23 @@ def _valid_nullxoid(root: Path) -> None:
     _write(root / "echolabs.sh", "#!/usr/bin/env sh\n")
     _write(root / "echolabs", "#!/usr/bin/env sh\n")
     _write(
+        root / "backend" / "auth_store.py",
+        "Bootstrap admin user created. username='admin'. Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD.\n",
+    )
+    _write(
+        root / "README.md",
+        "\n".join(
+            [
+                "git clone http://git.echolabs.diy/EchoLabs/.NullXoid.git",
+                "Permission denied (publickey)",
+                "$env:NX_BOOTSTRAP_ADMIN_PASSWORD=\"<your-own-password>\"",
+                ".\\echolabs.cmd start app",
+                "Terminal 1",
+                "Terminal 2",
+            ]
+        ),
+    )
+    _write(
         root / "frontend" / "src" / "App.jsx",
         "\n".join(
             [
@@ -98,6 +115,31 @@ def test_ms8_onboarding_validator_blocks_launcher_download_behavior(tmp_path):
 
     assert result["ok"] is False
     assert "scripts/echolabs.py:forbidden_download_behavior" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_bootstrap_password_logging(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    auth_store = root / "backend" / "auth_store.py"
+    auth_store.write_text("username='admin' password='%s'. Change it immediately.\n", encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "backend/auth_store.py:bootstrap_password_value_logged" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_missing_start_app_readme_flow(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    readme = root / "README.md"
+    readme.write_text("git clone ssh://forgejo@example/repo.git\nstart backend\n", encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "README.md:http_clone_beginner_path_missing" in result["failures"]
+    assert "README.md:start_app_quickstart_missing" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_missing_protected_action_marker(tmp_path):

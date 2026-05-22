@@ -298,6 +298,9 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "Welcome to EchoLabs / .NullXoid",
     "Backend-only mode is available",
     "EchoLabs Core is .NullXoid + NullBridge",
+    "FIRST_RUN_REQUIRED_MESSAGE",
+    "First-run setup is required before sign-in.",
+    "Continue setup",
     "Mark backend-only setup complete",
     "Reopen setup guide",
     "Skip for now",
@@ -363,7 +366,11 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     'sub.add_parser("status"',
     'start_sub.add_parser("backend"',
     'start_sub.add_parser("frontend"',
+    'start_sub.add_parser("app"',
     'start_sub.add_parser("core"',
+    "Complete first-run onboarding in the browser.",
+    "Backend is not running.",
+    "Run echolabs start backend or use echolabs start app.",
 )
 MS8_REQUIRED_FRONTEND_PROTECTED_ACTION_MARKERS = (
     "setAddonError(SIGN_IN_REQUIRED_MESSAGE)",
@@ -2333,6 +2340,11 @@ def validate_ms8_onboarding(
             failures.append(f"scripts/echolabs.py:marker_missing:{marker}")
     if "download" in launcher_text.lower():
         failures.append("scripts/echolabs.py:forbidden_download_behavior")
+    auth_store_text = _read_text_or_empty(root / "backend" / "auth_store.py")
+    if "password='%s'" in auth_store_text or "Change it immediately." in auth_store_text:
+        failures.append("backend/auth_store.py:bootstrap_password_value_logged")
+    if "Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD." not in auth_store_text:
+        failures.append("backend/auth_store.py:bootstrap_password_safe_message_missing")
     for wrapper in wrappers:
         if not wrapper.exists():
             failures.append(f"{wrapper.name}:missing")
@@ -2348,6 +2360,19 @@ def validate_ms8_onboarding(
     for forbidden in MS8_FORBIDDEN_FRONTEND_MARKERS:
         if forbidden in app_text:
             failures.append(f"frontend/src/App.jsx:stale_marker:{forbidden}")
+    readme_text = _read_text_or_empty(root / "README.md")
+    if "git clone http://git.echolabs.diy/EchoLabs/.NullXoid.git" not in readme_text:
+        failures.append("README.md:http_clone_beginner_path_missing")
+    if "Permission denied (publickey)" not in readme_text:
+        failures.append("README.md:ssh_publickey_guidance_missing")
+    if "start app" not in readme_text:
+        failures.append("README.md:start_app_quickstart_missing")
+    password_index = readme_text.find("NX_BOOTSTRAP_ADMIN_PASSWORD")
+    app_index = readme_text.find("start app")
+    if password_index == -1 or app_index == -1 or password_index > app_index:
+        failures.append("README.md:bootstrap_password_not_before_start_app")
+    if "Terminal 1" not in readme_text or "Terminal 2" not in readme_text:
+        failures.append("README.md:manual_terminal_fallback_missing")
     store_assistant_text = _read_text_or_empty(frontend_store_assistant)
     if not frontend_store_assistant.exists():
         failures.append("frontend/src/components/StoreAssistant.jsx:missing")
