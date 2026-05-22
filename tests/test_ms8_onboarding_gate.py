@@ -24,22 +24,30 @@ def _valid_nullxoid(root: Path) -> None:
         root / "backend" / "auth_store.py",
         "Bootstrap admin user created. username='admin'. Use the password you set in NX_BOOTSTRAP_ADMIN_PASSWORD.\n",
     )
-    _write(root / "backend" / "main.py", '"bootstrap"\nskip_model_setup\n')
+    _write(root / "backend" / "main.py", '"bootstrap"\nskip_model_setup\n"/api/setup/status"\nSETUP_STATUS_MODES\naccount_first_run\nandroid_client\nNullBridge pairing QR\n')
     _write(
         root / "README.md",
         "\n".join(
             [
                 "git clone http://git.echolabs.diy/EchoLabs/.NullXoid.git",
                 "Permission denied (publickey)",
-                ".\\echolabs.cmd setup",
+                ".\\echolabs.cmd setup backend",
+                ".\\echolabs.cmd setup app",
+                ".\\echolabs.cmd setup core",
                 ".\\echolabs.cmd start app",
+                "./echolabs setup backend",
+                "./echolabs setup app",
+                "./echolabs setup core",
                 "http://127.0.0.1:5174/setup",
+                "Backend-only does not require",
+                "Android import QR",
+                "NullBridge pairing QR",
                 "Terminal 1",
                 "Terminal 2",
             ]
         ),
     )
-    _write(root / "START_HERE.md", ".\\echolabs.cmd setup\nhttp://127.0.0.1:5174/setup\n")
+    _write(root / "START_HERE.md", ".\\echolabs.cmd setup backend\n.\\echolabs.cmd setup app\n.\\echolabs.cmd setup core\n./echolabs setup backend\n./echolabs setup app\n./echolabs setup core\nAndroid import QR and NullBridge pairing QR are optional\nhttp://127.0.0.1:5174/setup\n")
     _write(
         root / "frontend" / "src" / "App.jsx",
         "\n".join(
@@ -157,6 +165,30 @@ def test_ms8_onboarding_validator_blocks_missing_setup_route(tmp_path):
 
     assert result["ok"] is False
     assert "README.md:direct_setup_url_missing" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_ambiguous_qr_required_path(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    readme = root / "README.md"
+    readme.write_text(readme.read_text(encoding="utf-8").replace("Android import QR", ""), encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "README.md:mode_marker_missing:Android import QR" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_missing_setup_status_route(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    backend_main = root / "backend" / "main.py"
+    backend_main.write_text(backend_main.read_text(encoding="utf-8").replace('"/api/setup/status"', ""), encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert 'backend/main.py:setup_status_marker_missing:"/api/setup/status"' in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_missing_protected_action_marker(tmp_path):

@@ -371,6 +371,22 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "Backend-only mode is still available.",
     'sub.add_parser("scout"',
     'sub.add_parser("setup"',
+    'setup_parser.add_argument("setup_mode"',
+    "setup backend",
+    "setup app",
+    "setup core",
+    "Using app setup for backward compatibility. Prefer explicit setup backend, setup app, or setup core.",
+    "Backend-only setup is complete.",
+    'model_setup": "skip"',
+    "Frontend was not required.",
+    "Run `{local_command('setup', 'app')}` later if you want the browser UI.",
+    "Add NullBridge later with `{local_command('setup', 'core')}`",
+    "--mode",
+    "Backend-only: blocked because",
+    "Browser app: blocked because",
+    "EchoLabs Core: blocked because",
+    "local_command('start', 'backend')",
+    "local_command('start', 'app')",
     'sub.add_parser("status"',
     'start_sub.add_parser("backend"',
     'start_sub.add_parser("frontend"',
@@ -380,7 +396,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "Setup:",
     ".suite/local/nullxoid/bootstrap.env",
     "Do not commit",
-    "Backend is not running. Run echolabs start backend or echolabs start app first.",
+    "Backend is not running. Run {local_command('start', 'backend')} or {local_command('start', 'app')} first.",
 )
 MS8_REQUIRED_FRONTEND_PROTECTED_ACTION_MARKERS = (
     "setAddonError(SIGN_IN_REQUIRED_MESSAGE)",
@@ -407,6 +423,15 @@ MS8_REQUIRED_DOC_MARKERS = (
     "127.0.0.1:5174",
 )
 MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
+    "START_HERE.md": (
+        ".\\echolabs.cmd setup backend",
+        ".\\echolabs.cmd setup app",
+        ".\\echolabs.cmd setup core",
+        "./echolabs setup backend",
+        "./echolabs setup app",
+        "./echolabs setup core",
+        "Android import QR and NullBridge pairing QR are optional",
+    ),
     "docs/LOCAL_PRERELEASE.md": (
         "does not publish APKs",
         "move `latest-debug`",
@@ -424,29 +449,44 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
         "NullBridge frontend = convenience approval/status UI",
         "Lv-7 = optional operator assistance",
         "Nextcloud = optional export add-on",
+        "Backend-only does not require Node.js",
+        "Android import QR is optional",
+        "NullBridge pairing QR is optional",
     ),
     "docs/REPO_MAP.md": (
         "Do not treat Android, Lv-7, AIBenchie, or Nextcloud as required for first use.",
         "Release validator/evidence tool. Not needed to use EchoLabs.",
+        "Android import QR is optional",
+        "NullBridge pairing QR",
     ),
     "docs/WINDOWS_QUICKSTART.md": (
+        ".\\echolabs.cmd setup backend",
+        ".\\echolabs.cmd setup app",
+        ".\\echolabs.cmd setup core",
         "Node.js LTS",
         "The backend terminal stays open while the server runs.",
         "Press `Ctrl+C` to stop it.",
         "Do not expose the backend beyond `127.0.0.1`",
         "NX_BACKEND_URL",
+        "Android import QR and NullBridge pairing QR are optional",
     ),
     "docs/LINUX_QUICKSTART.md": (
+        "./echolabs setup backend",
+        "./echolabs setup app",
+        "./echolabs setup core",
         "Node.js LTS",
         "The backend terminal stays open while the server runs.",
         "Press `Ctrl+C` to stop it.",
         "Do not expose the backend beyond `127.0.0.1`",
         "NX_BACKEND_URL",
+        "Android import QR and NullBridge pairing QR are optional",
     ),
     "docs/FRONTEND_QUICKSTART.md": (
         "The Vite proxy reads `NX_BACKEND_URL`",
-        "echolabs start backend",
+        ".\\echolabs.cmd start backend",
+        "./echolabs start backend",
         "disconnected/setup state",
+        "setup app",
     ),
     "docs/STARTER_CHAT_CODE_PACK.md": (
         "Starter Chat + Code Pack",
@@ -2358,6 +2398,15 @@ def validate_ms8_onboarding(
     backend_main_text = _read_text_or_empty(root / "backend" / "main.py")
     if '"bootstrap"' not in backend_main_text or "skip_model_setup" not in backend_main_text:
         failures.append("backend/main.py:first_run_bootstrap_skip_contract_missing")
+    for marker in (
+        '"/api/setup/status"',
+        "SETUP_STATUS_MODES",
+        "account_first_run",
+        "android_client",
+        "NullBridge pairing QR",
+    ):
+        if marker not in backend_main_text:
+            failures.append(f"backend/main.py:setup_status_marker_missing:{marker}")
     gitignore_text = _read_text_or_empty(root / ".gitignore")
     if ".suite/local/nullxoid/bootstrap.env" not in gitignore_text:
         failures.append(".gitignore:bootstrap_secret_not_ignored")
@@ -2383,8 +2432,11 @@ def validate_ms8_onboarding(
         failures.append("README.md:ssh_publickey_guidance_missing")
     if "start app" not in readme_text:
         failures.append("README.md:start_app_quickstart_missing")
-    if "echolabs.cmd setup" not in readme_text and "./echolabs setup" not in readme_text:
+    if "echolabs.cmd setup app" not in readme_text and "./echolabs setup app" not in readme_text:
         failures.append("README.md:setup_quickstart_missing")
+    for marker in ("setup backend", "setup app", "setup core", "Backend-only does not require", "Android import QR", "NullBridge pairing QR"):
+        if marker not in readme_text:
+            failures.append(f"README.md:mode_marker_missing:{marker}")
     setup_index = readme_text.find("setup")
     app_index = readme_text.find("start app")
     if setup_index == -1 or app_index == -1 or setup_index > app_index:
@@ -2394,8 +2446,11 @@ def validate_ms8_onboarding(
     if "Terminal 1" not in readme_text or "Terminal 2" not in readme_text:
         failures.append("README.md:manual_terminal_fallback_missing")
     start_here_text = _read_text_or_empty(root / "START_HERE.md")
-    if "echolabs.cmd setup" not in start_here_text and "./echolabs setup" not in start_here_text:
+    if "echolabs.cmd setup app" not in start_here_text and "./echolabs setup app" not in start_here_text:
         failures.append("START_HERE.md:setup_quickstart_missing")
+    for marker in ("setup backend", "setup app", "setup core", "Android import QR", "NullBridge pairing QR"):
+        if marker not in start_here_text:
+            failures.append(f"START_HERE.md:mode_marker_missing:{marker}")
     if "http://127.0.0.1:5174/setup" not in start_here_text:
         failures.append("START_HERE.md:direct_setup_url_missing")
     store_assistant_text = _read_text_or_empty(frontend_store_assistant)
