@@ -296,27 +296,152 @@ MS8_REQUIRED_DOCS = (
 MS8_REQUIRED_FRONTEND_MARKERS = (
     "ms8-first-run-onboarding",
     "Welcome to EchoLabs / .NullXoid",
+    "Backend-only mode is available",
+    "EchoLabs Core is .NullXoid + NullBridge",
     "Mark backend-only setup complete",
     "Reopen setup guide",
+    "Skip for now",
+    "backendOnlyCompletedAt",
+    "coreCompletedAt",
+    "skippedAt",
+    "localStorage.setItem",
     "Guest mode is active. Sign in to use protected actions.",
     "Sign in required",
+    "SIGN_IN_REQUIRED_MESSAGE",
     "No model installed yet",
     "Install Starter Chat + Code Pack",
     "Qwen2.5-Coder-1.5B-Instruct-GGUF Q4_K_M",
     "Phase 1 does not download model binaries automatically",
+    'states: ["not_configured", "manual-review", "unavailable", "configured", "healthy"]',
     "Android: optional remote/mobile access.",
+    "NullBridge frontend: optional convenience approval/status UI.",
+    "Lv-7: optional operator loop.",
     "AIBenchie: release validator/evidence tool, not runtime.",
     "Nextcloud: optional export add-on.",
+    "No add-ons are enabled yet.",
+    "Optional add-ons can be enabled later",
+    "Guest mode",
+    "Backend disconnected",
+    "Unavailable",
+)
+MS8_REQUIRED_STORE_ASSISTANT_MARKERS = (
+    "Store Assistant",
+    "disabledReason",
+    "store-assistant-status",
 )
 MS8_REQUIRED_LAUNCHER_MARKERS = (
     "EchoLabs Scout",
+    "EXIT_SUCCESS = 0",
+    "EXIT_GENERAL = 1",
+    "EXIT_MISSING_PREREQ = 2",
+    "EXIT_PORT_CONFLICT = 3",
+    "EXIT_BACKEND_UNREACHABLE = 4",
+    "EXIT_FRONTEND_UNREACHABLE = 5",
     "EXIT_NULLBRIDGE_MISSING = 6",
     "EXIT_SETUP_INCOMPLETE = 7",
+    "DEFAULT_BACKEND_PORT = 8090",
+    "DEFAULT_FRONTEND_PORT = 5174",
+    "--json",
+    "--yes",
+    "--no-install",
     "NX_BOOTSTRAP_ADMIN_PASSWORD",
+    "Bootstrap admin password is set from NX_BOOTSTRAP_ADMIN_PASSWORD.",
+    "choose-a-real-password",
+    "admin",
+    "password",
+    "changeme",
+    "getpass.getpass",
     "--no-use-colors",
     "Starter Chat + Code Pack",
     "EchoLabs Core requires .NullXoid + NullBridge",
+    "Manual command:",
+    "Port {args.backend_port} is in use, but it does not look like .NullXoid.",
+    "Port {args.frontend_port} is in use, but it does not look like the .NullXoid frontend.",
+    "NullBridge was not found.",
+    "Backend-only mode is still available.",
+    'sub.add_parser("scout"',
+    'sub.add_parser("status"',
+    'start_sub.add_parser("backend"',
+    'start_sub.add_parser("frontend"',
+    'start_sub.add_parser("core"',
 )
+MS8_REQUIRED_FRONTEND_PROTECTED_ACTION_MARKERS = (
+    "setAddonError(SIGN_IN_REQUIRED_MESSAGE)",
+    "setStoreError(SIGN_IN_REQUIRED_MESSAGE)",
+    "setSettingsError(SIGN_IN_REQUIRED_MESSAGE)",
+    "setError(SIGN_IN_REQUIRED_MESSAGE)",
+    "pushAgentActivity(SIGN_IN_REQUIRED_MESSAGE",
+)
+MS8_FORBIDDEN_FRONTEND_MARKERS = (
+    "Sign out / Exit",
+    "Checking sign-in...",
+    "No models</option>",
+)
+MS8_REQUIRED_STYLE_MARKERS = (
+    ".setup-onboarding",
+    ".setup-reminder-card",
+    ".starter-pack-cta",
+    ".setup-checklist",
+)
+MS8_REQUIRED_DOC_MARKERS = (
+    "EchoLabs Core is .NullXoid + NullBridge",
+    "AIBenchie is validator",
+    "127.0.0.1:8090",
+    "127.0.0.1:5174",
+)
+MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
+    "docs/LOCAL_PRERELEASE.md": (
+        "does not publish APKs",
+        "move `latest-debug`",
+        "deploy website/home",
+        "promote `latest-passing`",
+        "start MS9",
+        ".venv",
+        "node_modules",
+        "model binaries",
+        "runtime DBs",
+        "raw evidence",
+    ),
+    "docs/WHAT_IS_REQUIRED.md": (
+        "NullXoidAndroid = remote/mobile access",
+        "NullBridge frontend = convenience approval/status UI",
+        "Lv-7 = optional operator assistance",
+        "Nextcloud = optional export add-on",
+    ),
+    "docs/REPO_MAP.md": (
+        "Do not treat Android, Lv-7, AIBenchie, or Nextcloud as required for first use.",
+        "Release validator/evidence tool. Not needed to use EchoLabs.",
+    ),
+    "docs/WINDOWS_QUICKSTART.md": (
+        "Node.js LTS",
+        "The backend terminal stays open while the server runs.",
+        "Press `Ctrl+C` to stop it.",
+        "Do not expose the backend beyond `127.0.0.1`",
+        "NX_BACKEND_URL",
+    ),
+    "docs/LINUX_QUICKSTART.md": (
+        "Node.js LTS",
+        "The backend terminal stays open while the server runs.",
+        "Press `Ctrl+C` to stop it.",
+        "Do not expose the backend beyond `127.0.0.1`",
+        "NX_BACKEND_URL",
+    ),
+    "docs/FRONTEND_QUICKSTART.md": (
+        "The Vite proxy reads `NX_BACKEND_URL`",
+        "echolabs start backend",
+        "disconnected/setup state",
+    ),
+    "docs/STARTER_CHAT_CODE_PACK.md": (
+        "Starter Chat + Code Pack",
+        "llama.cpp",
+        "Qwen2.5-Coder-1.5B-Instruct-GGUF Q4_K_M",
+        "does not download model binaries automatically",
+        "Ollama is an optional supported runtime.",
+        "Lv-7 is not the starter model.",
+        "GGUF files",
+        "real local runtime health check passes",
+    ),
+}
 
 
 def repo_root() -> Path:
@@ -2193,6 +2318,7 @@ def validate_ms8_onboarding(
     launcher = root / "scripts" / "echolabs.py"
     wrappers = [root / "echolabs.cmd", root / "echolabs.sh", root / "echolabs"]
     frontend_app = root / "frontend" / "src" / "App.jsx"
+    frontend_store_assistant = root / "frontend" / "src" / "components" / "StoreAssistant.jsx"
     frontend_styles = root / "frontend" / "src" / "styles.css"
     frontend_package = root / "frontend" / "package.json"
     vite_config = root / "frontend" / "vite.config.js"
@@ -2205,6 +2331,8 @@ def validate_ms8_onboarding(
     for marker in MS8_REQUIRED_LAUNCHER_MARKERS:
         if marker not in launcher_text:
             failures.append(f"scripts/echolabs.py:marker_missing:{marker}")
+    if "download" in launcher_text.lower():
+        failures.append("scripts/echolabs.py:forbidden_download_behavior")
     for wrapper in wrappers:
         if not wrapper.exists():
             failures.append(f"{wrapper.name}:missing")
@@ -2214,10 +2342,19 @@ def validate_ms8_onboarding(
     for marker in MS8_REQUIRED_FRONTEND_MARKERS:
         if marker not in app_text:
             failures.append(f"frontend/src/App.jsx:marker_missing:{marker}")
-    for forbidden in ("Sign out / Exit", "Checking sign-in...", "No models</option>"):
+    for marker in MS8_REQUIRED_FRONTEND_PROTECTED_ACTION_MARKERS:
+        if marker not in app_text:
+            failures.append(f"frontend/src/App.jsx:protected_action_marker_missing:{marker}")
+    for forbidden in MS8_FORBIDDEN_FRONTEND_MARKERS:
         if forbidden in app_text:
             failures.append(f"frontend/src/App.jsx:stale_marker:{forbidden}")
-    for marker in (".setup-onboarding", ".setup-reminder-card", ".starter-pack-cta", ".setup-checklist"):
+    store_assistant_text = _read_text_or_empty(frontend_store_assistant)
+    if not frontend_store_assistant.exists():
+        failures.append("frontend/src/components/StoreAssistant.jsx:missing")
+    for marker in MS8_REQUIRED_STORE_ASSISTANT_MARKERS:
+        if marker not in store_assistant_text:
+            failures.append(f"frontend/src/components/StoreAssistant.jsx:marker_missing:{marker}")
+    for marker in MS8_REQUIRED_STYLE_MARKERS:
         if marker not in styles_text:
             failures.append(f"frontend/src/styles.css:marker_missing:{marker}")
 
@@ -2238,12 +2375,10 @@ def validate_ms8_onboarding(
         if not path.exists():
             failures.append(f"{relative}:missing")
             continue
-        for marker in (
-            "EchoLabs Core is .NullXoid + NullBridge",
-            "AIBenchie is validator",
-            "127.0.0.1:8090",
-            "127.0.0.1:5174",
-        ):
+        for marker in MS8_REQUIRED_DOC_MARKERS:
+            if marker not in text:
+                failures.append(f"{relative}:marker_missing:{marker}")
+        for marker in MS8_REQUIRED_SPECIFIC_DOC_MARKERS.get(relative, ()):
             if marker not in text:
                 failures.append(f"{relative}:marker_missing:{marker}")
     ok = not failures
