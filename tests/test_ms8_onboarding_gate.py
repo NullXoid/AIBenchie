@@ -49,6 +49,40 @@ def _valid_nullxoid(root: Path) -> None:
     )
     _write(root / "START_HERE.md", ".\\echolabs.cmd setup backend\n.\\echolabs.cmd setup app\n.\\echolabs.cmd setup core\n./echolabs setup backend\n./echolabs setup app\n./echolabs setup core\nAndroid import QR and NullBridge pairing QR are optional\nhttp://127.0.0.1:5174/setup\n")
     _write(
+        root / "docs" / "STORE_METADATA.md",
+        "\n".join(release.MS8_REQUIRED_STORE_METADATA_MARKERS),
+    )
+    _write(
+        root / "echolabs-pack.json",
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "id": "nullxoid",
+                "display_name": ".NullXoid",
+                "summary": "Local EchoLabs backend and browser app.",
+                "type": "core_app",
+                "repo_url": "http://git.echolabs.diy/EchoLabs/.NullXoid",
+                "docs": {
+                    "start_here": "START_HERE.md",
+                    "commands": "docs/COMMANDS.md",
+                    "security": "SECURITY.md",
+                    "starter_chat_code": "docs/STARTER_CHAT_CODE_PACK.md",
+                    "store_metadata": "docs/STORE_METADATA.md",
+                },
+                "modes": {
+                    "backend": {"label": "Backend-only", "required_components": [".NullXoid"]},
+                    "app": {"label": "Browser app", "required_components": [".NullXoid", "frontend"]},
+                    "core": {"label": "EchoLabs Core", "required_components": [".NullXoid", "NullBridge"]},
+                },
+                "store": {"role": "core", "installable": False, "core_required": True, "stage": "prerelease"},
+                "public_safe": True,
+            },
+            indent=2,
+        ),
+    )
+    _write(root / "docs" / "COMMANDS.md", "Command reference\n")
+    _write(root / "SECURITY.md", "Security\n")
+    _write(
         root / "frontend" / "src" / "App.jsx",
         "\n".join(
             [
@@ -165,6 +199,57 @@ def test_ms8_onboarding_validator_blocks_missing_setup_route(tmp_path):
 
     assert result["ok"] is False
     assert "README.md:direct_setup_url_missing" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_missing_store_metadata(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    (root / "docs" / "STORE_METADATA.md").unlink()
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "docs/STORE_METADATA.md:missing" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_missing_pack_metadata(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    (root / "echolabs-pack.json").unlink()
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "echolabs-pack.json:missing" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_installable_pack_metadata(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    metadata_path = root / "echolabs-pack.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["store"]["installable"] = True
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "echolabs-pack.json:installable_core_app" in result["failures"]
+
+
+def test_ms8_onboarding_validator_blocks_pack_metadata_private_marker(tmp_path):
+    root = tmp_path / ".NullXoid"
+    _valid_nullxoid(root)
+    metadata_path = root / "echolabs-pack.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["docs"]["unsafe"] = "C:\\Users\\kasom\\secret.txt"
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    result = release.validate_ms8_onboarding(nullxoid_root=root)
+
+    assert result["ok"] is False
+    assert "echolabs-pack.json:docs_link_public_unsafe:unsafe" in result["failures"]
+    assert "echolabs-pack.json:path_detail_redacted" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_ambiguous_qr_required_path(tmp_path):

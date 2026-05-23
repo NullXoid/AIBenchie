@@ -293,6 +293,47 @@ MS8_REQUIRED_DOCS = (
     "docs/FRONTEND_QUICKSTART.md",
     "docs/STARTER_CHAT_CODE_PACK.md",
 )
+MS8_REQUIRED_PACK_METADATA_FIELDS = (
+    "schema_version",
+    "id",
+    "display_name",
+    "summary",
+    "type",
+    "docs",
+    "modes",
+    "store",
+    "public_safe",
+)
+MS8_REQUIRED_STORE_METADATA_MARKERS = (
+    "Store Metadata Authority",
+    "public-safe display/source metadata",
+    "does not replace",
+    "backend entitlement truth",
+    "AIBenchie release/stage proof",
+    "workflow matrix truth",
+    "Store install/uninstall state",
+    "NullBridge readiness state",
+    "Store State Display Contract",
+    "Needs NullBridge",
+    "does not add a Forgejo crawler",
+)
+MS8_FORBIDDEN_PACK_METADATA_MARKERS = (
+    "C:\\",
+    "\\Users\\",
+    "/Users/",
+    "/home/",
+    "file://",
+    ".suite/local",
+    "192.168.",
+    "127.0.0.1",
+    "localhost",
+    "token",
+    "secret",
+    "password",
+    "runtime DB",
+    "raw log",
+    "raw evidence",
+)
 MS8_REQUIRED_FRONTEND_MARKERS = (
     "ms8-first-run-onboarding",
     "Welcome to EchoLabs / .NullXoid",
@@ -333,6 +374,11 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "routeToSetup",
     "routeToAppHome",
     "isSetupRoutePath",
+    "Backend/browser setup is ready.",
+    "Optional: add for EchoLabs Core",
+    "Capability state:",
+    "Runtime readiness:",
+    "Needs NullBridge",
 )
 MS8_REQUIRED_STORE_ASSISTANT_MARKERS = (
     "Store Assistant",
@@ -376,6 +422,10 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "setup app",
     "setup core",
     "Using app setup for backward compatibility. Prefer explicit setup backend, setup app, or setup core.",
+    "Start backend now?",
+    "Start the app now?",
+    "Start EchoLabs Core now?",
+    "App appears to already be running. Open {setup_url(args)}",
     "Backend-only setup is complete.",
     'model_setup": "skip"',
     "Frontend was not required.",
@@ -415,6 +465,8 @@ MS8_REQUIRED_STYLE_MARKERS = (
     ".setup-reminder-card",
     ".starter-pack-cta",
     ".setup-checklist",
+    ".setup-ready-summary",
+    ".store-addon-readiness",
 )
 MS8_REQUIRED_DOC_MARKERS = (
     "EchoLabs Core is .NullXoid + NullBridge",
@@ -2453,6 +2505,59 @@ def validate_ms8_onboarding(
             failures.append(f"START_HERE.md:mode_marker_missing:{marker}")
     if "http://127.0.0.1:5174/setup" not in start_here_text:
         failures.append("START_HERE.md:direct_setup_url_missing")
+
+    store_metadata_path = root / "docs" / "STORE_METADATA.md"
+    store_metadata_text = _read_text_or_empty(store_metadata_path)
+    if not store_metadata_path.exists():
+        failures.append("docs/STORE_METADATA.md:missing")
+    else:
+        for marker in MS8_REQUIRED_STORE_METADATA_MARKERS:
+            if marker not in store_metadata_text:
+                failures.append(f"docs/STORE_METADATA.md:marker_missing:{marker}")
+
+    pack_metadata_path = root / "echolabs-pack.json"
+    pack_metadata_text = _read_text_or_empty(pack_metadata_path)
+    pack_metadata: dict[str, Any] | None = None
+    if not pack_metadata_path.exists():
+        failures.append("echolabs-pack.json:missing")
+    else:
+        try:
+            parsed = json.loads(pack_metadata_text)
+            if isinstance(parsed, dict):
+                pack_metadata = parsed
+            else:
+                failures.append("echolabs-pack.json:not_object")
+        except json.JSONDecodeError:
+            failures.append("echolabs-pack.json:invalid_json")
+    if pack_metadata is not None:
+        for field in MS8_REQUIRED_PACK_METADATA_FIELDS:
+            if field not in pack_metadata:
+                failures.append(f"echolabs-pack.json:missing_field:{field}")
+        if pack_metadata.get("public_safe") is not True:
+            failures.append("echolabs-pack.json:public_safe_not_true")
+        store_meta = pack_metadata.get("store")
+        if not isinstance(store_meta, dict):
+            failures.append("echolabs-pack.json:store_not_object")
+        elif store_meta.get("installable") is not False:
+            failures.append("echolabs-pack.json:installable_core_app")
+        docs_meta = pack_metadata.get("docs")
+        if not isinstance(docs_meta, dict):
+            failures.append("echolabs-pack.json:docs_not_object")
+        else:
+            for name, relative in docs_meta.items():
+                if not isinstance(relative, str) or not relative.strip():
+                    failures.append(f"echolabs-pack.json:docs_link_invalid:{name}")
+                    continue
+                rel_path = Path(relative)
+                if rel_path.is_absolute() or ".." in rel_path.parts:
+                    failures.append(f"echolabs-pack.json:docs_link_public_unsafe:{name}")
+                    continue
+                if not (root / rel_path).exists():
+                    failures.append(f"echolabs-pack.json:docs_link_missing:{relative}")
+        lower_pack_metadata = pack_metadata_text.lower()
+        for marker in MS8_FORBIDDEN_PACK_METADATA_MARKERS:
+            if marker.lower() in lower_pack_metadata:
+                failures.append(f"echolabs-pack.json:public_unsafe_marker:{marker}")
     store_assistant_text = _read_text_or_empty(frontend_store_assistant)
     if not frontend_store_assistant.exists():
         failures.append("frontend/src/components/StoreAssistant.jsx:missing")
