@@ -38,6 +38,12 @@ def _valid_nullxoid(root: Path) -> None:
                 "./echolabs setup backend",
                 "./echolabs setup app",
                 "./echolabs setup core",
+                "Browser App",
+                "EchoLabs Core + Android",
+                "Advanced Custom",
+                "backend is always included",
+                "not setup profiles",
+                "does not build, install, publish, or sideload APKs",
                 "http://127.0.0.1:5174/setup",
                 "Backend-only does not require",
                 "Android import QR",
@@ -47,7 +53,7 @@ def _valid_nullxoid(root: Path) -> None:
             ]
         ),
     )
-    _write(root / "START_HERE.md", ".\\echolabs.cmd setup backend\n.\\echolabs.cmd setup app\n.\\echolabs.cmd setup core\n./echolabs setup backend\n./echolabs setup app\n./echolabs setup core\nAndroid import QR and NullBridge pairing QR are optional\nhttp://127.0.0.1:5174/setup\n")
+    _write(root / "START_HERE.md", ".\\echolabs.cmd setup backend\n.\\echolabs.cmd setup app\n.\\echolabs.cmd setup core\n./echolabs setup backend\n./echolabs setup app\n./echolabs setup core\nBrowser App\nEchoLabs Core + Android\nAdvanced Custom\nbackend is always included\nnot setup profiles\ndoes not build, install, publish, or sideload APKs\nAndroid import QR and NullBridge pairing QR are optional\nhttp://127.0.0.1:5174/setup\n")
     _write(
         root / "docs" / "STORE_METADATA.md",
         "\n".join(release.MS8_REQUIRED_STORE_METADATA_MARKERS),

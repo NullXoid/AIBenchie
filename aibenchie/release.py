@@ -432,6 +432,19 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "setup app",
     "setup core",
     "Using app setup for backward compatibility. Prefer explicit setup backend, setup app, or setup core.",
+    "Choose setup profile:",
+    "Browser App (recommended)",
+    "EchoLabs Core + Android",
+    "Advanced Custom",
+    "Base: .NullXoid backend will be prepared.",
+    "Backend is always included and is not a removable component.",
+    "Include browser UI?",
+    "Setup plan:",
+    "Selected profile:",
+    "Continue?",
+    "does not build, install, publish, or sideload APKs",
+    "Backend is included and locked.",
+    "Android companion guidance depends on EchoLabs Core. NullBridge/Core will be included.",
     "Start backend now?",
     "Start the app now?",
     "Start EchoLabs Core now?",
@@ -496,6 +509,12 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
         "./echolabs setup backend",
         "./echolabs setup app",
         "./echolabs setup core",
+        "Browser App",
+        "EchoLabs Core + Android",
+        "Advanced Custom",
+        "backend is always included",
+        "not setup profiles",
+        "does not build, install, publish, or sideload APKs",
         "Android import QR and NullBridge pairing QR are optional",
     ),
     "docs/LOCAL_PRERELEASE.md": (
@@ -2500,9 +2519,25 @@ def validate_ms8_onboarding(
         failures.append("README.md:start_app_quickstart_missing")
     if "echolabs.cmd setup app" not in readme_text and "./echolabs setup app" not in readme_text:
         failures.append("README.md:setup_quickstart_missing")
-    for marker in ("setup backend", "setup app", "setup core", "Backend-only does not require", "Android import QR", "NullBridge pairing QR"):
+    for marker in (
+        "setup backend",
+        "setup app",
+        "setup core",
+        "Backend-only does not require",
+        "Browser App",
+        "EchoLabs Core + Android",
+        "Advanced Custom",
+        "backend is always included",
+        "not setup profiles",
+        "does not build, install, publish, or sideload APKs",
+        "Android import QR",
+        "NullBridge pairing QR",
+    ):
         if marker not in readme_text:
             failures.append(f"README.md:mode_marker_missing:{marker}")
+    for marker in ("Windows setup profile", "Linux setup profile", "macOS setup profile"):
+        if marker in readme_text:
+            failures.append(f"README.md:os_treated_as_profile:{marker}")
     setup_index = readme_text.find("setup")
     app_index = readme_text.find("start app")
     if setup_index == -1 or app_index == -1 or setup_index > app_index:
@@ -2514,9 +2549,24 @@ def validate_ms8_onboarding(
     start_here_text = _read_text_or_empty(root / "START_HERE.md")
     if "echolabs.cmd setup app" not in start_here_text and "./echolabs setup app" not in start_here_text:
         failures.append("START_HERE.md:setup_quickstart_missing")
-    for marker in ("setup backend", "setup app", "setup core", "Android import QR", "NullBridge pairing QR"):
+    for marker in (
+        "setup backend",
+        "setup app",
+        "setup core",
+        "Browser App",
+        "EchoLabs Core + Android",
+        "Advanced Custom",
+        "backend is always included",
+        "not setup profiles",
+        "does not build, install, publish, or sideload APKs",
+        "Android import QR",
+        "NullBridge pairing QR",
+    ):
         if marker not in start_here_text:
             failures.append(f"START_HERE.md:mode_marker_missing:{marker}")
+    for marker in ("Windows setup profile", "Linux setup profile", "macOS setup profile"):
+        if marker in start_here_text:
+            failures.append(f"START_HERE.md:os_treated_as_profile:{marker}")
     if "http://127.0.0.1:5174/setup" not in start_here_text:
         failures.append("START_HERE.md:direct_setup_url_missing")
 
