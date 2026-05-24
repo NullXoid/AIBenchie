@@ -58,6 +58,8 @@ def _valid_nullxoid(root: Path) -> None:
         root / "docs" / "STORE_METADATA.md",
         "\n".join(release.MS8_REQUIRED_STORE_METADATA_MARKERS),
     )
+    for relative, markers in release.MS8_REQUIRED_PLUG_DOC_MARKERS.items():
+        _write(root / relative, "\n".join(markers))
     _write(
         root / "echolabs-pack.json",
         json.dumps(

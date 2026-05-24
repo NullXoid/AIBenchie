@@ -317,6 +317,82 @@ MS8_REQUIRED_STORE_METADATA_MARKERS = (
     "Needs NullBridge",
     "does not add a Forgejo crawler",
 )
+MS8_REQUIRED_PLUG_DOC_MARKERS = {
+    "docs/PLUG_BACKEND_CONTRACT.md": (
+        "Backend owns install",
+        "AIBenchie owns validation",
+        "Repo metadata owns public-safe source",
+        "Frontend owns presentation only",
+        "NullBridge owns approval",
+        "Ollama Plug",
+        "llama.cpp Plug",
+        "OpenAI-compatible Plug",
+        "ComfyUI Plug",
+        "NullBridge Plug",
+        "network_scope",
+        "data_exposure",
+        "endpoint_visibility",
+        "Do not claim E2EE",
+        "GitHub search",
+        "Random public repo discovery",
+    ),
+    "docs/PLUG_MANIFEST_SCHEMA.md": (
+        "echolabs.plug",
+        "schema_version",
+        "provider_id",
+        "privacy",
+        "network_scope",
+        "data_exposure",
+        "transport",
+        "endpoint_visibility",
+        "e2ee",
+        "public_safe",
+    ),
+    "docs/PLUG_INTAKE_PIPELINE.md": (
+        "EchoLabs Trusted / AIBenchie Certified",
+        "Local Personal Plug",
+        "External Store / Community Store",
+        "GitHub search",
+        "Forgejo public search",
+        "Random repo discovery",
+        "Local Only",
+    ),
+    "docs/PLUG_TRUST_LEVELS.md": (
+        "EchoLabs Trusted",
+        "AIBenchie Certified",
+        "Local Only",
+        "Manual Review",
+        "Do not claim E2EE",
+        "provider can process prompts",
+    ),
+    "docs/LOCAL_PLUGS.md": (
+        "ignored local state",
+        "Local Only",
+        "GitHub",
+        "Forgejo",
+        "must not search",
+        "must not become EchoLabs Trusted",
+    ),
+    "docs/RUNTIME_READINESS_API.md": (
+        "GET /api/runtime/readiness",
+        "read-only",
+        "public-safe",
+        "not a settings store",
+        "model_runtime",
+        "media_runtime",
+        "nullbridge",
+        "tokens",
+        "API keys",
+    ),
+    "docs/ADDING_A_PLUG.md": (
+        "EchoLabs-Owned Plug",
+        "Local Personal Plug",
+        "Future External Store Plug",
+        "Add from Source",
+        "GitHub",
+        "must not run repo scripts",
+    ),
+}
 MS8_FORBIDDEN_PACK_METADATA_MARKERS = (
     "C:\\",
     "\\Users\\",
@@ -360,6 +436,11 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "Qwen2.5-Coder-1.5B-Instruct-GGUF Q4_K_M",
     "Phase 1 does not download model binaries automatically",
     "MODEL_RUNTIME_PROVIDERS",
+    "Ollama Plug",
+    "llama.cpp Plug",
+    "OpenAI-compatible Plug",
+    "ComfyUI Plug",
+    "NullBridge Plug",
     'id: "llama_cpp"',
     'id: "openai_compatible"',
     "http://127.0.0.1:8080",
@@ -2603,6 +2684,16 @@ def validate_ms8_onboarding(
             if marker not in store_metadata_text:
                 failures.append(f"docs/STORE_METADATA.md:marker_missing:{marker}")
 
+    for relative, markers in MS8_REQUIRED_PLUG_DOC_MARKERS.items():
+        path = root / relative
+        text = _read_text_or_empty(path)
+        if not path.exists():
+            failures.append(f"{relative}:missing")
+            continue
+        for marker in markers:
+            if marker not in text:
+                failures.append(f"{relative}:marker_missing:{marker}")
+
     pack_metadata_path = root / "echolabs-pack.json"
     pack_metadata_text = _read_text_or_empty(pack_metadata_path)
     pack_metadata: dict[str, Any] | None = None
@@ -2692,7 +2783,11 @@ def validate_ms8_onboarding(
         "nullxoid_root_label": ".NullXoid",
         "command_surface": "pass" if not any(item.startswith(command_failure_prefixes) for item in failures) else "blocked",
         "frontend_onboarding": "pass" if not any(item.startswith("frontend/src/App.jsx") for item in failures) else "blocked",
-        "docs": "pass" if not any(item.startswith(relative) for relative in MS8_REQUIRED_DOCS for item in failures) else "blocked",
+        "docs": "pass" if not any(
+            item.startswith(relative)
+            for relative in (*MS8_REQUIRED_DOCS, *MS8_REQUIRED_PLUG_DOC_MARKERS.keys())
+            for item in failures
+        ) else "blocked",
         "ok": ok,
         "failures": _sanitize_failures(failures),
         "blocked_reason": None if ok else "ms8_onboarding_contract_incomplete",
