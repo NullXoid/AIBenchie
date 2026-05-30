@@ -153,9 +153,14 @@ def test_suite_candidate_validator_accepts_valid_evidence(tmp_path):
     assert result["ok"] is True
     assert result["schema"] == release.SUITE_CANDIDATE_VERDICT_SCHEMA
     assert result["verdict"] == "pass"
+    assert result["suite_version"] == release.DEFAULT_SUITE_VERSION
+    assert result["source_commits"]["AIBenchie"] == "abc123"
     assert result["promotion_status"] == "not_promoted"
     assert (root / "suite-verdict.json").exists()
     assert (root / "aibenchie-verdict.json").exists()
+    release_payload = json.loads((root / "aibenchie-verdict.json").read_text(encoding="utf-8"))
+    assert release_payload["suite_version"] == release.DEFAULT_SUITE_VERSION
+    assert release_payload["source_commits"]["AIBenchie"] == "abc123"
 
 
 def test_suite_candidate_validator_blocks_missing_release_notes(tmp_path):

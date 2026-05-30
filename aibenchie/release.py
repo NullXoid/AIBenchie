@@ -1292,21 +1292,30 @@ def export_website_status(
 ) -> dict[str, Any]:
     candidate = _load_latest_candidate(evidence_root, prefer_passing=True)
     validation = validate_status_payload(candidate)
+    effective_status = str(validation.get("effective_status") or candidate.get("status") or "draft")
+    verdict = str(candidate.get("aibenchie_verdict") or "not-run")
+    release_candidate_ok = bool(
+        validation.get("ok")
+        and verdict == "pass"
+        and effective_status in {"passing", "published", "prerelease-candidate"}
+    )
     payload = {
         "schema": SUITE_STATUS_SCHEMA,
         "public_safe": True,
+        "ok": bool(validation.get("ok")),
+        "release_candidate_ok": release_candidate_ok,
         **_identity_payload(
             build_id=str(candidate.get("build_id") or "unverified"),
             suite_version=str(candidate.get("suite_version") or DEFAULT_SUITE_VERSION),
-            status=str(validation.get("effective_status") or candidate.get("status") or "draft"),
-            verdict=str(candidate.get("aibenchie_verdict") or "not-run"),
+            status=effective_status,
+            verdict=verdict,
             source_commits={key: str(value) for key, value in (candidate.get("source_commits") or {}).items()},
         ),
         "latest_source": Path(str(candidate.get("_source_path") or "")).name,
         "latest_passing_build_id": str(candidate.get("build_id") or "") if candidate.get("aibenchie_verdict") == "pass" else "",
         "summary": {
-            "release_candidate_ok": bool(candidate.get("release_candidate_ok")),
-            "status_effective": validation.get("effective_status"),
+            "release_candidate_ok": release_candidate_ok,
+            "status_effective": effective_status,
             "validation_failures": validation.get("failures", []),
         },
     }
@@ -2432,6 +2441,11 @@ def validate_suite_candidate(
     repo_payload = payloads.get("repo-commits.json") or {}
     if repo_payload:
         failures.extend(_validate_repo_commit_evidence(repo_payload))
+    source_commits = {
+        str(repo.get("name")): str(repo.get("commit"))
+        for repo in repo_payload.get("repos", [])
+        if isinstance(repo, dict) and repo.get("name")
+    }
 
     pass_files = (
         "suite-status.json",
@@ -2503,9 +2517,11 @@ def validate_suite_candidate(
         "schema": SUITE_CANDIDATE_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,
         "build_id": build_id,
+        "suite_version": DEFAULT_SUITE_VERSION,
         "suite": "echolabs",
         "verdict": "pass" if ok else "blocked",
         "aibenchie_verdict": "pass" if ok else "blocked",
+        "source_commits": source_commits,
         "generated_at": _iso(current),
         "expires_at": _iso(current + timedelta(days=7)),
         "candidate_status": "local_candidate_ready" if ok else "blocked",

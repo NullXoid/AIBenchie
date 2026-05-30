@@ -1,0 +1,29 @@
+{
+  "aibenchie_verdict": "pass",
+  "build_id": "ms7-prerelease-candidate-20260521-001",
+  "expires_at": "2026-06-06T03:45:53.506088Z",
+  "generated_at": "2026-05-30T03:45:53.506088Z",
+  "latest_passing_build_id": "ms7-prerelease-candidate-20260521-001",
+  "latest_source": "latest-passing.json",
+  "ok": true,
+  "public_safe": true,
+  "release_candidate_ok": true,
+  "schema": "aibenchie.suite-status.v1",
+  "schema_version": "1.0",
+  "source_commits": {
+    ".NullXoid": "f2ac438f03c3418910bd14474aee8507250a79f0",
+    "AIBenchie": "a4d1b9b3038f023384cbf38df2ca10443a71bd62",
+    "Lv7": "16b5afe22612e8607c13c261000a812ff2a8c4b1",
+    "NullBridge": "9368078074d78463c47ad00c9134f59ddabd86a3",
+    "NullXoidAndroid": "a7153cbfc26af49a71273b7a09f77cceaae89542",
+    "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
+    "echolabs-site": "50e7cd178b74a8a8c2a7ca295c6e6ee426eda02f"
+  },
+  "status": "passing",
+  "suite_version": "0.9.0-prerelease.1",
+  "summary": {
+    "release_candidate_ok": true,
+    "status_effective": "passing",
+    "validation_failures": []
+  }
+}
