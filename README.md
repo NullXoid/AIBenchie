@@ -61,6 +61,12 @@ Lv-7 is the intelligence, training, eval, and agent-behavior layer.
 
 AIBenchie can consume sanitized Lv-7 benchmark fixtures and release reports, but Lv-7 remains its own source of truth. Historical AIBenchie tests still reference some Lv-7-style fixture paths; those are compatibility fixtures until the remaining test data is split into a dedicated benchmark fixture package.
 
+## Relationship To Intent Routers
+
+AIBenchie is not an intent router. It is the benchmark, testbed, release gate, approval-status system, and status marker for router candidates.
+
+Router-related code in this repo evaluates a router-under-test. It does not make AIBenchie the runtime router. Use the terminology in [docs/ROUTER_EVALUATION_BOUNDARY.md](docs/ROUTER_EVALUATION_BOUNDARY.md) when describing this boundary.
+
 ## Main Tracks
 
 - model quality
