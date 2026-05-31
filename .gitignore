@@ -57,3 +57,12 @@ data/**/*.tar
 data/**/*.tar.gz
 data/**/*.sqlite*
 data/**/*.db
+
+# Generated router candidate runs, training logs, and materialized datasets.
+# Keep source builders/tests tracked; force-add a specific frozen artifact only
+# when it is needed as release evidence.
+reports/candidates/
+reports/training/*_PLAN.md
+reports/training/*_run_config.json
+reports/training/*_train_log.jsonl
+data/router_*/
