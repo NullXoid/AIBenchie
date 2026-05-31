@@ -67,6 +67,8 @@ def run_evaluation(
                 "response_text": adapter_result["text"],
                 "parsed_policy_rationale": scored["parsed_policy_rationale"],
                 "score": scored["score"],
+                "gate": scored["gate"],
+                "review": scored["review"],
                 "pass": scored["score"]["pass"],
                 "metadata": adapter_result.get("metadata", {}),
             }
@@ -105,6 +107,29 @@ def main(argv: list[str] | None = None) -> int:
         "total": len(results),
         "passed": sum(1 for result in results if result["pass"]),
         "failed": sum(1 for result in results if not result["pass"]),
+        "a_ben_gate": {
+            "mascot": "a.ben",
+            "passed": sum(1 for result in results if result["gate"]["pass"]),
+            "failed": sum(1 for result in results if not result["gate"]["pass"]),
+        },
+        "i_chie_review": {
+            "mascot": "i.chie",
+            "average_fit_score": round(
+                sum(result["review"]["fit_score"] for result in results) / len(results)
+            )
+            if results
+            else 0,
+            "verdicts": {
+                verdict: sum(
+                    1
+                    for result in results
+                    if result["review"]["verdict"] == verdict
+                )
+                for verdict in sorted(
+                    {result["review"]["verdict"] for result in results}
+                )
+            },
+        },
         "output": str(args.output),
     }
     print(json.dumps(summary, indent=2))

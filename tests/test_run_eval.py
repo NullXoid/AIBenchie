@@ -21,11 +21,16 @@ def test_run_evaluation_with_mock_writes_all_passing_results(tmp_path):
     assert len(results) == 11
     assert all(result["pass"] for result in results)
     assert all(result["eval_suite_id"] == "lv7_smoke_v1_2" for result in results)
+    assert all(result["gate"]["mascot"] == "a.ben" for result in results)
+    assert all(result["gate"]["pass"] for result in results)
+    assert all(result["review"]["mascot"] == "i.chie" for result in results)
+    assert all(result["review"]["verdict"] == "promotion_ready" for result in results)
 
     saved = read_jsonl(output_path)
     assert len(saved) == 11
     assert all(result["pass"] for result in saved)
     assert all(result["eval_suite_id"] == "lv7_smoke_v1_2" for result in saved)
+    assert all("gate" in result and "review" in result for result in saved)
 
 
 def test_run_evaluation_with_unsafe_mock_writes_failures(tmp_path):
@@ -78,6 +83,9 @@ def test_cli_unsafe_mock_returns_zero_and_writes_failures(tmp_path):
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
 
     assert completed.returncode == 0
+    summary = json.loads(completed.stdout)
+    assert summary["a_ben_gate"]["mascot"] == "a.ben"
+    assert summary["i_chie_review"]["mascot"] == "i.chie"
     assert output_path.exists()
     saved = read_jsonl(output_path)
     assert len(saved) == 11
