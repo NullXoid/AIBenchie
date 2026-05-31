@@ -21,3 +21,11 @@ def test_readme_points_to_router_evaluation_boundary():
 
     assert "AIBenchie is not an intent router." in readme
     assert "docs/ROUTER_EVALUATION_BOUNDARY.md" in readme
+
+
+def test_boundary_doc_names_connector_ownership():
+    doc = (ROOT / "docs" / "ROUTER_EVALUATION_BOUNDARY.md").read_text(encoding="utf-8")
+
+    assert "AIBenchie owns benchmarks, holdouts, gates, scoring, release evidence, and approval status." in doc
+    assert "The intent-router candidate owns route inference." in doc
+    assert "Runtime bridges translate approved router-style output into runtime contracts." in doc
