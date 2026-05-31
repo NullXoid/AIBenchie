@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from evals import router_backend
 from evals.router_backend import (
+    EmbeddingClassifierRouterBackend,
+    EncoderStage0RouterBackend,
     HFTransformersRouterBackend,
     OpenAICompatibleRouterBackend,
     ProviderResult,
     RouterGenerationOptions,
+    _apply_stop_sequences,
     parse_backend_model_spec,
 )
+from training import router_embedding_classifier
 
 
 def test_router_generation_options_are_deterministic():
@@ -45,7 +49,17 @@ def test_provider_result_serializes_common_shape():
     assert payload["stop_enforced"] is True
 
 
+def test_apply_stop_sequences_trims_at_earliest_configured_stop():
+    assert _apply_stop_sequences("R01 answer.question", ("\n", " ", "=")) == "R01"
+    assert _apply_stop_sequences("R08=console.run_command", ("\n", " ", "=")) == "R08"
+    assert _apply_stop_sequences("R12", ("\n", " ", "=")) == "R12"
+
+
 def test_backend_model_spec_parsing():
+    assert parse_backend_model_spec("classifier:models/classifiers/router.joblib") == (
+        "embedding_classifier",
+        "models/classifiers/router.joblib",
+    )
     assert parse_backend_model_spec("hf:LiquidAI/LFM2-1.2B-Tool") == (
         "hf_transformers",
         "LiquidAI/LFM2-1.2B-Tool",
@@ -53,6 +67,10 @@ def test_backend_model_spec_parsing():
     assert parse_backend_model_spec("vllm_openai:Salesforce/xLAM-2-1b-fc-r") == (
         "vllm_openai",
         "Salesforce/xLAM-2-1b-fc-r",
+    )
+    assert parse_backend_model_spec("encoder_stage0:models/encoders/router_stage0") == (
+        "encoder_stage0",
+        "models/encoders/router_stage0",
     )
     assert parse_backend_model_spec("gemma3:1b") == ("ollama", "gemma3:1b")
 
@@ -123,6 +141,11 @@ class FakeTokenizer:
         return "answer.question"
 
 
+class FakeRouteCodeTokenizer(FakeTokenizer):
+    def decode(self, *_args, **_kwargs):
+        return "R01 answer.question"
+
+
 class FakeModel:
     device = "cpu"
 
@@ -135,6 +158,13 @@ class FakeModel:
 
     def generate(self, **_kwargs):
         return [FakeSequence()]
+
+
+class FakePeftModel:
+    @staticmethod
+    def from_pretrained(model, adapter_path):
+        model.adapter_path = adapter_path
+        return model
 
 
 class FakeInferenceMode:
@@ -161,6 +191,43 @@ class FakeTorch:
         return FakeInferenceMode()
 
 
+class FakeClassifierEncoder:
+    def __init__(self, _model):
+        pass
+
+    def encode(self, *_args, **_kwargs):
+        return [[1.0, 0.0]]
+
+
+class FakeProbabilityClassifier:
+    classes_ = ["R08", "R01"]
+
+    @staticmethod
+    def predict_proba(_embedding):
+        return [[0.97, 0.03]]
+
+
+def fake_classifier_artifact(_path):
+    return {
+        "artifact_type": "embedding_classifier_router",
+        "version": 1,
+        "metadata": {
+            "embedding_model": "fake/encoder",
+            "classifier_type": "logistic_regression",
+            "routing_mode": "flat_15_class",
+            "context_mode": "text_only",
+            "thresholds": router_embedding_classifier.ClassifierThresholds().to_dict(),
+            "class_labels": ["R08", "R01"],
+            "route_codes": dict(router_embedding_classifier.ROUTE_CODES),
+            "risky_route_codes": sorted(router_embedding_classifier.RISKY_ROUTE_CODES),
+            "safe_stage_codes": sorted(router_embedding_classifier.SAFE_STAGE_CODES),
+            "train_data_hash": "hash",
+            "train_count": 2,
+        },
+        "models": {"flat": FakeProbabilityClassifier()},
+    }
+
+
 def test_hf_expected_cuda_cpu_marks_backend_misconfigured():
     backend = HFTransformersRouterBackend(
         "fake/model",
@@ -175,5 +242,92 @@ def test_hf_expected_cuda_cpu_marks_backend_misconfigured():
 
     assert result.text == "answer.question"
     assert result.device == "cpu"
-    assert result.stop_enforced is False
+    assert result.stop_enforced is True
     assert result.backend_misconfigured is True
+
+
+def test_hf_backend_enforces_configured_stop_sequences():
+    backend = HFTransformersRouterBackend(
+        "fake/model",
+        options=RouterGenerationOptions(max_new_tokens=4, stop=("\n", " ", "=")),
+        torch_module=FakeTorch(),
+        auto_tokenizer=FakeRouteCodeTokenizer,
+        auto_model=FakeModel,
+    )
+
+    result = backend.generate("system", "user", "route_code")
+
+    assert result.text == "R01"
+    assert result.stop_enforced is True
+
+
+def test_hf_backend_loads_peft_adapter_metadata():
+    backend = HFTransformersRouterBackend(
+        "fake/model",
+        options=RouterGenerationOptions(),
+        adapter_path="models/adapters/router_lora_r08_boundary_v1",
+        torch_module=FakeTorch(),
+        auto_tokenizer=FakeTokenizer,
+        auto_model=FakeModel,
+        peft_model=FakePeftModel,
+    )
+
+    result = backend.generate("system", "user", "route_code")
+
+    assert getattr(backend.model_obj, "adapter_path") == "models/adapters/router_lora_r08_boundary_v1"
+    assert result.adapter_path == "models/adapters/router_lora_r08_boundary_v1"
+
+
+def test_embedding_classifier_backend_returns_exact_code_and_metadata():
+    backend = EmbeddingClassifierRouterBackend(
+        "models/classifiers/router.joblib",
+        artifact_loader=fake_classifier_artifact,
+        encoder_factory=FakeClassifierEncoder,
+    )
+
+    result = backend.generate("ignored", "Run tests now.", "route_code")
+
+    assert result.text == "R08"
+    assert result.backend == "embedding_classifier"
+    assert result.stop_enforced is True
+    assert result.classifier_metadata["embedding_model"] == "fake/encoder"
+    assert result.classifier_metadata["last_prediction"]["code"] == "R08"
+
+
+def test_encoder_stage0_backend_returns_gate_and_metadata():
+    def fake_loader(_path):
+        return {
+            "artifact_type": "encoder_stage0_classifier",
+            "metadata": {
+                "model_id": "fake/encoder-stage0",
+                "context_mode": "text_only",
+                "stage0_thresholds": {},
+            },
+        }
+
+    backend = EncoderStage0RouterBackend(
+        "models/encoders/router_stage0/fake",
+        artifact_loader=fake_loader,
+    )
+    backend._predict_encoder_stage0 = lambda _artifact, _text, context_flags=None: router_embedding_classifier.RouterPrediction(
+        "G04",
+        0.99,
+        0.50,
+        "G04",
+        False,
+        "encoder_stage0",
+        "stage0",
+    )
+
+    result = backend.generate_with_context(
+        "ignored",
+        "Run tests now.",
+        "route_code",
+        context_flags={"HAS_IMAGE": "unknown"},
+    )
+
+    assert result.text == "G04"
+    assert result.backend == "encoder_stage0"
+    assert result.stop_enforced is True
+    assert result.classifier_metadata["model_id"] == "fake/encoder-stage0"
+    assert result.classifier_metadata["last_prediction"]["code"] == "G04"

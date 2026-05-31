@@ -6,10 +6,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any, Protocol
 
 
 SUPPORTED_BACKENDS = {
+    "embedding_classifier",
+    "encoder_stage0",
     "ollama",
     "hf_transformers",
     "vllm_openai",
@@ -57,6 +60,8 @@ class ProviderResult:
     max_vram_reserved_mb: float | None = None
     generation_settings: dict[str, Any] = field(default_factory=dict)
     protocol: str | None = None
+    adapter_path: str | None = None
+    classifier_metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -80,6 +85,12 @@ def normalize_backend(value: str) -> str:
         "sglang": "sglang_openai",
         "llamacpp": "llama_cpp_openai",
         "llama.cpp": "llama_cpp_openai",
+        "classifier": "embedding_classifier",
+        "embedding": "embedding_classifier",
+        "embedding_classifier_router": "embedding_classifier",
+        "stage0_encoder": "encoder_stage0",
+        "encoder": "encoder_stage0",
+        "encoder_stage0_classifier": "encoder_stage0",
     }
     backend = aliases.get(backend, backend)
     if backend not in SUPPORTED_BACKENDS:
@@ -123,6 +134,21 @@ def _tokens_per_second(tokens_generated: int, latency_ms: int) -> float:
     if latency_ms <= 0:
         return 0.0
     return round(tokens_generated / (latency_ms / 1000.0), 3)
+
+
+def _apply_stop_sequences(text: str, stop: tuple[str, ...]) -> str:
+    if not stop:
+        return text
+    cut_index: int | None = None
+    for sequence in stop:
+        if not sequence:
+            continue
+        index = text.find(sequence)
+        if index >= 0 and (cut_index is None or index < cut_index):
+            cut_index = index
+    if cut_index is None:
+        return text
+    return text[:cut_index]
 
 
 class OllamaRouterBackend:
@@ -258,32 +284,52 @@ class HFTransformersRouterBackend:
         options: RouterGenerationOptions | None = None,
         *,
         expected_cuda: bool = False,
+        adapter_path: str | None = None,
         torch_module: Any | None = None,
         auto_tokenizer: Any | None = None,
         auto_model: Any | None = None,
+        peft_model: Any | None = None,
     ) -> None:
         self.model = model
         self.options = options or RouterGenerationOptions()
         self.expected_cuda = expected_cuda
+        self.adapter_path = adapter_path
         started = time.perf_counter()
         if torch_module is None or auto_tokenizer is None or auto_model is None:
             import torch
+            from peft import PeftModel
             from transformers import AutoModelForCausalLM, AutoTokenizer
 
             torch_module = torch
             auto_tokenizer = AutoTokenizer
             auto_model = AutoModelForCausalLM
+            peft_model = PeftModel
         self.torch = torch_module
         self.cuda_available = bool(self.torch.cuda.is_available())
         self.dtype = "float16" if self.cuda_available else "float32"
         torch_dtype = self.torch.float16 if self.cuda_available else self.torch.float32
         self.tokenizer = auto_tokenizer.from_pretrained(model, trust_remote_code=True)
-        self.model_obj = auto_model.from_pretrained(
-            model,
-            torch_dtype=torch_dtype,
-            device_map="auto",
-            trust_remote_code=True,
-        )
+        try:
+            model_obj = auto_model.from_pretrained(
+                model,
+                dtype=torch_dtype,
+                device_map="auto",
+                trust_remote_code=True,
+            )
+        except TypeError:
+            model_obj = auto_model.from_pretrained(
+                model,
+                torch_dtype=torch_dtype,
+                device_map="auto",
+                trust_remote_code=True,
+            )
+        if adapter_path:
+            if peft_model is None:
+                from peft import PeftModel
+
+                peft_model = PeftModel
+            model_obj = peft_model.from_pretrained(model_obj, adapter_path)
+        self.model_obj = model_obj
         if hasattr(self.model_obj, "eval"):
             self.model_obj.eval()
         self.model_load_time_ms = int((time.perf_counter() - started) * 1000)
@@ -359,7 +405,8 @@ class HFTransformersRouterBackend:
                 )
             prompt_len = inputs["input_ids"].shape[-1]
             generated_ids = output_ids[0][prompt_len:]
-            text = str(self.tokenizer.decode(generated_ids, skip_special_tokens=True))
+            decoded = str(self.tokenizer.decode(generated_ids, skip_special_tokens=True))
+            text = _apply_stop_sequences(decoded, self.options.stop)
             tokens = int(getattr(generated_ids, "shape", [len(text.split())])[-1])
             error = None
         except Exception as exc:
@@ -378,7 +425,7 @@ class HFTransformersRouterBackend:
             latency_ms=latency_ms,
             tokens_generated=tokens,
             tokens_per_second=_tokens_per_second(tokens, latency_ms),
-            stop_enforced=False,
+            stop_enforced=bool(self.options.stop),
             error=error,
             backend_misconfigured=bool(self.expected_cuda and "cuda" not in device.lower()),
             cuda_available=self.cuda_available,
@@ -389,7 +436,163 @@ class HFTransformersRouterBackend:
             max_vram_reserved_mb=self._vram_mb("max_memory_reserved"),
             generation_settings=self.options.to_dict(),
             protocol=protocol,
+            adapter_path=self.adapter_path,
         )
+
+
+class EmbeddingClassifierRouterBackend:
+    backend = "embedding_classifier"
+
+    def __init__(
+        self,
+        model: str,
+        *,
+        artifact_loader: Any | None = None,
+        encoder_factory: Any | None = None,
+    ) -> None:
+        from training import router_embedding_classifier
+
+        self.model = model
+        self.artifact_path = Path(model)
+        loader = artifact_loader or router_embedding_classifier.load_artifact
+        started = time.perf_counter()
+        self.artifact = loader(self.artifact_path)
+        metadata = self.artifact["metadata"]
+        if encoder_factory is None:
+            from sentence_transformers import SentenceTransformer
+
+            encoder_factory = SentenceTransformer
+        self.encoder = encoder_factory(metadata["embedding_model"])
+        self.model_load_time_ms = int((time.perf_counter() - started) * 1000)
+        self._predict_route_code = router_embedding_classifier.predict_route_code
+        self._predict_hybrid_label = router_embedding_classifier.predict_hybrid_label
+
+    def generate_with_context(
+        self,
+        system_prompt: str,
+        user_text: str,
+        protocol: str,
+        *,
+        context_flags: dict[str, Any] | None = None,
+    ) -> ProviderResult:
+        started = time.perf_counter()
+        try:
+            if self.artifact.get("artifact_type") == "hybrid_embedding_classifier_router":
+                prediction = self._predict_hybrid_label(
+                    self.artifact,
+                    user_text,
+                    encoder=self.encoder,
+                    context_flags=context_flags,
+                )
+            else:
+                prediction = self._predict_route_code(
+                    self.artifact,
+                    user_text,
+                    encoder=self.encoder,
+                    context_flags=context_flags,
+                )
+            text = prediction.code
+            error = None
+            prediction_payload = prediction.to_dict()
+        except Exception as exc:
+            text = ""
+            error = str(exc)
+            prediction_payload = {}
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        metadata = dict(self.artifact.get("metadata") or {})
+        if prediction_payload:
+            metadata["last_prediction"] = prediction_payload
+        return ProviderResult(
+            text=text,
+            backend=self.backend,
+            model=self.model,
+            device="local",
+            dtype="embedding_classifier",
+            quantization=None,
+            latency_ms=latency_ms,
+            tokens_generated=1 if text else 0,
+            tokens_per_second=_tokens_per_second(1 if text else 0, latency_ms),
+            stop_enforced=True,
+            error=error,
+            model_load_time_ms=self.model_load_time_ms,
+            generation_settings={
+                "deterministic": True,
+                "protocol": protocol,
+                "system_prompt_ignored": True,
+            },
+            protocol=protocol,
+            classifier_metadata=metadata,
+        )
+
+    def generate(self, system_prompt: str, user_text: str, protocol: str) -> ProviderResult:
+        return self.generate_with_context(system_prompt, user_text, protocol)
+
+
+class EncoderStage0RouterBackend:
+    backend = "encoder_stage0"
+
+    def __init__(
+        self,
+        model: str,
+        *,
+        artifact_loader: Any | None = None,
+    ) -> None:
+        from training import router_stage0_encoder
+
+        self.model = model
+        self.artifact_path = Path(model)
+        loader = artifact_loader or router_stage0_encoder.load_encoder_stage0_artifact
+        started = time.perf_counter()
+        self.artifact = loader(self.artifact_path)
+        self.model_load_time_ms = int((time.perf_counter() - started) * 1000)
+        self._predict_encoder_stage0 = router_stage0_encoder.predict_encoder_stage0
+
+    def generate_with_context(
+        self,
+        system_prompt: str,
+        user_text: str,
+        protocol: str,
+        *,
+        context_flags: dict[str, Any] | None = None,
+    ) -> ProviderResult:
+        started = time.perf_counter()
+        try:
+            prediction = self._predict_encoder_stage0(self.artifact, user_text, context_flags=context_flags)
+            text = prediction.code
+            error = None
+            prediction_payload = prediction.to_dict()
+        except Exception as exc:
+            text = ""
+            error = str(exc)
+            prediction_payload = {}
+        latency_ms = int((time.perf_counter() - started) * 1000)
+        metadata = dict(self.artifact.get("metadata") or {})
+        if prediction_payload:
+            metadata["last_prediction"] = prediction_payload
+        return ProviderResult(
+            text=text,
+            backend=self.backend,
+            model=self.model,
+            device="local",
+            dtype="encoder_stage0",
+            quantization=None,
+            latency_ms=latency_ms,
+            tokens_generated=1 if text else 0,
+            tokens_per_second=_tokens_per_second(1 if text else 0, latency_ms),
+            stop_enforced=True,
+            error=error,
+            model_load_time_ms=self.model_load_time_ms,
+            generation_settings={
+                "deterministic": True,
+                "protocol": protocol,
+                "system_prompt_ignored": True,
+            },
+            protocol=protocol,
+            classifier_metadata=metadata,
+        )
+
+    def generate(self, system_prompt: str, user_text: str, protocol: str) -> ProviderResult:
+        return self.generate_with_context(system_prompt, user_text, protocol)
 
 
 def build_router_backend(
@@ -401,8 +604,13 @@ def build_router_backend(
     api_key: str = "local",
     timeout_seconds: int = 90,
     expected_cuda: bool = False,
+    adapter_path: str | None = None,
 ) -> RouterBackend:
     normalized = normalize_backend(backend)
+    if normalized == "embedding_classifier":
+        return EmbeddingClassifierRouterBackend(model)
+    if normalized == "encoder_stage0":
+        return EncoderStage0RouterBackend(model)
     if normalized == "ollama":
         return OllamaRouterBackend(
             model,
@@ -415,6 +623,7 @@ def build_router_backend(
             model,
             options=options,
             expected_cuda=expected_cuda,
+            adapter_path=adapter_path,
         )
     return OpenAICompatibleRouterBackend(
         normalized,
