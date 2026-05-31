@@ -14,6 +14,7 @@ TAIL_CHARS = 4000
 TRUE_VALUES = {"1", "true", "yes", "on"}
 PYTHON_OVERRIDE_ENV = {
     "aibenchie_core": "AIBENCHIE_CORE_PYTHON",
+    "lv7_router_bridge": "AIBENCHIE_LV7_PYTHON",
     "nullbridge_trust_fabric": "AIBENCHIE_NULLBRIDGE_PYTHON",
     "nullxoid_wrapper_backend": "AIBENCHIE_NULLXOID_WRAPPER_PYTHON",
 }
@@ -276,6 +277,50 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
                 "tests/test_zero_knowledge_devices.py",
             ),
             timeout_seconds=240,
+        ),
+        SuiteTestTarget(
+            name="lv7_router_bridge",
+            description="Lv-7 router bridge route-output to model-intent contract, route audit, and focused schema checks",
+            repo_env="AIBENCHIE_LV7_REPO",
+            repo_candidates=("../Lv-7", "Lv-7"),
+            required_paths=(
+                "lv7_autonomy/router_intent_bridge.py",
+                "tests/test_router_intent_bridge.py",
+                "tests/test_model_intent_adapter.py",
+                "tests/test_autonomy_schemas.py",
+            ),
+            command=(
+                sys.executable,
+                "-m",
+                "pytest",
+                "tests/test_router_intent_bridge.py",
+                "tests/test_model_intent_adapter.py",
+                "tests/test_autonomy_schemas.py",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+            ),
+            timeout_seconds=180,
+        ),
+        SuiteTestTarget(
+            name="lv7_autonomy_e2e",
+            description="Generate deterministic Lv-7 autonomy evidence and validate it with the AIBenchie gate",
+            repo_env="AIBENCHIE_LV7_REPO",
+            repo_candidates=("../Lv-7", "Lv-7"),
+            required_paths=(
+                "lv7_autonomy/evidence.py",
+                "examples/autonomy/resource_pressure_normal.json",
+                "examples/autonomy/presence_owner_available.json",
+                "examples/autonomy/forgejo_pr_checks_passed.json",
+            ),
+            command=(
+                sys.executable,
+                str(_repo_root() / "scripts" / "run_lv7_autonomy_gate.py"),
+                "--lv7-root",
+                ".",
+                "--json",
+            ),
+            timeout_seconds=180,
         ),
         SuiteTestTarget(
             name="aibenchie_security_privacy",

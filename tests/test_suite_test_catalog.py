@@ -111,6 +111,55 @@ def test_catalog_uses_target_python_override(monkeypatch, tmp_path):
     assert result.results[0].command[0] == str(custom_python)
 
 
+def test_catalog_runs_lv7_router_bridge_target(monkeypatch, tmp_path):
+    repo = tmp_path / "Lv-7"
+    touch_required_files(repo, "lv7_router_bridge")
+
+    def fake_run(command, **kwargs):
+        assert kwargs["cwd"] == repo
+        assert command[:3] == [suite_test_catalog.sys.executable, "-m", "pytest"]
+        assert "tests/test_router_intent_bridge.py" in command
+        assert "tests/test_model_intent_adapter.py" in command
+        assert "tests/test_autonomy_schemas.py" in command
+        return SimpleNamespace(returncode=0, stdout="63 passed\n", stderr="")
+
+    monkeypatch.setattr(suite_test_catalog.subprocess, "run", fake_run)
+
+    result = suite_test_catalog.run_suite_tests(
+        root=tmp_path,
+        env={"AIBENCHIE_LV7_REPO": str(repo)},
+        selected_targets=["lv7_router_bridge"],
+        require_all=True,
+    )
+
+    assert result.ok is True
+    assert result.results[0].status == "pass"
+
+
+def test_catalog_runs_lv7_autonomy_e2e_target(monkeypatch, tmp_path):
+    repo = tmp_path / "Lv-7"
+    touch_required_files(repo, "lv7_autonomy_e2e")
+
+    def fake_run(command, **kwargs):
+        assert kwargs["cwd"] == repo
+        assert command[0] == suite_test_catalog.sys.executable
+        assert command[1].endswith("scripts\\run_lv7_autonomy_gate.py") or command[1].endswith("scripts/run_lv7_autonomy_gate.py")
+        assert command[-3:] == ["--lv7-root", ".", "--json"]
+        return SimpleNamespace(returncode=0, stdout='{"ok": true}\n', stderr="")
+
+    monkeypatch.setattr(suite_test_catalog.subprocess, "run", fake_run)
+
+    result = suite_test_catalog.run_suite_tests(
+        root=tmp_path,
+        env={"AIBENCHIE_LV7_REPO": str(repo)},
+        selected_targets=["lv7_autonomy_e2e"],
+        require_all=True,
+    )
+
+    assert result.ok is True
+    assert result.results[0].status == "pass"
+
+
 def test_catalog_runs_wrapper_frontend_e2ee_target(monkeypatch, tmp_path):
     repo = tmp_path / "NullXoid"
     touch_required_files(repo, "nullxoid_wrapper_frontend_e2ee")
@@ -166,12 +215,16 @@ def test_catalog_contains_suite_boundaries():
     targets = {target.name: target for target in suite_test_catalog.build_suite_test_catalog()}
 
     assert "aibenchie_core" in targets
+    assert "lv7_router_bridge" in targets
+    assert "lv7_autonomy_e2e" in targets
     assert "aibenchie_security_privacy" in targets
     assert "nullbridge_trust_fabric" in targets
     assert "nullxoid_wrapper_backend" in targets
     assert "nullxoid_wrapper_frontend_e2ee" in targets
     assert "android_companion_unit" in targets
     assert "tests/test_suite_security_privacy.py" in targets["aibenchie_security_privacy"].required_paths
+    assert "tests/test_router_intent_bridge.py" in targets["lv7_router_bridge"].required_paths
+    assert "lv7_autonomy/evidence.py" in targets["lv7_autonomy_e2e"].required_paths
     assert targets["android_companion_unit"].optional is True
 
 
