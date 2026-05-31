@@ -309,10 +309,19 @@ def probe_current_runtime(config: dict[str, Any]) -> dict[str, Any]:
     }
 
     gpu_line = ""
-    gpu_check = shell_result(
-        ["bash", "-lc", "nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || true"],
-        timeout=30,
-    )
+    try:
+        gpu_check = shell_result(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            timeout=30,
+        )
+    except FileNotFoundError:
+        try:
+            gpu_check = shell_result(
+                ["bash", "-lc", "nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || true"],
+                timeout=30,
+            )
+        except FileNotFoundError:
+            gpu_check = subprocess.CompletedProcess(args=["nvidia-smi"], returncode=1, stdout="", stderr="")
     for line in gpu_check.stdout.splitlines():
         if line.strip():
             gpu_line = line.strip()
@@ -368,26 +377,30 @@ def probe_current_runtime(config: dict[str, Any]) -> dict[str, Any]:
         result["notes"].append("The detected GPU memory is below the v0.5 smoke threshold.")
         return result
 
-    try:
-        __import__("bitsandbytes")
-        result["bnb_import_ready"] = True
-    except ImportError as exc:
-        result["status"] = BLOCKED_BNB_IMPORT
-        result["notes"].append(f"`bitsandbytes` import failed: {exc}")
-        return result
+    if uses_bnb_quantization(config):
+        try:
+            __import__("bitsandbytes")
+            result["bnb_import_ready"] = True
+        except ImportError as exc:
+            result["status"] = BLOCKED_BNB_IMPORT
+            result["notes"].append(f"`bitsandbytes` import failed: {exc}")
+            return result
 
-    try:
-        BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.float16,
-        )
-        result["bnb_4bit_ready"] = True
-    except Exception as exc:  # pragma: no cover - exercised via tests with mocks
-        result["status"] = BLOCKED_BNB_4BIT
-        result["notes"].append(f"4-bit NF4 configuration failed: {exc}")
-        return result
+        try:
+            BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_compute_dtype=torch.float16,
+            )
+            result["bnb_4bit_ready"] = True
+        except Exception as exc:  # pragma: no cover - exercised via tests with mocks
+            result["status"] = BLOCKED_BNB_4BIT
+            result["notes"].append(f"4-bit NF4 configuration failed: {exc}")
+            return result
+    else:
+        result["bnb_import_ready"] = None
+        result["bnb_4bit_ready"] = None
 
     try:
         load_minimal_model(config, imports)
@@ -451,6 +464,14 @@ def import_training_stack() -> dict[str, Any]:
     }
 
 
+def quantization_mode(config: dict[str, Any]) -> str:
+    return str(config.get("quantization") or "4bit_nf4").strip().lower()
+
+
+def uses_bnb_quantization(config: dict[str, Any]) -> bool:
+    return quantization_mode(config) not in {"", "none", "fp16", "float16", "bf16", "bfloat16"}
+
+
 def build_bnb_config(torch_module: Any, BitsAndBytesConfig: Any) -> Any:
     return BitsAndBytesConfig(
         load_in_4bit=True,
@@ -490,11 +511,26 @@ def load_minimal_model(config: dict[str, Any], imports: dict[str, Any]) -> tuple
     tokenizer = imports["AutoTokenizer"].from_pretrained(config["base_model"])
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    model = imports["AutoModelForCausalLM"].from_pretrained(
-        config["base_model"],
-        quantization_config=build_bnb_config(imports["torch"], imports["BitsAndBytesConfig"]),
-        device_map="auto",
-    )
+    if uses_bnb_quantization(config):
+        model = imports["AutoModelForCausalLM"].from_pretrained(
+            config["base_model"],
+            quantization_config=build_bnb_config(imports["torch"], imports["BitsAndBytesConfig"]),
+            device_map="auto",
+        )
+    else:
+        dtype = imports["torch"].float16 if imports["torch"].cuda.is_available() else imports["torch"].float32
+        try:
+            model = imports["AutoModelForCausalLM"].from_pretrained(
+                config["base_model"],
+                dtype=dtype,
+                device_map="auto",
+            )
+        except TypeError:
+            model = imports["AutoModelForCausalLM"].from_pretrained(
+                config["base_model"],
+                torch_dtype=dtype,
+                device_map="auto",
+            )
     return tokenizer, model
 
 
@@ -573,6 +609,20 @@ def build_training_examples(
             }
         )
     return examples
+
+
+def count_trainable_label_tokens(example: dict[str, Any]) -> int:
+    return sum(1 for label in example["labels"] if label != -100)
+
+
+def validate_training_examples_have_labels(examples: list[dict[str, Any]]) -> None:
+    zero_label_ids = [example["id"] for example in examples if count_trainable_label_tokens(example) == 0]
+    if zero_label_ids:
+        sample = ", ".join(zero_label_ids[:5])
+        raise ValueError(
+            f"{len(zero_label_ids)} training examples have zero assistant label tokens after truncation. "
+            f"Increase max_seq_length or shorten the prompt. First ids: {sample}"
+        )
 
 
 def collate_sft_batch(batch: list[dict[str, Any]], pad_token_id: int) -> dict[str, Any]:
@@ -778,7 +828,10 @@ def initialize_trainable_model(
     config: dict[str, Any],
     imports: dict[str, Any],
 ) -> tuple[Any, str]:
-    model = imports["prepare_model_for_kbit_training"](model)
+    if uses_bnb_quantization(config):
+        model = imports["prepare_model_for_kbit_training"](model)
+    elif hasattr(model, "enable_input_require_grads"):
+        model.enable_input_require_grads()
     if hasattr(model, "config"):
         model.config.use_cache = False
 
@@ -821,6 +874,7 @@ def run_train(config: dict[str, Any]) -> StepResult:
         prepared_records=prepared_records,
         max_seq_length=config["max_seq_length"],
     )
+    validate_training_examples_have_labels(training_examples)
     dataset = imports["Dataset"].from_list(training_examples)
     model, starting_adapter_path = initialize_trainable_model(
         model,
@@ -867,6 +921,7 @@ def run_train(config: dict[str, Any]) -> StepResult:
 
     run_config = {
         "base_model": config["base_model"],
+        "quantization": config["quantization"],
         "starting_adapter": starting_adapter_path or "",
         "dataset": config["dataset"],
         "prepared_dataset": config["prepared_dataset"],
@@ -1197,7 +1252,7 @@ def run_full_pipeline(
 
 
 def probe_step(config: dict[str, Any]) -> StepResult:
-    if is_windows_host():
+    if is_windows_host() and not config.get("allow_native_windows", False):
         probe = probe_windows_wsl(config)
     else:
         probe = probe_current_runtime(config)
@@ -1210,10 +1265,10 @@ def probe_step(config: dict[str, Any]) -> StepResult:
     return StepResult(ok=ok, status=probe["status"], summary=probe)
 
 
-def ensure_wsl_training_runtime(status: str) -> None:
+def ensure_wsl_training_runtime(status: str, config: dict[str, Any] | None = None) -> None:
     if status != READY_FOR_WSL2_SMOKE:
         raise RuntimeError(f"Smoke training is not ready: {status}")
-    if is_windows_host():
+    if is_windows_host() and not (config or {}).get("allow_native_windows", False):
         raise RuntimeError("Run eval_base/train/eval_adapter inside WSL2 with the prepared venv.")
 
 
@@ -1222,11 +1277,13 @@ def load_config(path: Path) -> dict[str, Any]:
     config.setdefault("wsl_distro", "Ubuntu-24.04")
     config.setdefault("repo_wsl_path", "<aibenchie-root>")
     config.setdefault("venv_path", "~/.venvs/lv7-sft")
+    config.setdefault("allow_native_windows", False)
     config.setdefault("hf_home", "~/.cache/huggingface")
     config.setdefault("transformers_cache", "~/.cache/huggingface/transformers")
     config.setdefault("dataset", "data/pilot_v1_8/sft_messages.jsonl")
     config.setdefault("prepared_dataset", "data/pilot_v1_8/sft_train_ready.jsonl")
     config.setdefault("dpo_dataset_unused", "data/pilot_v1_8/dpo_pairs.jsonl")
+    config.setdefault("quantization", "4bit_nf4")
     config.setdefault("starting_adapter", "")
     config.setdefault("output_dir", "models/adapters/lv7_sft_smoke_v1_0_3/")
     config.setdefault("plan_report", "reports/training/V1_0_3_MODE_STABILITY_PLAN.md")
@@ -1297,15 +1354,15 @@ def main(argv: list[str] | None = None) -> int:
             result = probe_step(config)
         elif args.mode == "eval_base":
             probe = probe_step(config)
-            ensure_wsl_training_runtime(probe.status)
+            ensure_wsl_training_runtime(probe.status, config)
             result = run_base_eval(config, scenarios_dir)
         elif args.mode == "train":
             probe = probe_step(config)
-            ensure_wsl_training_runtime(probe.status)
+            ensure_wsl_training_runtime(probe.status, config)
             result = run_train(config)
         elif args.mode == "eval_adapter":
             probe = probe_step(config)
-            ensure_wsl_training_runtime(probe.status)
+            ensure_wsl_training_runtime(probe.status, config)
             result = run_adapter_eval(config, scenarios_dir)
         else:
             result = run_full_pipeline(

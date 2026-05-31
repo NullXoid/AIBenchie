@@ -1,0 +1,95 @@
+stage: router_model_recovery_sft
+repo_wsl_path: .
+wsl_distro: Ubuntu-24.04
+allow_native_windows: true
+venv_path: ~/.venvs/lv7-sft
+hf_home: ~/.cache/huggingface
+transformers_cache: ~/.cache/huggingface/transformers
+dataset: data/router_direct_action_boundaries_v2/router_lora_train_v2.jsonl
+prepared_dataset: data/router_direct_action_boundaries_v2/router_lora_train_ready_v2.jsonl
+dpo_dataset_unused: data/router_direct_action_boundaries_v2/router_lora_dpo_pairs_v2.jsonl
+base_model: ibm-granite/granite-4.0-micro
+quantization: 4bit_nf4
+save_adapter_only: true
+output_dir: models/adapters/router_model_recovery_granite_4_0_micro/
+plan_report: reports/training/ROUTER_MODEL_RECOVERY_GRANITE_4_0_MICRO_PLAN.md
+base_eval_outputs: reports/training/router_model_recovery_granite_4_0_micro_base_outputs.jsonl
+base_eval_results: reports/training/router_model_recovery_granite_4_0_micro_base_results.jsonl
+qwen_base_eval_outputs: reports/training/router_model_recovery_granite_4_0_micro_base_outputs.jsonl
+qwen_base_eval_results: reports/training/router_model_recovery_granite_4_0_micro_base_results.jsonl
+comparison_runs: []
+current_label: router_model_recovery_granite_4_0_micro
+analysis_title: IBM Granite 4.0 Micro Router Model Recovery Analysis
+run_config: reports/training/router_model_recovery_granite_4_0_micro_run_config.json
+train_log: reports/training/router_model_recovery_granite_4_0_micro_train_log.jsonl
+adapter_eval_outputs: reports/training/router_model_recovery_granite_4_0_micro_adapter_outputs.jsonl
+adapter_eval_results: reports/training/router_model_recovery_granite_4_0_micro_adapter_results.jsonl
+analysis_report: reports/training/ROUTER_MODEL_RECOVERY_GRANITE_4_0_MICRO_ANALYSIS.md
+adapter_run_type: router_model_recovery_granite_4_0_micro
+max_steps: 260
+learning_rate: 0.0001
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+max_seq_length: 768
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+target_modules:
+- q_proj
+- k_proj
+- v_proj
+- o_proj
+- gate_proj
+- up_proj
+- down_proj
+eval_suite_id: nullxoid_router_model_recovery
+eval_prompt_mode: route_code
+min_vram_gb: 16
+seed: 42
+data_seed: 42
+candidate:
+  id: granite_4_0_micro
+  display_name: IBM Granite 4.0 Micro
+  model_id: ibm-granite/granite-4.0-micro
+  candidate_path: production_friendly
+  evaluation_order: 4
+  license_class: production_reviewed
+  license_name: Apache-2.0
+  intended_backend: hf_peft
+  training_kind: sft_lora
+  recovery_status: diagnostic_only
+  serving_parity_status: not_started
+  wrapper_drift_policy: strict_protocol_failure
+  notes:
+  - Stopped as a promotable candidate after false job starts and memory writes.
+  - Archive false job/memory examples for future training data.
+  - HF/vLLM/SGLang serving parity is still required before shadow mode.
+router_protocol:
+  protocol: route_code
+  generation:
+    temperature: 0.0
+    top_p: 1.0
+    max_new_tokens: 4
+    stream: false
+    stop:
+    - '
+
+      '
+    - ' '
+    - '='
+    thinking_disabled: true
+  gates:
+  - router_protocol_200
+  - router_console_semantics_350
+  - router_direct_action_boundaries_500
+  - router_holdout_1000_v3
+  wrapper_drift_policy: strict_protocol_failure
+  promotion_rules:
+    focused_gates_required: true
+    holdout_v3_required: true
+    serving_parity_required: true
+    false_direct_actions_total: 0
+    protocol_validity_min: 0.995
+    direct_action_recall_min: 0.98
+    hard_negative_recall_min: 0.98
+    shadow_mode_before_control: true

@@ -1,0 +1,47 @@
+stage: sft_only
+repo_wsl_path: .
+wsl_distro: Ubuntu-24.04
+allow_native_windows: true
+venv_path: ~/.venvs/lv7-sft
+hf_home: ~/.cache/huggingface
+transformers_cache: ~/.cache/huggingface/transformers
+dataset: data/router_direct_action_boundaries_v2/router_lora_train_v2.jsonl
+prepared_dataset: data/router_direct_action_boundaries_v2/router_lora_train_ready_v2.jsonl
+dpo_dataset_unused: data/router_direct_action_boundaries_v2/router_lora_dpo_pairs_v2.jsonl
+base_model: Qwen/Qwen3-0.6B
+quantization: none
+save_adapter_only: true
+output_dir: models/adapters/router_lora_direct_action_boundaries_v2/
+plan_report: reports/training/ROUTER_DIRECT_ACTION_BOUNDARIES_V2_PLAN.md
+qwen_base_eval_outputs: reports/training/router_direct_action_boundaries_v2_base_outputs.jsonl
+qwen_base_eval_results: reports/training/router_direct_action_boundaries_v2_base_results.jsonl
+comparison_runs: []
+current_label: router_lora_direct_action_boundaries_v2
+analysis_title: Router Direct Action Boundaries V2 Analysis
+run_config: reports/training/router_direct_action_boundaries_v2_run_config.json
+train_log: reports/training/router_direct_action_boundaries_v2_train_log.jsonl
+adapter_eval_outputs: reports/training/router_direct_action_boundaries_v2_adapter_outputs.jsonl
+adapter_eval_results: reports/training/router_direct_action_boundaries_v2_adapter_results.jsonl
+analysis_report: reports/training/ROUTER_DIRECT_ACTION_BOUNDARIES_V2_ANALYSIS.md
+adapter_run_type: router_direct_action_boundaries_v2
+max_steps: 260
+learning_rate: 1.0e-4
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+max_seq_length: 768
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+eval_suite_id: nullxoid_router_direct_action_boundaries_v2
+eval_prompt_mode: route_code
+min_vram_gb: 16
+seed: 42
+data_seed: 42

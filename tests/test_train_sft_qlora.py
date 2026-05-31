@@ -75,6 +75,21 @@ def test_tokenize_with_assistant_mask_masks_prompt_tokens():
     assert any(label != -100 for label in tokenized["labels"])
 
 
+def test_validate_training_examples_have_labels_rejects_truncated_answers():
+    examples = [
+        {"id": "ok", "labels": [-100, 1]},
+        {"id": "truncated", "labels": [-100, -100]},
+    ]
+
+    try:
+        train_sft_qlora.validate_training_examples_have_labels(examples)
+    except ValueError as exc:
+        assert "zero assistant label tokens" in str(exc)
+        assert "truncated" in str(exc)
+    else:
+        raise AssertionError("expected zero-label training examples to fail fast")
+
+
 def test_resolve_probe_status_prefers_mount_then_pip_then_cuda():
     probe = {
         "repo_reachable": False,
@@ -238,6 +253,8 @@ def test_load_config_defaults_to_v1_0_5_paths():
     assert config["seed"] == 42
     assert config["data_seed"] == 42
     assert config["starting_adapter"] == ""
+    assert config["quantization"] == "4bit_nf4"
+    assert config["allow_native_windows"] is False
 
 
 def test_initialize_trainable_model_preserves_old_behavior_without_starting_adapter():
@@ -280,6 +297,96 @@ def test_initialize_trainable_model_preserves_old_behavior_without_starting_adap
     assert captured["lora_kwargs"]["target_modules"] == config["target_modules"]
     assert starting_adapter_path == ""
     assert model["wrapped"].config.use_cache is False
+
+
+def test_initialize_trainable_model_skips_kbit_prep_for_nonquantized_lora():
+    captured = {}
+
+    class FakeBaseModel:
+        def __init__(self):
+            self.config = type("Config", (), {"use_cache": True})()
+            self.input_grads_enabled = False
+
+        def enable_input_require_grads(self):
+            self.input_grads_enabled = True
+
+    def fake_prepare_model_for_kbit_training(_model):
+        raise AssertionError("non-quantized LoRA should not prepare model for k-bit training")
+
+    def fake_lora_config(**kwargs):
+        captured["lora_kwargs"] = kwargs
+        return {"fake_lora_config": kwargs}
+
+    def fake_get_peft_model(model, lora_config):
+        captured["used_get_peft_model"] = True
+        captured["passed_lora_config"] = lora_config
+        return {"wrapped": model, "lora": lora_config}
+
+    config = train_sft_qlora.load_config(ROOT / "training" / "qlora_smoke_config.yaml")
+    config["quantization"] = "none"
+    model, starting_adapter_path = train_sft_qlora.initialize_trainable_model(
+        FakeBaseModel(),
+        config=config,
+        imports={
+            "prepare_model_for_kbit_training": fake_prepare_model_for_kbit_training,
+            "LoraConfig": fake_lora_config,
+            "get_peft_model": fake_get_peft_model,
+            "PeftModel": object(),
+        },
+    )
+
+    assert captured["used_get_peft_model"] is True
+    assert captured["lora_kwargs"]["r"] == config["lora_r"]
+    assert starting_adapter_path == ""
+    assert model["wrapped"].input_grads_enabled is True
+    assert model["wrapped"].config.use_cache is False
+
+
+def test_load_minimal_model_uses_dtype_without_bnb_for_nonquantized_lora():
+    captured = {}
+
+    class FakeTokenizer:
+        pad_token = None
+        eos_token = "<eos>"
+
+    class FakeAutoTokenizer:
+        @staticmethod
+        def from_pretrained(model_name):
+            captured["tokenizer_model"] = model_name
+            return FakeTokenizer()
+
+    class FakeAutoModel:
+        @staticmethod
+        def from_pretrained(model_name, **kwargs):
+            captured["model_name"] = model_name
+            captured["model_kwargs"] = kwargs
+            return {"model": model_name, "kwargs": kwargs}
+
+    class FakeCuda:
+        @staticmethod
+        def is_available():
+            return True
+
+    class FakeTorch:
+        cuda = FakeCuda()
+        float16 = "float16"
+        float32 = "float32"
+
+    config = train_sft_qlora.load_config(ROOT / "training" / "qlora_smoke_config.yaml")
+    config["quantization"] = "none"
+    tokenizer, model = train_sft_qlora.load_minimal_model(
+        config,
+        imports={
+            "AutoTokenizer": FakeAutoTokenizer,
+            "AutoModelForCausalLM": FakeAutoModel,
+            "torch": FakeTorch,
+            "BitsAndBytesConfig": object(),
+        },
+    )
+
+    assert tokenizer.pad_token == "<eos>"
+    assert model["model"] == config["base_model"]
+    assert captured["model_kwargs"] == {"dtype": "float16", "device_map": "auto"}
 
 
 def test_initialize_trainable_model_loads_starting_adapter_when_present(tmp_path):
