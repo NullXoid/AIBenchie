@@ -94,6 +94,7 @@ def test_suite_security_aggregates_required_checks(monkeypatch, tmp_path):
     assert statuses["generated_output_policy"] == "pass"
     assert statuses["release_artifacts_attestation"] == "pass"
     assert statuses["ephemeral_hosted_chat"] == "skip"
+    assert statuses["hosted_nullxoid_penetration"] == "skip"
     assert statuses["local_nullbridge_trust_path"] == "skip"
     assert statuses["local_nullbridge_notification_path"] == "skip"
 
@@ -193,6 +194,38 @@ def test_suite_security_runs_ephemeral_chat_when_enabled(monkeypatch, tmp_path):
     assert result.ok is True
     assert called["helper_origin"] == "http://127.0.0.1:8090"
     assert next(check for check in result.checks if check.name == "ephemeral_hosted_chat").status == "pass"
+
+
+def test_suite_security_runs_penetration_when_enabled(monkeypatch, tmp_path):
+    called = {}
+
+    def fake_penetration(**kwargs):
+        called.update(kwargs)
+        return SimpleNamespace(ok=True, failure="", as_dict=lambda: {"ok": True, "probes": []})
+
+    monkeypatch.setattr(suite_security, "run_hosted_nullxoid_stack_check", lambda **kwargs: _hosted_stack(True))
+    monkeypatch.setattr(
+        suite_security,
+        "scan_public_files_for_secrets",
+        lambda root: suite_security.SecretScanResult(ok=True, root=str(root), scanned_files=1),
+    )
+    monkeypatch.setattr(suite_security, "run_generated_output_policy_check", lambda env: _generated_policy(True))
+    monkeypatch.setattr(suite_security, "verify_release_artifacts_manifest", lambda *args, **kwargs: _release_artifacts(True))
+    monkeypatch.setattr(suite_security, "run_hosted_nullxoid_penetration_check", fake_penetration)
+
+    result = suite_security.run_suite_security_check(
+        env={
+            "AIBENCHIE_SUITE_SECURITY_ROOT": str(tmp_path),
+            "AIBENCHIE_SUITE_SECURITY_PENETRATION": "1",
+            "AIBENCHIE_NULLXOID_USERNAME": "admin",
+            "AIBENCHIE_NULLXOID_PASSWORD": "runtime-secret",
+        }
+    )
+
+    assert result.ok is True
+    assert called["username"] == "admin"
+    assert called["password"] == "runtime-secret"
+    assert next(check for check in result.checks if check.name == "hosted_nullxoid_penetration").status == "pass"
 
 
 def test_suite_security_cli_prints_json_without_secret_values(monkeypatch, capsys):

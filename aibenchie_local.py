@@ -16,6 +16,7 @@ from aibenchie.echolabs_store import run_from_env as run_echolabs_store_from_env
 from aibenchie.hosted_nullxoid_auth import run_from_env as run_hosted_nullxoid_auth_from_env
 from aibenchie.hosted_nullxoid_chat import run_from_env as run_hosted_nullxoid_chat_from_env
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_from_env as run_hosted_nullxoid_ephemeral_chat_from_env
+from aibenchie.hosted_nullxoid_penetration import run_from_env as run_hosted_nullxoid_penetration_from_env
 from aibenchie.hosted_nullxoid_stack import run_from_env as run_hosted_nullxoid_stack_from_env
 from aibenchie.companion_remote_backend import run_from_env as run_companion_remote_backend_from_env
 from aibenchie.deploy_addon import execute_deploy_addon, run_deploy_addon_check, verify_deploy_plan
@@ -206,6 +207,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--hosted-nullxoid-ephemeral-chat",
         action="store_true",
         help="Run hosted NullXoid chat E2E with a loopback-created short-lived test user.",
+    )
+    parser.add_argument(
+        "--hosted-nullxoid-penetration",
+        action="store_true",
+        help="Run credentialed hosted NullXoid auth/session negative probes using AIBENCHIE_NULLXOID_* environment variables.",
     )
     parser.add_argument(
         "--resource-budget",
@@ -939,6 +945,20 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Project: {chat.get('project_id') or '(none)'}")
             print(f"Model runtime: {chat.get('model') or '(none)'}")
             print(f"Cleanup test user: HTTP {result['cleanup_status']}")
+            print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
+        return 0 if result["ok"] else 1
+
+    if args.hosted_nullxoid_penetration:
+        result = run_hosted_nullxoid_penetration_from_env().as_dict()
+        if args.json:
+            print(json.dumps(result, indent=2, sort_keys=True))
+        else:
+            print("Hosted NullXoid Penetration Check")
+            print(f"Origin: {result['origin']}")
+            print(f"Base path: {result['base_path']}")
+            for probe in result["probes"]:
+                status = "PASS" if probe["ok"] else f"FAIL ({probe['failure']})"
+                print(f"{probe['name']}: HTTP {probe['status']} {status}")
             print("Result: PASS" if result["ok"] else f"Result: FAIL ({result['failure']})")
         return 0 if result["ok"] else 1
 

@@ -9,6 +9,7 @@ from typing import Any
 from aibenchie.generated_output_policy import run_generated_output_policy_check
 from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_ephemeral_chat import run_ephemeral_hosted_nullxoid_chat_check
+from aibenchie.hosted_nullxoid_penetration import run_hosted_nullxoid_penetration_check
 from aibenchie.hosted_nullxoid_stack import run_hosted_nullxoid_stack_check
 from aibenchie.local_nullbridge_runner import run_local_notification_path, run_local_trust_path
 from aibenchie.e2ee_readiness import run_e2ee_readiness_check
@@ -356,6 +357,26 @@ def run_suite_security_check(env: dict[str, str] | None = None) -> SuiteSecurity
         )
     else:
         checks.append(_skip_check("ephemeral_hosted_chat", "set AIBENCHIE_SUITE_SECURITY_EPHEMERAL=1"))
+
+    if _env_bool(source, "AIBENCHIE_SUITE_SECURITY_PENETRATION"):
+        penetration = run_hosted_nullxoid_penetration_check(
+            origin=origin,
+            base_path=base_path,
+            username=source.get("AIBENCHIE_NULLXOID_USERNAME", ""),
+            password=source.get("AIBENCHIE_NULLXOID_PASSWORD", ""),
+            timeout=int(source.get("AIBENCHIE_NULLXOID_PENETRATION_TIMEOUT", str(timeout))),
+        )
+        checks.append(
+            _check_from_result(
+                "hosted_nullxoid_penetration",
+                penetration.ok,
+                penetration.as_dict(),
+                severity="critical",
+                failure=penetration.failure or "hosted_nullxoid_penetration_failed",
+            )
+        )
+    else:
+        checks.append(_skip_check("hosted_nullxoid_penetration", "set AIBENCHIE_SUITE_SECURITY_PENETRATION=1"))
 
     if _env_bool(source, "AIBENCHIE_SUITE_SECURITY_E2EE"):
         e2ee = run_e2ee_readiness_check(root=root, env=source)
