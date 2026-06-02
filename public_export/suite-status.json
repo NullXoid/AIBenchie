@@ -1,29 +1,30 @@
 {
-  "aibenchie_verdict": "pass",
-  "build_id": "ms7-prerelease-candidate-20260521-001",
-  "expires_at": "2026-06-06T03:45:53.506088Z",
-  "generated_at": "2026-05-30T03:45:53.506088Z",
-  "latest_passing_build_id": "ms7-prerelease-candidate-20260521-001",
-  "latest_source": "latest-passing.json",
+  "aibenchie_verdict": "not-run",
+  "build_id": "current-nullxoid-20260602-152700",
+  "expires_at": "2026-06-09T19:27:21.045715Z",
+  "generated_at": "2026-06-02T19:27:21.045715Z",
+  "latest_passing_build_id": "",
+  "latest_source": "latest-verdict.json",
   "ok": true,
   "public_safe": true,
-  "release_candidate_ok": true,
+  "release_candidate_ok": false,
   "schema": "aibenchie.suite-status.v1",
   "schema_version": "1.0",
   "source_commits": {
-    ".NullXoid": "f2ac438f03c3418910bd14474aee8507250a79f0",
-    "AIBenchie": "a4d1b9b3038f023384cbf38df2ca10443a71bd62",
-    "Lv7": "16b5afe22612e8607c13c261000a812ff2a8c4b1",
+    ".NullXoid": "f69c42c61b1f91d0d5ed990dd49913e7ae40c0de",
+    "AIBenchie": "9da9c68753005feacabe0030b1277508697e8177",
+    "Lv7": "136106c74f018c67a18cf97702b0de572fbeacc8",
     "NullBridge": "9368078074d78463c47ad00c9134f59ddabd86a3",
-    "NullXoidAndroid": "a7153cbfc26af49a71273b7a09f77cceaae89542",
+    "NullXoidAndroid": "2e4d76f495892b344e35e311f679f646625da8b3",
     "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
-    "echolabs-site": "50e7cd178b74a8a8c2a7ca295c6e6ee426eda02f"
+    "echolabs-site": "5bc6191655fa1162bfee720ce730af4f90b60556"
   },
-  "status": "passing",
-  "suite_version": "0.9.0-prerelease.1",
+  "source_selection": "current",
+  "status": "draft",
+  "suite_version": "0.9.0-current",
   "summary": {
-    "release_candidate_ok": true,
-    "status_effective": "passing",
+    "release_candidate_ok": false,
+    "status_effective": "draft",
     "validation_failures": []
   }
 }
