@@ -1,8 +1,8 @@
 {
   "aibenchie_verdict": "not-run",
   "build_id": "current-nullxoid-20260602-152700",
-  "expires_at": "2026-06-09T19:27:21.045715Z",
-  "generated_at": "2026-06-02T19:27:21.045715Z",
+  "expires_at": "2026-06-09T19:49:59.647579Z",
+  "generated_at": "2026-06-02T19:49:59.647579Z",
   "latest_passing_build_id": "",
   "latest_source": "latest-verdict.json",
   "ok": true,
@@ -12,12 +12,12 @@
   "schema_version": "1.0",
   "source_commits": {
     ".NullXoid": "f69c42c61b1f91d0d5ed990dd49913e7ae40c0de",
-    "AIBenchie": "9da9c68753005feacabe0030b1277508697e8177",
+    "AIBenchie": "19bd44c365f444dff073b1a567980cfb93c541e3",
     "Lv7": "136106c74f018c67a18cf97702b0de572fbeacc8",
     "NullBridge": "9368078074d78463c47ad00c9134f59ddabd86a3",
     "NullXoidAndroid": "2e4d76f495892b344e35e311f679f646625da8b3",
     "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
-    "echolabs-site": "5bc6191655fa1162bfee720ce730af4f90b60556"
+    "echolabs-site": "c4e88b5a816bc3d1db1a7ca2561a5ea91e19e200"
   },
   "source_selection": "current",
   "status": "draft",
