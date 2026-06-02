@@ -774,6 +774,7 @@ def collect_repo_commit_evidence(root: Path | None = None) -> tuple[dict[str, An
     parent = base.parent
     candidates = {
         "AIBenchie": base,
+        ".NullXoid": parent / ".NullXoid",
         "NullXoidAndroid": parent / "NullXoidAndroid",
         "NullBridge": parent / "NullBridge",
         "echolabs-site": parent / "echolabs-site",
@@ -1289,8 +1290,9 @@ def export_website_status(
     *,
     out: str | Path,
     evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    prefer_passing: bool = True,
 ) -> dict[str, Any]:
-    candidate = _load_latest_candidate(evidence_root, prefer_passing=True)
+    candidate = _load_latest_candidate(evidence_root, prefer_passing=prefer_passing)
     validation = validate_status_payload(candidate)
     effective_status = str(validation.get("effective_status") or candidate.get("status") or "draft")
     verdict = str(candidate.get("aibenchie_verdict") or "not-run")
@@ -1318,6 +1320,7 @@ def export_website_status(
             "status_effective": effective_status,
             "validation_failures": validation.get("failures", []),
         },
+        "source_selection": "latest_passing" if prefer_passing else "current",
     }
     _assert_public_safe(payload)
     _write_json(Path(out), payload)
@@ -2843,6 +2846,11 @@ def build_parser() -> argparse.ArgumentParser:
     website = subparsers.add_parser("export-website-status", help="Export public-safe suite status JSON.")
     add_common(website)
     website.add_argument("--out", required=True)
+    website.add_argument(
+        "--current",
+        action="store_true",
+        help="Export latest-verdict.json instead of preferring latest-passing.json.",
+    )
 
     android = subparsers.add_parser("export-android-release", help="Export Android release status shell.")
     add_common(android)
@@ -2953,7 +2961,11 @@ def main(argv: list[str] | None = None) -> int:
         _print_result(result, json_output=args.json, title="AIBenchie Workflow Matrix Validation")
         return 0 if result["ok"] else 1
     if args.command == "export-website-status":
-        result = export_website_status(out=args.out, evidence_root=args.evidence_root)
+        result = export_website_status(
+            out=args.out,
+            evidence_root=args.evidence_root,
+            prefer_passing=not args.current,
+        )
         _print_result(result, json_output=args.json, title="AIBenchie Website Status Export")
         return 0
     if args.command == "export-android-release":

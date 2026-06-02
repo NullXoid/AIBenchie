@@ -479,6 +479,29 @@ def test_website_status_export_is_public_safe(tmp_path):
     assert "service_token" not in text
 
 
+def test_website_status_export_can_select_current_verdict(tmp_path):
+    release.verify_release_spine(evidence_root=tmp_path / "evidence", build_id="pass-001", verdict="pass")
+    release.promote_passing_candidate(evidence_root=tmp_path / "evidence", build_id="pass-001")
+    release.verify_release_spine(evidence_root=tmp_path / "evidence", build_id="current-001")
+
+    latest_passing = release.export_website_status(
+        evidence_root=tmp_path / "evidence",
+        out=tmp_path / "site" / "suite-status-passing.json",
+    )
+    current = release.export_website_status(
+        evidence_root=tmp_path / "evidence",
+        out=tmp_path / "site" / "suite-status-current.json",
+        prefer_passing=False,
+    )
+
+    assert latest_passing["build_id"] == "pass-001"
+    assert latest_passing["source_selection"] == "latest_passing"
+    assert current["build_id"] == "current-001"
+    assert current["latest_source"] == "latest-verdict.json"
+    assert current["source_selection"] == "current"
+    assert current["release_candidate_ok"] is False
+
+
 def test_android_release_export_does_not_fake_missing_proof(tmp_path):
     release.verify_release_spine(evidence_root=tmp_path / "evidence", build_id="draft-001")
 

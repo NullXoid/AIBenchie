@@ -48,6 +48,11 @@ $resolvedReportPath = if ([System.IO.Path]::IsPathRooted($ReportPath)) {
     [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot $ReportPath))
 }
 $universalE2EReportPath = [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $resolvedReportPath) "aibenchie_universal_e2e_latest.json"))
+$webRepoPath = if (Test-Path -LiteralPath (Join-Path $workspaceRoot ".NullXoid")) {
+    Join-Path $workspaceRoot ".NullXoid"
+} else {
+    Join-Path $workspaceRoot "NullXoid-live"
+}
 
 function Get-SuiteRelativePath {
     param(
@@ -191,7 +196,7 @@ if (-not $SkipWeb) {
         -Id "echolabs_web" `
         -Name "EchoLabs web shell" `
         -Owner "EchoLabs / NullXoid Chat" `
-        -WorkingDirectory (Join-Path $workspaceRoot "NullXoid-live") `
+        -WorkingDirectory $webRepoPath `
         -Command "npm" `
         -Arguments @("run", "release:gate")
 }
@@ -399,7 +404,7 @@ if ((-not $SkipRealDeviceUX) -and (Test-Path -LiteralPath $resolvedRealDeviceUXP
 if (-not $SkipDistributionHygiene) {
     $distributionRoots = @(
         [ordered]@{ Id = "aibenchie_distribution_hygiene"; Name = "AIBenchie distribution hygiene"; Owner = "AIBenchie"; Path = $aibenchieRoot },
-        [ordered]@{ Id = "web_distribution_hygiene"; Name = "EchoLabs web distribution hygiene"; Owner = "EchoLabs / NullXoid Chat"; Path = (Join-Path $workspaceRoot "NullXoid-live") },
+        [ordered]@{ Id = "web_distribution_hygiene"; Name = "EchoLabs web distribution hygiene"; Owner = "EchoLabs / NullXoid Chat"; Path = $webRepoPath },
         [ordered]@{ Id = "android_distribution_hygiene"; Name = "NullXoid Android distribution hygiene"; Owner = "NullXoid Android"; Path = (Join-Path $workspaceRoot "NullXoidAndroid") },
         [ordered]@{ Id = "desktop_distribution_hygiene"; Name = "NullXoid Desktop distribution hygiene"; Owner = "NullXoid Desktop / LV7"; Path = (Join-Path $workspaceRoot "AiAssistant") },
         [ordered]@{ Id = "nullbridge_distribution_hygiene"; Name = "BridgeEcho / NullBridge distribution hygiene"; Owner = "BridgeEcho"; Path = (Join-Path $workspaceRoot "NullBridge") },
