@@ -48,10 +48,20 @@ $resolvedReportPath = if ([System.IO.Path]::IsPathRooted($ReportPath)) {
     [System.IO.Path]::GetFullPath((Join-Path $workspaceRoot $ReportPath))
 }
 $universalE2EReportPath = [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $resolvedReportPath) "aibenchie_universal_e2e_latest.json"))
-$webRepoPath = if (Test-Path -LiteralPath (Join-Path $workspaceRoot ".NullXoid")) {
-    Join-Path $workspaceRoot ".NullXoid"
-} else {
-    Join-Path $workspaceRoot "NullXoid-live"
+$webRepoCandidates = @(
+    (Join-Path $workspaceRoot ".NullXoid"),
+    (Join-Path $workspaceRoot "NullXoid-live")
+)
+$webRepoPath = $webRepoCandidates |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_ "package.json") } |
+    Select-Object -First 1
+if (-not $webRepoPath) {
+    $webRepoPath = $webRepoCandidates |
+        Where-Object { Test-Path -LiteralPath $_ } |
+        Select-Object -First 1
+}
+if (-not $webRepoPath) {
+    $webRepoPath = Join-Path $workspaceRoot "NullXoid-live"
 }
 
 function Get-SuiteRelativePath {

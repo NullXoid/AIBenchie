@@ -55,7 +55,7 @@
           "type": "web",
           "adapter": "command",
           "required": true,
-          "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../.NullXoid}",
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
           "command": ["npm", "run", "verify:nullxoid"],
           "timeout_seconds": 240,
           "notes": "Runs the EchoLabs web shell build and NullXoid UI contract checks until the browser-driven Playwright adapter is promoted."
@@ -67,7 +67,7 @@
           "adapter": "web_browser",
           "required": true,
           "retries": 1,
-          "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../.NullXoid}",
+          "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
           "env": {
             "VITE_NULLXOID_EMBED_LOCAL_APP": "true"
           },
