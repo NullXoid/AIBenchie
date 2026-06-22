@@ -232,3 +232,99 @@ def test_release_module_cli_validates_suite_candidate(tmp_path, capsys):
     assert code == 0
     assert payload["ok"] is True
     assert payload["aibenchie_verdict"] == "pass"
+
+
+def test_assemble_suite_candidate_accepts_fresh_subgate_builds(tmp_path, monkeypatch):
+    evidence = tmp_path / "evidence"
+    build_id = "ms7-fresh-candidate"
+    workflow_build_id = "ms3-live-20260622-190145"
+
+    monkeypatch.setattr(
+        release,
+        "collect_repo_commit_evidence",
+        lambda: (
+            _repo_commits(build_id),
+            {
+                "AIBenchie": "abc123",
+                "NullXoidAndroid": "def456",
+                "NullBridge": "fed321",
+                "Lv7": "789abc",
+            },
+        ),
+    )
+
+    _write_json(
+        evidence / workflow_build_id / "workflow-matrix-verdict.json",
+        {
+            "schema": release.WORKFLOW_MATRIX_VERDICT_SCHEMA,
+            "schema_version": release.SCHEMA_VERSION,
+            "build_id": workflow_build_id,
+            "generated_at": "2026-06-22T23:24:43Z",
+            "ok": True,
+            "aibenchie_verdict": "pass",
+            "failures": [],
+            "workflow_count": 14,
+            "prerelease_count": 7,
+            "frozen_prerelease_workflows": ["standard-prompt-image"],
+            "validated_prerelease_workflows": ["standard-prompt-image"],
+        },
+    )
+    _write_json(
+        tmp_path / "android-status.json",
+        {
+            "schema": "nullxoid.android-release-status.v1",
+            "aibenchie_verdict": "pass",
+            "app_id": "nullxoid_android",
+            "package_name": "com.nullxoid.android",
+            "app_version": "0.2.0-alpha.1",
+            "version_code": "98",
+            "publish_state": "ready_to_publish",
+            "signing_status": "pass",
+            "signing_fingerprint_match": True,
+            "apk": {"present": True, "sha256": "abc"},
+            "update_notes": {"present": True},
+            "proof": {
+                "primary": {"present": True},
+                "secondary": {"present": True},
+            },
+        },
+    )
+    for subgate_build_id, relative_path, schema in (
+        ("ms4-nullbridge-refresh", "nullbridge-proof/nullbridge-prerelease-verdict.json", release.NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA),
+        ("ms5-lv7-refresh", "lv7-proof/lv7-operator-loop-verdict.json", release.LV7_OPERATOR_LOOP_VERDICT_SCHEMA),
+        ("ms6-store-refresh", "store-proof/store-addons-verdict.json", release.STORE_ADDONS_VERDICT_SCHEMA),
+    ):
+        _write_json(
+            evidence / subgate_build_id / relative_path,
+            {
+                "schema": schema,
+                "schema_version": release.SCHEMA_VERSION,
+                "build_id": subgate_build_id,
+                "generated_at": "2026-06-22T23:24:43Z",
+                "ok": True,
+                "aibenchie_verdict": "pass",
+                "verdict": "pass",
+            },
+        )
+
+    result = release.assemble_suite_candidate(
+        build_id=build_id,
+        workflow_build_id=workflow_build_id,
+        evidence_root=evidence,
+        android_status=tmp_path / "android-status.json",
+        nullbridge_build_id="ms4-nullbridge-refresh",
+        lv7_build_id="ms5-lv7-refresh",
+        store_build_id="ms6-store-refresh",
+        now=datetime(2026, 6, 22, 23, 30, tzinfo=timezone.utc),
+    )
+
+    assert result["ok"] is True
+    workflow = json.loads((evidence / build_id / "workflow-matrix-verdict.json").read_text(encoding="utf-8"))
+    assert workflow["build_id"] == build_id
+    assert workflow["source_build_id"] == workflow_build_id
+    validation = release.validate_suite_candidate(
+        evidence_root=evidence,
+        build_id=build_id,
+        now=datetime(2026, 6, 22, 23, 31, tzinfo=timezone.utc),
+    )
+    assert validation["ok"] is True

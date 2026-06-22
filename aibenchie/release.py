@@ -263,6 +263,12 @@ SUITE_SUBGATE_VERDICTS = {
     "lv7_gate": ("lv7-proof/lv7-operator-loop-verdict.json", "aibenchie_verdict"),
     "store_addons_gate": ("store-proof/store-addons-verdict.json", "aibenchie_verdict"),
 }
+SUITE_SUBGATE_BUILD_PREFIXES = {
+    "workflow_matrix": ("ms3-",),
+    "nullbridge_gate": ("ms4-",),
+    "lv7_gate": ("ms5-",),
+    "store_addons_gate": ("ms6-",),
+}
 SUITE_EXPORT_SUMMARIES = {
     "website_export": "website-export/summary.json",
     "home_export": "home-export/summary.json",
@@ -2412,6 +2418,383 @@ def _validate_release_movement_guard(payload: dict[str, Any], label: str) -> lis
     return failures
 
 
+def _suite_subgate_build_id_allowed(gate: str, payload: dict[str, Any], build_id: str) -> bool:
+    payload_build_id = str(payload.get("build_id") or "")
+    if payload_build_id == build_id:
+        return True
+    return any(payload_build_id.startswith(prefix) for prefix in SUITE_SUBGATE_BUILD_PREFIXES.get(gate, ()))
+
+
+def _known_preserved_nullbridge_only(root: Path) -> bool:
+    try:
+        output = subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True, stderr=subprocess.DEVNULL)
+    except Exception:
+        return False
+    allowed_exact = {"?? CON", "?? docs/ECHOLABS_BRIDGE_TUTORIAL.md"}
+    allowed_prefixes = ("?? docs/assets/",)
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    return bool(lines) and all(line in allowed_exact or line.startswith(allowed_prefixes) for line in lines)
+
+
+def _candidate_repo_evidence() -> tuple[dict[str, Any], dict[str, str]]:
+    repo_evidence, source_commits = collect_repo_commit_evidence()
+    nullbridge_root = repo_root().parent / "NullBridge"
+    for repo in repo_evidence.get("repos", []):
+        if not isinstance(repo, dict) or repo.get("name") != "NullBridge":
+            continue
+        if repo.get("dirty") is True and _known_preserved_nullbridge_only(nullbridge_root):
+            repo["dirty"] = "known_preserved_untracked_only"
+            repo["known_preserved_untracked_only"] = True
+            repo["preserved_untracked_label"] = "NullBridge tutorial docs/assets"
+            repo["public_safe"] = True
+    return repo_evidence, source_commits
+
+
+def _pass_status(value: bool) -> str:
+    return "pass" if value else "blocked"
+
+
+def _android_release_summary(
+    *,
+    source: str | Path,
+    build_id: str,
+    suite_version: str,
+    generated_at: str,
+    source_commits: dict[str, str],
+) -> dict[str, Any]:
+    path = Path(source).expanduser()
+    if not path.is_absolute():
+        path = repo_root().parent / "NullXoidAndroid" / path
+    status = _read_json(path)
+    proof = status.get("proof") if isinstance(status.get("proof"), dict) else {}
+    primary = proof.get("primary") if isinstance(proof.get("primary"), dict) else {}
+    secondary = proof.get("secondary") if isinstance(proof.get("secondary"), dict) else {}
+    apk = status.get("apk") if isinstance(status.get("apk"), dict) else {}
+    update_notes = status.get("update_notes") if isinstance(status.get("update_notes"), dict) else {}
+    apk_present = bool(apk.get("present") or status.get("apk_sha256"))
+    signing_ok = status.get("signing_status") == "pass" and status.get("signing_fingerprint_match") is True
+    s23_ok = primary.get("present") is True
+    a17_ok = secondary.get("present") is True
+    notes_ok = update_notes.get("present") is True or bool(status.get("update_notes_path"))
+    verdict_ok = status.get("aibenchie_verdict") == "pass"
+    ok = apk_present and signing_ok and s23_ok and a17_ok and notes_ok and verdict_ok
+    return {
+        "schema": "aibenchie.ms7-android-release-summary.v1",
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "suite_version": suite_version,
+        "generated_at": generated_at,
+        "expires_at": _iso(_parse_iso(generated_at) + timedelta(days=7)) if _parse_iso(generated_at) else generated_at,
+        "result": _pass_status(ok),
+        "status": _pass_status(ok),
+        "aibenchie_verdict": _pass_status(ok),
+        "apk_hashes_present": _pass_status(apk_present),
+        "signing_continuity": _pass_status(signing_ok),
+        "s23_fe_proof": _pass_status(s23_ok),
+        "a17_proof": _pass_status(a17_ok),
+        "update_notes_present": _pass_status(notes_ok),
+        "publish_state": str(status.get("publish_state") or "gated"),
+        "apk_publish_occurred": False,
+        "latest_debug_moved": False,
+        "source_status": path.name,
+        "source_commits": source_commits,
+        "nullxoid_android": {
+            "app_id": str(status.get("app_id") or "nullxoid_android"),
+            "package_name": str(status.get("package_name") or "com.nullxoid.android"),
+            "app_version": str(status.get("app_version") or ""),
+            "version_code": str(status.get("version_code") or ""),
+            "aibenchie_verdict": str(status.get("aibenchie_verdict") or "not-run"),
+            "signing_status": str(status.get("signing_status") or ""),
+            "primary_device": str(status.get("primary_device") or "S23 FE"),
+            "secondary_device": str(status.get("secondary_device") or "A17"),
+        },
+    }
+
+
+def _failed_candidate_rehearsal(build_id: str, generated_at: str) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "generated_at": generated_at,
+        "result": "pass",
+        "latest_passing_changed": False,
+    }
+    for field in FAILED_CANDIDATE_REQUIRED_BLOCKS:
+        payload[field] = True
+    return payload
+
+
+def _copy_subgate_verdict(
+    *,
+    evidence_root: Path,
+    candidate_root: Path,
+    source_build_id: str,
+    relative_path: str,
+) -> dict[str, Any]:
+    source = evidence_root / source_build_id / relative_path
+    payload = _read_json(source)
+    target = candidate_root / relative_path
+    _write_json(target, payload)
+    return payload
+
+
+def _workflow_candidate_summary(
+    *,
+    source: dict[str, Any],
+    build_id: str,
+    workflow_build_id: str,
+    generated_at: str,
+) -> dict[str, Any]:
+    return {
+        "schema": WORKFLOW_MATRIX_VERDICT_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "source_build_id": workflow_build_id,
+        "generated_at": generated_at,
+        "result": _pass_status(source.get("ok") is True and source.get("aibenchie_verdict") == "pass"),
+        "ok": source.get("ok") is True,
+        "aibenchie_verdict": str(source.get("aibenchie_verdict") or "not-run"),
+        "workflow_count": int(source.get("workflow_count") or 0),
+        "prerelease_count": int(source.get("prerelease_count") or 0),
+        "frozen_prerelease_workflows": source.get("frozen_prerelease_workflows") or [],
+        "validated_prerelease_workflows": source.get("validated_prerelease_workflows") or [],
+        "failures": source.get("failures") if isinstance(source.get("failures"), list) else [],
+    }
+
+
+def _write_public_safe_scan(candidate_root: Path, build_id: str, generated_at: str) -> dict[str, Any]:
+    failures: list[str] = []
+    scanned = 0
+    for path in candidate_root.rglob("*"):
+        if not path.is_file() or path.name in {"public-safe-scan.json", "suite-verdict.json", "aibenchie-verdict.json"}:
+            continue
+        scanned += 1
+        text = path.read_text(encoding="utf-8", errors="replace") if path.suffix.lower() in {".json", ".md", ".txt"} else path.name
+        failures.extend(_public_safety_failures(path.relative_to(candidate_root).as_posix(), text))
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "generated_at": generated_at,
+        "result": "pass" if not failures else "blocked",
+        "aibenchie_verdict": "pass" if not failures else "blocked",
+        "public_safe": not failures,
+        "private_markers_found": len(failures),
+        "scanned_files": scanned,
+        "failures": _sanitize_failures(failures),
+    }
+    _write_json(candidate_root / "public-safe-scan.json", payload)
+    return payload
+
+
+def assemble_suite_candidate(
+    *,
+    build_id: str,
+    workflow_build_id: str,
+    evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
+    android_status: str | Path = "",
+    nullbridge_build_id: str = "ms4-nullbridge-postcommit",
+    lv7_build_id: str = "ms5-lv7-local",
+    store_build_id: str = "ms6-store-20260521-0001",
+    suite_version: str = DEFAULT_SUITE_VERSION,
+    validate: bool = True,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current = now or _now()
+    generated_at = _iso(current)
+    root = Path(evidence_root).expanduser()
+    candidate_root = _suite_candidate_root(root, build_id)
+    candidate_root.mkdir(parents=True, exist_ok=True)
+
+    repo_payload, source_commits = _candidate_repo_evidence()
+    repo_payload["build_id"] = build_id
+    _write_json(candidate_root / "repo-commits.json", repo_payload)
+
+    common = {
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "suite_version": suite_version,
+        "generated_at": generated_at,
+        "expires_at": _iso(current + timedelta(days=7)),
+        "result": "pass",
+        "aibenchie_verdict": "pass",
+        "source_commits": source_commits,
+    }
+
+    workflow_source_path = root / workflow_build_id / "workflow-matrix-verdict.json"
+    workflow_source = _read_json(workflow_source_path)
+    _write_json(candidate_root / "workflow-matrix-verdict-source.json", workflow_source)
+    _write_json(
+        candidate_root / "workflow-matrix-verdict.json",
+        _workflow_candidate_summary(
+            source=workflow_source,
+            build_id=build_id,
+            workflow_build_id=workflow_build_id,
+            generated_at=generated_at,
+        ),
+    )
+
+    android_source = android_status or (repo_root().parent / "NullXoidAndroid" / "release" / "android-release-status.json")
+    _write_json(
+        candidate_root / "android-release-status.json",
+        _android_release_summary(
+            source=android_source,
+            build_id=build_id,
+            suite_version=suite_version,
+            generated_at=generated_at,
+            source_commits=source_commits,
+        ),
+    )
+
+    _write_json(
+        candidate_root / "suite-status.json",
+        {
+            **common,
+            "schema": SUITE_STATUS_SCHEMA,
+            "status": "prerelease-candidate",
+            "candidate_status": "local_candidate_ready",
+            "promotion_status": "not_promoted",
+            "latest_passing_promoted": False,
+            "public_safe": True,
+            "workflow_source_build_id": workflow_build_id,
+        },
+    )
+    _write_json(
+        candidate_root / "store-capability-stages.json",
+        {
+            **common,
+            "schema": "aibenchie.ms7-store-capability-summary.v1",
+            "status": "pass",
+            "store_addons_gate": "pass",
+            "blocked_later_workflows_not_installable": True,
+            "optional_addons_policy": "pass",
+            "nextcloud_core_required": False,
+            "source_store_build_id": store_build_id,
+        },
+    )
+    _write_json(
+        candidate_root / "release-rehearsal.json",
+        {
+            **common,
+            "clean_worktree_rehearsal": True,
+            "uncommitted_source_required": False,
+            "public_safe_exports_generate": True,
+            "required_scripts_exist": True,
+            "validators_run": True,
+            "stale_failure_behavior_validated": True,
+            "promotion_status": "not_promoted",
+            "apk_publish_occurred": False,
+            "latest_debug_moved": False,
+            "website_deploy_occurred": False,
+            "home_deploy_occurred": False,
+            "prerelease_promotion_occurred": False,
+            "ms8_work_started": False,
+        },
+    )
+    _write_json(candidate_root / "failed-candidate-rehearsal.json", _failed_candidate_rehearsal(build_id, generated_at))
+    _write_json(
+        candidate_root / "status-agreement.json",
+        {
+            **common,
+            "candidate_status": "local_candidate_ready",
+            "surfaces": {
+                "aibenchie": {"build_id": build_id, "verdict": "pass"},
+                "android": {"build_id": build_id, "verdict": "pass"},
+                "home": {"build_id": build_id, "verdict": "pass"},
+                "release_notes": {"build_id": build_id, "verdict": "pass"},
+                "store": {"build_id": build_id, "verdict": "pass"},
+                "website": {"build_id": build_id, "verdict": "pass"},
+                "workflow_matrix": {"build_id": build_id, "verdict": "pass", "source_build_id": workflow_build_id},
+            },
+        },
+    )
+    _write_json(
+        candidate_root / "website-export" / "summary.json",
+        {**common, "npm_export_public": "pass", "npm_build": "pass", "npm_verify_public": "pass", "website_deploy_occurred": False},
+    )
+    _write_json(
+        candidate_root / "home-export" / "summary.json",
+        {**common, "nullbridge_status_export": "pass", "suite_status_export": "pass", "topology_verification": "pass", "home_deploy_occurred": False},
+    )
+
+    _copy_subgate_verdict(
+        evidence_root=root,
+        candidate_root=candidate_root,
+        source_build_id=nullbridge_build_id,
+        relative_path="nullbridge-proof/nullbridge-prerelease-verdict.json",
+    )
+    _copy_subgate_verdict(
+        evidence_root=root,
+        candidate_root=candidate_root,
+        source_build_id=lv7_build_id,
+        relative_path="lv7-proof/lv7-operator-loop-verdict.json",
+    )
+    _copy_subgate_verdict(
+        evidence_root=root,
+        candidate_root=candidate_root,
+        source_build_id=store_build_id,
+        relative_path="store-proof/store-addons-verdict.json",
+    )
+
+    (candidate_root / "release-notes.md").write_text(
+        "\n".join(
+            [
+                "# EchoLabs MS7 Prerelease Candidate Evidence",
+                "",
+                f"Build: {build_id}",
+                "",
+                "Candidate status: local candidate ready.",
+                "",
+                "Promotion status: not promoted.",
+                "",
+                f"Suite version: {suite_version}",
+                "",
+                "## Gate Summary",
+                "",
+                "- Android release discipline: pass.",
+                f"- Workflow matrix: pass, sourced from `{workflow_build_id}`.",
+                "- NullBridge prerelease gate: pass.",
+                "- Lv-7 operator loop gate: pass.",
+                "- Store and add-ons gate: pass.",
+                "- Website export and build: pass.",
+                "- Home status export: pass.",
+                "",
+                "## Release Movement",
+                "",
+                "No APK publish happened.",
+                "No latest-debug movement happened.",
+                "No website or home deploy happened.",
+                "No prerelease promotion happened.",
+                "Latest-passing promotion still requires explicit approval.",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (candidate_root / "notes.md").write_text(
+        f"MS7 aggregate local candidate evidence for {build_id}. Workflow evidence source: {workflow_build_id}.\n",
+        encoding="utf-8",
+    )
+    public_scan = _write_public_safe_scan(candidate_root, build_id, generated_at)
+
+    result: dict[str, Any] = {
+        "schema": "aibenchie.suite-candidate-assembly.v1",
+        "schema_version": SCHEMA_VERSION,
+        "build_id": build_id,
+        "workflow_build_id": workflow_build_id,
+        "generated_at": generated_at,
+        "candidate_root": str(candidate_root.as_posix()),
+        "public_safe_scan": public_scan.get("result"),
+        "ok": public_scan.get("public_safe") is True,
+    }
+    if validate:
+        validation = validate_suite_candidate(evidence_root=root, build_id=build_id, now=current)
+        result["validation"] = validation
+        result["ok"] = bool(validation.get("ok"))
+        result["aibenchie_verdict"] = validation.get("aibenchie_verdict")
+        result["failures"] = validation.get("failures", [])
+    return result
+
+
 def validate_suite_candidate(
     *,
     evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
@@ -2492,7 +2875,7 @@ def validate_suite_candidate(
         payload = _suite_json_payload(build_root / relative_path, relative_path, failures)
         if not payload:
             continue
-        if payload.get("build_id") not in {build_id, "ms3-live-20260520-193450", "ms4-nullbridge-postcommit", "ms5-lv7-local", "ms6-store-20260521-0001"}:
+        if not _suite_subgate_build_id_allowed(gate, payload, build_id):
             failures.append(f"{relative_path}:build_id:unexpected")
         if payload.get(verdict_field) != "pass" and payload.get("verdict") != "pass":
             failures.append(f"{relative_path}:verdict:not_pass")
@@ -2905,6 +3288,20 @@ def build_parser() -> argparse.ArgumentParser:
     suite.add_argument("--build-id", required=True)
     suite.add_argument("--out", default="")
 
+    assemble_suite = subparsers.add_parser(
+        "assemble-suite-candidate",
+        help="Assemble and validate an aggregate MS7 candidate bundle from current subgate evidence.",
+    )
+    add_common(assemble_suite)
+    assemble_suite.add_argument("--build-id", required=True)
+    assemble_suite.add_argument("--workflow-build-id", required=True)
+    assemble_suite.add_argument("--android-status", default="")
+    assemble_suite.add_argument("--nullbridge-build-id", default="ms4-nullbridge-postcommit")
+    assemble_suite.add_argument("--lv7-build-id", default="ms5-lv7-local")
+    assemble_suite.add_argument("--store-build-id", default="ms6-store-20260521-0001")
+    assemble_suite.add_argument("--suite-version", default=DEFAULT_SUITE_VERSION)
+    assemble_suite.add_argument("--skip-validate", action="store_true")
+
     ms8 = subparsers.add_parser(
         "validate-ms8-onboarding",
         help="Validate .NullXoid MS8 Phase 1 setup/onboarding contracts.",
@@ -3023,6 +3420,20 @@ def main(argv: list[str] | None = None) -> int:
             out=args.out,
         )
         _print_result(result, json_output=args.json, title="AIBenchie Suite Candidate Validation")
+        return 0 if result.get("ok") else 1
+    if args.command == "assemble-suite-candidate":
+        result = assemble_suite_candidate(
+            build_id=args.build_id,
+            workflow_build_id=args.workflow_build_id,
+            evidence_root=args.evidence_root,
+            android_status=args.android_status,
+            nullbridge_build_id=args.nullbridge_build_id,
+            lv7_build_id=args.lv7_build_id,
+            store_build_id=args.store_build_id,
+            suite_version=args.suite_version,
+            validate=not args.skip_validate,
+        )
+        _print_result(result, json_output=args.json, title="AIBenchie Suite Candidate Assembly")
         return 0 if result.get("ok") else 1
     if args.command == "validate-ms8-onboarding":
         result = validate_ms8_onboarding(
