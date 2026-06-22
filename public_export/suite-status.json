@@ -1,8 +1,8 @@
 {
   "aibenchie_verdict": "not-run",
-  "build_id": "current-nullxoid-20260602-152700",
-  "expires_at": "2026-06-09T19:49:59.647579Z",
-  "generated_at": "2026-06-02T19:49:59.647579Z",
+  "build_id": "current-nullxoid-20260622-192719",
+  "expires_at": "2026-06-29T23:27:20.700062Z",
+  "generated_at": "2026-06-22T23:27:20.700062Z",
   "latest_passing_build_id": "",
   "latest_source": "latest-verdict.json",
   "ok": true,
@@ -11,17 +11,17 @@
   "schema": "aibenchie.suite-status.v1",
   "schema_version": "1.0",
   "source_commits": {
-    ".NullXoid": "f69c42c61b1f91d0d5ed990dd49913e7ae40c0de",
-    "AIBenchie": "19bd44c365f444dff073b1a567980cfb93c541e3",
-    "Lv7": "136106c74f018c67a18cf97702b0de572fbeacc8",
-    "NullBridge": "9368078074d78463c47ad00c9134f59ddabd86a3",
-    "NullXoidAndroid": "2e4d76f495892b344e35e311f679f646625da8b3",
+    ".NullXoid": "f9abf7996826b9be8179485d750c4c503433b6fb",
+    "AIBenchie": "6fa56cfc3c688656322402f11b73ae0d890212a7",
+    "Lv7": "994e2bb29b0a202b79be67bf796081c741e2b4a9",
+    "NullBridge": "a4f16c8ffa5916c3c604d21d0cad4fb0e67952c4",
+    "NullXoidAndroid": "da516d2642c4d89d17257a774b366b8106e845ec",
     "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
-    "echolabs-site": "c4e88b5a816bc3d1db1a7ca2561a5ea91e19e200"
+    "echolabs-site": "0c8e1ebfcce58b3493c697ddab81473b0f704f9b"
   },
   "source_selection": "current",
   "status": "draft",
-  "suite_version": "0.9.0-current",
+  "suite_version": "0.9.0-prerelease.1",
   "summary": {
     "release_candidate_ok": false,
     "status_effective": "draft",
