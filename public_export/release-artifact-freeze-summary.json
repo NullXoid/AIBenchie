@@ -1,0 +1,138 @@
+{
+  "aibenchie_verdict": "pass",
+  "artifacts": [
+    {
+      "byte_size": 521048,
+      "digest": {
+        "algorithm": "sha256",
+        "value": "52ce95098ff809fc60223be3340b711b364f405138e29b794958961dfe6d9329"
+      },
+      "kind": "wrapper",
+      "name": "wrapper-package",
+      "package_name": "nullxoid-wrapper.zip",
+      "package_path": "nullxoid-wrapper.zip",
+      "sha256": "52ce95098ff809fc60223be3340b711b364f405138e29b794958961dfe6d9329",
+      "sidecars": {
+        "manifest": {
+          "path": "release-attestation/wrapper.manifest.json",
+          "sha256": "192c5e0934f32c66eb285cc25c5ad4a31bcb5ac205da5fc1f435be4b28151d49"
+        },
+        "sbom": {
+          "path": "release-attestation/wrapper.sbom.json",
+          "sha256": "e601576e628319a4231250e2eb1b9b31e6378a02226522a106c1b411b7201627"
+        },
+        "signature": {
+          "algorithm": "hmac-sha256-v1",
+          "key_id": "local-ms7-freeze-validation",
+          "path": "release-attestation/wrapper.sig.json",
+          "sha256": "6d843db879ad5dad7f2b2b35a1a6fddcf504ee4de3a2d6d32a4d1f24ef7e579a"
+        }
+      },
+      "source_reference": "../.NullXoid/frontend/dist"
+    },
+    {
+      "byte_size": 56908590,
+      "digest": {
+        "algorithm": "sha256",
+        "value": "ec1a4e375216341b6d420a83ed52f95f594b8072788aa0493c758d2cf597331d"
+      },
+      "kind": "android",
+      "name": "android-package",
+      "package_name": "nullxoid-companion.apk",
+      "package_path": "nullxoid-companion.apk",
+      "sha256": "ec1a4e375216341b6d420a83ed52f95f594b8072788aa0493c758d2cf597331d",
+      "sidecars": {
+        "manifest": {
+          "path": "release-attestation/android.manifest.json",
+          "sha256": "045fb8c6c739858be2cbb3c9d999095c51007ed308938e9f2c4e906ef2be8119"
+        },
+        "sbom": {
+          "path": "release-attestation/android.sbom.json",
+          "sha256": "f452905b597de86ca9e6c93138b44fc44670eed845c4b9471426d7c1bc52fbb4"
+        },
+        "signature": {
+          "algorithm": "hmac-sha256-v1",
+          "key_id": "local-ms7-freeze-validation",
+          "path": "release-attestation/android.sig.json",
+          "sha256": "d34162583301e331a4c9af873bc95bcdd159468d203a7b07f0f1913014e64b9e"
+        }
+      },
+      "source_reference": "../NullXoidAndroid/release/NullXoidAndroid-debug.apk"
+    },
+    {
+      "byte_size": 1743857,
+      "digest": {
+        "algorithm": "sha256",
+        "value": "7b95e4255d3a7810cd2e3eb5c5c4c4f7e87dffcf5b124e7f3b9a556ddda6069b"
+      },
+      "kind": "public",
+      "name": "public-package",
+      "package_name": "echolabs-public-site.zip",
+      "package_path": "echolabs-public-site.zip",
+      "sha256": "7b95e4255d3a7810cd2e3eb5c5c4c4f7e87dffcf5b124e7f3b9a556ddda6069b",
+      "sidecars": {
+        "manifest": {
+          "path": "release-attestation/public.manifest.json",
+          "sha256": "c8724e010e406ea1d816b74299b48b4c14995729f8bf85466680d2323851af05"
+        },
+        "sbom": {
+          "path": "release-attestation/public.sbom.json",
+          "sha256": "1bc90db646ee182a0ee7720c9e15fc363a9c7cf480c03107c0b5311fb7149fed"
+        },
+        "signature": {
+          "algorithm": "hmac-sha256-v1",
+          "key_id": "local-ms7-freeze-validation",
+          "path": "release-attestation/public.sig.json",
+          "sha256": "32631f71e37b40bfb807744b3b3a50a68fa6865b1356ecd13c7b512ae0f1b4f3"
+        }
+      },
+      "source_reference": "../echolabs-site/dist"
+    }
+  ],
+  "build_id": "ms7-prerelease-candidate-20260622-195825",
+  "generated_at": "2026-06-23T00:48:26.789152+00:00",
+  "manifest": {
+    "artifact_count": 3,
+    "local_full_attestation": true,
+    "path": ".suite/local/aibenchie/release-freezes/ms7-prerelease-candidate-20260622-195825/release-artifacts.json",
+    "required_artifact_kinds": [
+      "wrapper",
+      "android",
+      "public"
+    ],
+    "sha256": "57689ce49d42a1b2d4b62a6d4bf09df9a511838a03484c72b154baa17aa4adeb"
+  },
+  "notes": [
+    "No APK publish occurred and latest-debug was not moved.",
+    "Full package bytes, SBOMs, signatures, and signing key material are kept out of git under ignored local evidence paths.",
+    "Wrapper artifact is the rebuilt local .NullXoid frontend dist at the source commit recorded in MS7; the current live suite.echolabs.diy JS bundle was not found in local builds, so this is not claimed as a byte-for-byte live mirror."
+  ],
+  "public_safe": true,
+  "publication_boundaries": {
+    "apk_publish_occurred": false,
+    "full_manifest_committed": false,
+    "hmac_key_material_committed": false,
+    "latest_debug_moved": false,
+    "package_bytes_committed": false
+  },
+  "release_candidate_ok": true,
+  "schema": "aibenchie.release-artifact-freeze-summary.v1",
+  "schema_version": "1.0",
+  "source_commits": {
+    ".NullXoid": "f9abf7996826b9be8179485d750c4c503433b6fb",
+    "AIBenchie": "e164efed955b730488043831a558016a0c4e6f4a",
+    "Lv7": "994e2bb29b0a202b79be67bf796081c741e2b4a9",
+    "NullBridge": "a4f16c8ffa5916c3c604d21d0cad4fb0e67952c4",
+    "NullXoidAndroid": "da516d2642c4d89d17257a774b366b8106e845ec",
+    "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
+    "echolabs-site": "321225f893f674fea975b8c9641a838cc87c66ec"
+  },
+  "status": "passing",
+  "suite_version": "0.9.0-prerelease.1",
+  "verification": {
+    "artifact_count": 3,
+    "failures": [],
+    "ok": true,
+    "signature_policy": "full HMAC-SHA256 sidecars verified locally with runtime signing key material; key material and package bytes are not committed"
+  }
+}
