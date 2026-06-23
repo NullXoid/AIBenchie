@@ -15,17 +15,17 @@
       "sidecars": {
         "manifest": {
           "path": "release-attestation/wrapper.manifest.json",
-          "sha256": "192c5e0934f32c66eb285cc25c5ad4a31bcb5ac205da5fc1f435be4b28151d49"
+          "sha256": "5c20aec41543276b2e103d7f212adcc0cef5ce296f46725cc19c91251aa3d611"
         },
         "sbom": {
           "path": "release-attestation/wrapper.sbom.json",
-          "sha256": "e601576e628319a4231250e2eb1b9b31e6378a02226522a106c1b411b7201627"
+          "sha256": "e5e996ec5f5c278fbdd02410343e941f47f2afc255f5852892e537b7d7b6a9c6"
         },
         "signature": {
           "algorithm": "hmac-sha256-v1",
           "key_id": "local-ms7-freeze-validation",
           "path": "release-attestation/wrapper.sig.json",
-          "sha256": "6d843db879ad5dad7f2b2b35a1a6fddcf504ee4de3a2d6d32a4d1f24ef7e579a"
+          "sha256": "6f02964fcf7da2a57a0434abd091e70368be9c0f8a23a3b30353afa8f43ee25c"
         }
       },
       "source_reference": "../.NullXoid/frontend/dist"
@@ -44,53 +44,53 @@
       "sidecars": {
         "manifest": {
           "path": "release-attestation/android.manifest.json",
-          "sha256": "045fb8c6c739858be2cbb3c9d999095c51007ed308938e9f2c4e906ef2be8119"
+          "sha256": "5675f3405ee4637b52befa9dd18f826f0d780ec8d2d576cbda723835d695bed0"
         },
         "sbom": {
           "path": "release-attestation/android.sbom.json",
-          "sha256": "f452905b597de86ca9e6c93138b44fc44670eed845c4b9471426d7c1bc52fbb4"
+          "sha256": "2d8d1b8ba0dce30ef3f639326265dd9a77875973eaa424365aab82e04785af7b"
         },
         "signature": {
           "algorithm": "hmac-sha256-v1",
           "key_id": "local-ms7-freeze-validation",
           "path": "release-attestation/android.sig.json",
-          "sha256": "d34162583301e331a4c9af873bc95bcdd159468d203a7b07f0f1913014e64b9e"
+          "sha256": "d5f7f56e3ad56488035a4a9f7f84e46c12cfa1b91c755f3278fce3b342e8dfde"
         }
       },
       "source_reference": "../NullXoidAndroid/release/NullXoidAndroid-debug.apk"
     },
     {
-      "byte_size": 1743857,
+      "byte_size": 1746020,
       "digest": {
         "algorithm": "sha256",
-        "value": "7b95e4255d3a7810cd2e3eb5c5c4c4f7e87dffcf5b124e7f3b9a556ddda6069b"
+        "value": "55f35123fc551833f118bbfddae7fbaa5ee61654eb5b56ff16ac08acfac2727c"
       },
       "kind": "public",
       "name": "public-package",
       "package_name": "echolabs-public-site.zip",
       "package_path": "echolabs-public-site.zip",
-      "sha256": "7b95e4255d3a7810cd2e3eb5c5c4c4f7e87dffcf5b124e7f3b9a556ddda6069b",
+      "sha256": "55f35123fc551833f118bbfddae7fbaa5ee61654eb5b56ff16ac08acfac2727c",
       "sidecars": {
         "manifest": {
           "path": "release-attestation/public.manifest.json",
-          "sha256": "c8724e010e406ea1d816b74299b48b4c14995729f8bf85466680d2323851af05"
+          "sha256": "5b7d012bb9c1b1104f977511f99da1f101c6334588633024cadb14b5eb4e394d"
         },
         "sbom": {
           "path": "release-attestation/public.sbom.json",
-          "sha256": "1bc90db646ee182a0ee7720c9e15fc363a9c7cf480c03107c0b5311fb7149fed"
+          "sha256": "e07e589438c1b6ea4551595a879d83aa0f523f567b195733d3ed8904feda1308"
         },
         "signature": {
           "algorithm": "hmac-sha256-v1",
           "key_id": "local-ms7-freeze-validation",
           "path": "release-attestation/public.sig.json",
-          "sha256": "32631f71e37b40bfb807744b3b3a50a68fa6865b1356ecd13c7b512ae0f1b4f3"
+          "sha256": "d7534768884da316c52e86a2e179c787d643a124f933fd22d0f4b2eef3c433ef"
         }
       },
       "source_reference": "../echolabs-site/dist"
     }
   ],
   "build_id": "ms7-prerelease-candidate-20260622-195825",
-  "generated_at": "2026-06-23T00:48:26.789152+00:00",
+  "generated_at": "2026-06-23T00:51:07.975971+00:00",
   "manifest": {
     "artifact_count": 3,
     "local_full_attestation": true,
@@ -100,7 +100,7 @@
       "android",
       "public"
     ],
-    "sha256": "57689ce49d42a1b2d4b62a6d4bf09df9a511838a03484c72b154baa17aa4adeb"
+    "sha256": "0170c51af0ba73434eb3e4cb20128d9bdaba062c5dc17545e08dd977023b79b4"
   },
   "notes": [
     "No APK publish occurred and latest-debug was not moved.",
