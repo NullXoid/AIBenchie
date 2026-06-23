@@ -1,30 +1,30 @@
 {
-  "aibenchie_verdict": "not-run",
-  "build_id": "current-nullxoid-20260622-192719",
-  "expires_at": "2026-06-29T23:27:20.700062Z",
-  "generated_at": "2026-06-22T23:27:20.700062Z",
-  "latest_passing_build_id": "",
-  "latest_source": "latest-verdict.json",
+  "aibenchie_verdict": "pass",
+  "build_id": "ms7-prerelease-candidate-20260622-195825",
+  "expires_at": "2026-06-30T00:00:22.484540Z",
+  "generated_at": "2026-06-23T00:00:22.484540Z",
+  "latest_passing_build_id": "ms7-prerelease-candidate-20260622-195825",
+  "latest_source": "latest-passing.json",
   "ok": true,
   "public_safe": true,
-  "release_candidate_ok": false,
+  "release_candidate_ok": true,
   "schema": "aibenchie.suite-status.v1",
   "schema_version": "1.0",
   "source_commits": {
     ".NullXoid": "f9abf7996826b9be8179485d750c4c503433b6fb",
-    "AIBenchie": "6fa56cfc3c688656322402f11b73ae0d890212a7",
+    "AIBenchie": "e164efed955b730488043831a558016a0c4e6f4a",
     "Lv7": "994e2bb29b0a202b79be67bf796081c741e2b4a9",
     "NullBridge": "a4f16c8ffa5916c3c604d21d0cad4fb0e67952c4",
     "NullXoidAndroid": "da516d2642c4d89d17257a774b366b8106e845ec",
     "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
-    "echolabs-site": "0c8e1ebfcce58b3493c697ddab81473b0f704f9b"
+    "echolabs-site": "321225f893f674fea975b8c9641a838cc87c66ec"
   },
-  "source_selection": "current",
-  "status": "draft",
+  "source_selection": "latest_passing",
+  "status": "passing",
   "suite_version": "0.9.0-prerelease.1",
   "summary": {
-    "release_candidate_ok": false,
-    "status_effective": "draft",
+    "release_candidate_ok": true,
+    "status_effective": "passing",
     "validation_failures": []
   }
 }
