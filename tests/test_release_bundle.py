@@ -26,6 +26,11 @@ def _write_build_sources(tmp_path):
     (wrapper / "node_modules" / "ignored" / "junk.js").write_text("ignore me\n", encoding="utf-8")
     (public / "index.html").write_text("<main>Public site</main>\n", encoding="utf-8")
     (public / "assets" / "site.css").write_text("body { color: #fff; }\n", encoding="utf-8")
+    (public / "content" / "verdicts").mkdir(parents=True)
+    (public / "content" / "verdicts" / "aibenchie-release-artifact-freeze-summary.json").write_text(
+        '{"schema":"aibenchie.release-artifact-freeze-summary.v1"}\n',
+        encoding="utf-8",
+    )
     android.write_bytes(b"fake apk bytes")
     return wrapper, android, public
 
@@ -75,11 +80,14 @@ def test_package_release_artifacts_excludes_generated_dependency_dirs(tmp_path, 
     )
 
     with zipfile.ZipFile(output_dir / "nullxoid-wrapper.zip") as archive:
-        names = set(archive.namelist())
+        wrapper_names = set(archive.namelist())
+    with zipfile.ZipFile(output_dir / "echolabs-public-site.zip") as archive:
+        public_names = set(archive.namelist())
 
-    assert "index.html" in names
-    assert "assets/app.js" in names
-    assert "node_modules/ignored/junk.js" not in names
+    assert "index.html" in wrapper_names
+    assert "assets/app.js" in wrapper_names
+    assert "node_modules/ignored/junk.js" not in wrapper_names
+    assert "content/verdicts/aibenchie-release-artifact-freeze-summary.json" not in public_names
 
 
 def test_package_release_artifacts_cli(tmp_path, capsys, monkeypatch):

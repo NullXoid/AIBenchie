@@ -22,6 +22,7 @@ EXCLUDED_PACKAGE_PARTS = {
     "node_modules",
     "release-attestation",
     "release-packages",
+    "aibenchie-release-artifact-freeze-summary.json",
 }
 FIXED_ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 PACKAGE_BASENAMES = {

@@ -2,33 +2,33 @@
   "aibenchie_verdict": "pass",
   "artifacts": [
     {
-      "byte_size": 521048,
+      "byte_size": 521045,
       "digest": {
         "algorithm": "sha256",
-        "value": "52ce95098ff809fc60223be3340b711b364f405138e29b794958961dfe6d9329"
+        "value": "4b10eebe2969368e8c211ef361cc6195d77741495b189d12ca054ee31585655a"
       },
       "kind": "wrapper",
       "name": "wrapper-package",
       "package_name": "nullxoid-wrapper.zip",
       "package_path": "nullxoid-wrapper.zip",
-      "sha256": "52ce95098ff809fc60223be3340b711b364f405138e29b794958961dfe6d9329",
+      "sha256": "4b10eebe2969368e8c211ef361cc6195d77741495b189d12ca054ee31585655a",
       "sidecars": {
         "manifest": {
           "path": "release-attestation/wrapper.manifest.json",
-          "sha256": "5c20aec41543276b2e103d7f212adcc0cef5ce296f46725cc19c91251aa3d611"
+          "sha256": "a9f665653e345135fd13f80983643b46310976c938d0c16417eaa9ddeb57afb7"
         },
         "sbom": {
           "path": "release-attestation/wrapper.sbom.json",
-          "sha256": "e5e996ec5f5c278fbdd02410343e941f47f2afc255f5852892e537b7d7b6a9c6"
+          "sha256": "46ef601eb4164f46706e7db1dcf2ddd9005985e22a618f74480c8053b60b8583"
         },
         "signature": {
           "algorithm": "hmac-sha256-v1",
           "key_id": "local-ms7-freeze-validation",
           "path": "release-attestation/wrapper.sig.json",
-          "sha256": "6f02964fcf7da2a57a0434abd091e70368be9c0f8a23a3b30353afa8f43ee25c"
+          "sha256": "61dd65b080dc5a328804af14ad9e52a117c7b27d0876b37ef83fab4991818b6c"
         }
       },
-      "source_reference": "../.NullXoid/frontend/dist"
+      "source_reference": "ct400:/var/www/nullxoid"
     },
     {
       "byte_size": 56908590,
@@ -44,53 +44,53 @@
       "sidecars": {
         "manifest": {
           "path": "release-attestation/android.manifest.json",
-          "sha256": "5675f3405ee4637b52befa9dd18f826f0d780ec8d2d576cbda723835d695bed0"
+          "sha256": "57cdb645de8a55039e80d2c6efbac8f01629320ccf26f88388727e81f02aaec4"
         },
         "sbom": {
           "path": "release-attestation/android.sbom.json",
-          "sha256": "2d8d1b8ba0dce30ef3f639326265dd9a77875973eaa424365aab82e04785af7b"
+          "sha256": "a76ef4d63678a1e761e4e5bc781756ed9855e4b05b0ba9a4e6fe5e08b2a4232f"
         },
         "signature": {
           "algorithm": "hmac-sha256-v1",
           "key_id": "local-ms7-freeze-validation",
           "path": "release-attestation/android.sig.json",
-          "sha256": "d5f7f56e3ad56488035a4a9f7f84e46c12cfa1b91c755f3278fce3b342e8dfde"
+          "sha256": "0eb1b7935aab40cd42125e6e86a59f6d82dc9ff16670d65552b6fec5bc0a8fd8"
         }
       },
       "source_reference": "../NullXoidAndroid/release/NullXoidAndroid-debug.apk"
     },
     {
-      "byte_size": 1746020,
+      "byte_size": 1743877,
       "digest": {
         "algorithm": "sha256",
-        "value": "55f35123fc551833f118bbfddae7fbaa5ee61654eb5b56ff16ac08acfac2727c"
+        "value": "8d92717ecf39223e805bfc3aef1151a115b9660bb36d0fda00241593ae87e640"
       },
       "kind": "public",
       "name": "public-package",
       "package_name": "echolabs-public-site.zip",
       "package_path": "echolabs-public-site.zip",
-      "sha256": "55f35123fc551833f118bbfddae7fbaa5ee61654eb5b56ff16ac08acfac2727c",
+      "sha256": "8d92717ecf39223e805bfc3aef1151a115b9660bb36d0fda00241593ae87e640",
       "sidecars": {
         "manifest": {
           "path": "release-attestation/public.manifest.json",
-          "sha256": "5b7d012bb9c1b1104f977511f99da1f101c6334588633024cadb14b5eb4e394d"
+          "sha256": "07e733e4635b5785c0db6b45951974d40ff0754beef5189bfa15eb536f8cf4cb"
         },
         "sbom": {
           "path": "release-attestation/public.sbom.json",
-          "sha256": "e07e589438c1b6ea4551595a879d83aa0f523f567b195733d3ed8904feda1308"
+          "sha256": "740c0832540a389c8b04de76818745e999cd0263b9a880d613181c71d0444fed"
         },
         "signature": {
           "algorithm": "hmac-sha256-v1",
           "key_id": "local-ms7-freeze-validation",
           "path": "release-attestation/public.sig.json",
-          "sha256": "d7534768884da316c52e86a2e179c787d643a124f933fd22d0f4b2eef3c433ef"
+          "sha256": "03718815b92dbf58f9e5920a4e18fc2deeef2349b94ae64addb47cdc8f50ee93"
         }
       },
       "source_reference": "../echolabs-site/dist"
     }
   ],
   "build_id": "ms7-prerelease-candidate-20260622-195825",
-  "generated_at": "2026-06-23T00:51:07.975971+00:00",
+  "generated_at": "2026-06-23T09:58:38.690953+00:00",
   "manifest": {
     "artifact_count": 3,
     "local_full_attestation": true,
@@ -100,12 +100,13 @@
       "android",
       "public"
     ],
-    "sha256": "0170c51af0ba73434eb3e4cb20128d9bdaba062c5dc17545e08dd977023b79b4"
+    "sha256": "35256ad5275d5a6f8ea4f0e25eb40388f7f794f0ea136d0c39c0daf4080a5de0"
   },
   "notes": [
     "No APK publish occurred and latest-debug was not moved.",
     "Full package bytes, SBOMs, signatures, and signing key material are kept out of git under ignored local evidence paths.",
-    "Wrapper artifact is the rebuilt local .NullXoid frontend dist at the source commit recorded in MS7; the current live suite.echolabs.diy JS bundle was not found in local builds, so this is not claimed as a byte-for-byte live mirror."
+    "Wrapper artifact is copied from the CT400 Nginx root that serves suite.echolabs.diy: ct400:/var/www/nullxoid.",
+    "The public-site package excludes this freeze-summary JSON as release evidence, so the site digest is not self-referential."
   ],
   "public_safe": true,
   "publication_boundaries": {
