@@ -16,12 +16,12 @@
       "guided_setup_ui_contract"
     ],
     "evidence": [
-      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
-      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
-      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
-      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs",
-      "EchoLabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
-      "EchoLabs/AIBenchie:tests/test_zero_knowledge_devices.py"
+      "Elabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+      "Elabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
+      "Elabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+      "Elabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs",
+      "Elabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
+      "Elabs/AIBenchie:tests/test_zero_knowledge_devices.py"
     ]
   },
   "targets": [
@@ -39,9 +39,9 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:frontend/src/lib/chatE2ee.js",
-        "EchoLabs/.NullXoid:frontend/scripts/test-chat-e2ee.mjs",
-        "EchoLabs/.NullXoid:backend/tests/test_chat_e2ee_contract.py"
+        "Elabs/.NullXoid:frontend/src/lib/chatE2ee.js",
+        "Elabs/.NullXoid:frontend/scripts/test-chat-e2ee.mjs",
+        "Elabs/.NullXoid:backend/tests/test_chat_e2ee_contract.py"
       ]
     },
     {
@@ -58,8 +58,8 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:backend/storage/artifacts.py",
-        "EchoLabs/.NullXoid:backend/tests/test_artifact_e2ee_contract.py"
+        "Elabs/.NullXoid:backend/storage/artifacts.py",
+        "Elabs/.NullXoid:backend/tests/test_artifact_e2ee_contract.py"
       ]
     },
     {
@@ -76,8 +76,8 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:backend/storage/artifacts.py",
-        "EchoLabs/.NullXoid:backend/tests/test_private_uploads_e2ee_contract.py"
+        "Elabs/.NullXoid:backend/storage/artifacts.py",
+        "Elabs/.NullXoid:backend/tests/test_private_uploads_e2ee_contract.py"
       ]
     },
     {
@@ -94,9 +94,9 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:frontend/public/sw.js",
-        "EchoLabs/.NullXoid:frontend/scripts/test-offline-cache-policy.mjs",
-        "EchoLabs/.NullXoid:frontend/scripts/test-chat-e2ee.mjs"
+        "Elabs/.NullXoid:frontend/public/sw.js",
+        "Elabs/.NullXoid:frontend/scripts/test-offline-cache-policy.mjs",
+        "Elabs/.NullXoid:frontend/scripts/test-chat-e2ee.mjs"
       ]
     },
     {
@@ -113,8 +113,8 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:backend/storage/sync_blobs.py",
-        "EchoLabs/.NullXoid:backend/tests/test_sync_blobs_e2ee_contract.py"
+        "Elabs/.NullXoid:backend/storage/sync_blobs.py",
+        "Elabs/.NullXoid:backend/tests/test_sync_blobs_e2ee_contract.py"
       ]
     },
     {
@@ -131,9 +131,9 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/AIBenchie:aibenchie/release_report.py",
-        "EchoLabs/AIBenchie:tests/test_release_report.py",
-        "EchoLabs/AIBenchie:tests/test_public_scoreboard.py"
+        "Elabs/AIBenchie:aibenchie/release_report.py",
+        "Elabs/AIBenchie:tests/test_release_report.py",
+        "Elabs/AIBenchie:tests/test_public_scoreboard.py"
       ]
     },
     {
@@ -150,8 +150,8 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:backend/ccc_store.py",
-        "EchoLabs/.NullXoid:backend/tests/test_ccc_e2ee_contract.py"
+        "Elabs/.NullXoid:backend/ccc_store.py",
+        "Elabs/.NullXoid:backend/tests/test_ccc_e2ee_contract.py"
       ]
     },
     {
@@ -168,8 +168,8 @@
         "key_not_persisted_in_repo"
       ],
       "evidence": [
-        "EchoLabs/.NullXoid:backend/ccc_store.py",
-        "EchoLabs/.NullXoid:backend/tests/test_workspace_notes_e2ee_contract.py"
+        "Elabs/.NullXoid:backend/ccc_store.py",
+        "Elabs/.NullXoid:backend/tests/test_workspace_notes_e2ee_contract.py"
       ]
     }
   ]
