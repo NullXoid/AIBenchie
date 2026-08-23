@@ -356,8 +356,10 @@ def test_aibenchie_report_preview_includes_mascot_asset():
 
 def test_streamlit_entrypoint_is_public_safe():
     app = ROOT / "streamlit_app.py"
+    legacy_app = ROOT / "Benchmark.py"
     requirements = ROOT / "requirements.txt"
     assert app.is_file()
+    assert legacy_app.is_file()
     assert requirements.is_file()
     text = app.read_text(encoding="utf-8")
     assert "st.set_page_config" in text
@@ -373,6 +375,9 @@ def test_streamlit_entrypoint_is_public_safe():
     assert "MAX_PROMPT_CHARS = 500" in local_ollama
     assert "ALLOWED_LOCAL_OLLAMA_HOSTS" in local_ollama
     assert "streamlit==1.43.2" in requirements.read_text(encoding="utf-8")
+    legacy_text = legacy_app.read_text(encoding="utf-8")
+    assert "from streamlit_app import main" in legacy_text
+    assert 'if __name__ == "__main__"' in legacy_text
 
 
 def test_runner_policy_blocks_sensitive_power_on_arbitrary_code_runners():
