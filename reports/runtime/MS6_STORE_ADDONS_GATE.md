@@ -2,7 +2,7 @@
 
 ## Summary
 
-MS6 validates the EchoLabs Store/Add-ons layer as a release-staged capability system.
+MS6 validates the Elabs Store/Add-ons layer as a release-staged capability system.
 
 Validated build:
 

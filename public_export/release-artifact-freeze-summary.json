@@ -105,7 +105,7 @@
   "notes": [
     "No APK publish occurred and latest-debug was not moved.",
     "Full package bytes, SBOMs, signatures, and signing key material are kept out of git under ignored local evidence paths.",
-    "Wrapper artifact is copied from the CT400 Nginx root that serves suite.echolabs.diy: ct400:/var/www/nullxoid.",
+    "Wrapper artifact is copied from the CT400 Nginx root that serves suite.elabs.test: ct400:/var/www/nullxoid.",
     "The public-site package excludes this freeze-summary JSON as release evidence, so the site digest is not self-referential."
   ],
   "public_safe": true,
