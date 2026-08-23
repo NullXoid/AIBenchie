@@ -6,6 +6,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from aibenchie.gui_health import build_repository_health
 from aibenchie.local_ollama import (
     DEFAULT_OLLAMA_URL,
     MAX_PROMPT_CHARS,
@@ -33,12 +34,9 @@ def load_json(path: Path) -> dict:
         return {}
 
 
-def count_tests() -> int:
-    total = 0
-    for path in (ROOT / "tests").glob("test_*.py"):
-        text = path.read_text(encoding="utf-8", errors="ignore")
-        total += text.count("def test_")
-    return total
+@st.cache_data(ttl=60, show_spinner=False)
+def repository_health() -> dict:
+    return build_repository_health(ROOT).as_dict()
 
 
 def policy_status() -> list[tuple[str, str, str]]:
@@ -318,12 +316,27 @@ def main() -> None:
 
     st.divider()
 
-    tests = count_tests()
+    health = repository_health()
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Suite checks", tests)
-    col2.metric("Critical blockers", "0")
-    col3.metric("Publish mode", "Signed")
-    col4.metric("Secret storage", "Ephemeral")
+    col1.metric("Collected tests", health["collected_tests"] if health["collection_ok"] else "Blocked")
+    col2.metric("Critical blockers", health["critical_blockers"])
+    col3.metric("Release status", health["release_status"].title())
+    col4.metric("Public scan", "Passed" if health["distribution_ok"] else "Blocked")
+
+    if health["blockers"]:
+        st.error("Live repository health is blocked. Expand the details below before treating this build as releasable.")
+    else:
+        st.success("Live repository health checks currently pass.")
+    with st.expander("Live health details", expanded=bool(health["blockers"])):
+        st.caption(f"Checked at {health['generated_at']}. Cached for up to 60 seconds.")
+        for blocker in health["blockers"]:
+            st.write(f"- {blocker}")
+        for warning in health["warnings"]:
+            st.write(f"- Warning: {warning}")
+        st.write(f"Distribution files scanned: {health['distribution_files_scanned']}")
+        if st.button("Refresh repository health"):
+            repository_health.clear()
+            st.rerun()
 
     st.subheader("Gate Map")
     rows = policy_status()

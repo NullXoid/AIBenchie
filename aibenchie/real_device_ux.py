@@ -18,7 +18,7 @@ SECRET_VALUE_PREFIXES = ("ghp_", "github_pat_", "gitea_", "forgejo_", "glpat-", 
 REQUIRED_ANDROID_WORKFLOWS = {"signin", "chat"}
 DEFAULT_ANDROID_PROOF_OUTPUT = Path(".suite/local/aibenchie/android-real-device-ux.json")
 DEFAULT_ANDROID_PACKAGE = "com.nullxoid.android"
-DEFAULT_ANDROID_BASE_URL = "https://api.echolabs.diy/nullxoid"
+DEFAULT_ANDROID_BASE_URL = "https://api.elabs.test/nullxoid"
 
 
 @dataclass(frozen=True)

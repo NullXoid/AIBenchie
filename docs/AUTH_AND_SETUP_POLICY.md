@@ -58,7 +58,7 @@ Some gates are intentionally credential-free and should run even during credenti
 The Lv-7 autonomy gate is one of these:
 
 ```powershell
-python scripts\run_lv7_autonomy_gate.py --lv7-root C:\Users\kasom\projects\Lv-7
+python scripts\run_lv7_autonomy_gate.py --lv7-root $env:USERPROFILE\projects\Lv-7
 ```
 
 It generates deterministic Lv-7 autonomy evidence and validates it with AIBenchie. It does not require live Forgejo tokens, Android credentials, NullBridge service secrets, provider tokens, or signing material. Agents checking credentials should treat this as a baseline release gate that remains runnable without secrets; missing live credentials should only block credentialed live-route gates.

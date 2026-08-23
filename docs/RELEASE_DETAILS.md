@@ -52,7 +52,7 @@ $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runn
 python aibenchie_local.py --package-release-artifacts `
   --wrapper-package path/to/nullxoid-wrapper/frontend/dist `
   --android-package path/to/nullxoid-companion.apk `
-  --public-package path/to/echolabs-site/dist `
+  --public-package path/to/Elabs-site/dist `
   --release-package-output-dir path/to/release-packages `
   --release-artifact-key-id release-attestation-key `
   --json
@@ -60,7 +60,7 @@ python aibenchie_local.py --package-release-artifacts `
 python aibenchie_local.py --emit-release-artifacts `
   --wrapper-package path/to/nullxoid-wrapper.zip `
   --android-package path/to/nullxoid-companion.apk `
-  --public-package path/to/echolabs-site.zip `
+  --public-package path/to/Elabs-site.zip `
   --release-artifacts-output path/to/release-artifacts.json `
   --release-artifact-key-id release-attestation-key `
   --json

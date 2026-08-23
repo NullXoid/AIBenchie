@@ -15,7 +15,7 @@
     "build_type": "release"
   },
   "environment": {
-    "base_url": "https://api.echolabs.diy/nullxoid",
+    "base_url": "https://api.elabs.test/nullxoid",
     "network": "real-device"
   },
   "workflows": [

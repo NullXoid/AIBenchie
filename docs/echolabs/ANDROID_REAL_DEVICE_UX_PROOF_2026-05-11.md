@@ -2,7 +2,7 @@
 
 ## Result
 
-The Android real-device UX proof passed for the EchoLabs Suite release checkpoint.
+The Android real-device UX proof passed for the Elabs Suite release checkpoint.
 
 ## Scope
 
@@ -31,7 +31,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\echolabs_suite_rel
 
 ## Release Evidence
 
-The public EchoLabs web evidence was refreshed from the sanitized AIBenchie summary. The website evidence now reports:
+The public Elabs web evidence was refreshed from the sanitized AIBenchie summary. The website evidence now reports:
 
 - Latest verdict: `pass`
 - Suite gate: `8/8`
@@ -44,7 +44,7 @@ The proof was regenerated after RuntimeEcho was moved off the temporary workstat
 
 - CT729 `llama-server.service`: port `8080`, `Qwen/Qwen3-VL-8B-Instruct-GGUF`, vision/VL runtime.
 - CT729 `llama-server-text.service`: port `8081`, `Qwen/Qwen3-4B-GGUF`, normal text chat runtime.
-- CT400 RuntimeEcho default: `http://192.168.1.244:8081`, model `Qwen/Qwen3-4B-GGUF`.
+- CT400 RuntimeEcho default: redacted internal endpoint, model `Qwen/Qwen3-4B-GGUF`.
 
 The physical Android chat path returned a visible response through the CT729 text runtime and no longer exposes the VL model as the normal-chat default.
 
@@ -52,12 +52,12 @@ The physical Android chat path returned a visible response through the CT729 tex
 
 Local production preview passed for `/aibenchie`, `/aibenchie/latest-verdict.json`, and `/aibenchie/release-evidence.json`.
 
-Canonical public deployment passed on `https://www.echolabs.diy` after the public-site deploy path was corrected.
+Canonical public deployment passed on `https://www.elabs.test` after the public-site deploy path was corrected.
 
-- `https://www.echolabs.diy/aibenchie`: `200`
+- `https://www.elabs.test/aibenchie`: `200`
 - Public route verification: 7 app routes and 8 content routes passed
-- `https://www.echolabs.diy/content/verdicts/aibenchie-latest-verdict.json`: suite gate `8/8`
-- `https://www.echolabs.diy/content/verdicts/aibenchie-release-evidence.json`: real-device UX `pass`
+- `https://www.elabs.test/content/verdicts/aibenchie-latest-verdict.json`: suite gate `8/8`
+- `https://www.elabs.test/content/verdicts/aibenchie-release-evidence.json`: real-device UX `pass`
 
-The older `https://echolabs.netlify.app` route is not the canonical deployment for this evidence and should not be used as the release smoke target.
+The older `https://Elabs.netlify.app` route is not the canonical deployment for this evidence and should not be used as the release smoke target.
 

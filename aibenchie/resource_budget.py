@@ -10,7 +10,7 @@ from typing import Any
 
 
 MIB = 1024 * 1024
-EXPECTED_RUNTIME_SCHEMA = "echolabs.resource-manager-runtime.v1"
+EXPECTED_RUNTIME_SCHEMA = "Elabs.resource-manager-runtime.v1"
 DEFAULT_RUNTIME_EVIDENCE_PATH = Path("configs/echolabs_resource_manager_runtime.example.json")
 FORBIDDEN_KEYS = {"client_secret", "private_key", "password", "service_secret", "service_token", "api_key", "token"}
 
@@ -113,9 +113,9 @@ class ResourceBudgetResult:
 def default_ct400_wrapper_budgets() -> list[ResourceBudget]:
     return [
         ResourceBudget("backend_venv", "/home/deploy/NullXoid/NullXoid/.venv", 300 * MIB, required=True),
-        ResourceBudget("staging_backend_venv", "/root/repos/echolabs/nullxoid-wrapper/.venv", 0),
-        ResourceBudget("wrapper_frontend_node_modules", "/root/repos/echolabs/nullxoid-wrapper/frontend/node_modules", 500 * MIB),
-        ResourceBudget("aibenchie_runtime_reports", "/root/repos/echolabs/AIBenchie/reports/runtime", 500 * MIB),
+        ResourceBudget("staging_backend_venv", "/root/repos/Elabs/nullxoid-wrapper/.venv", 0),
+        ResourceBudget("wrapper_frontend_node_modules", "/root/repos/Elabs/nullxoid-wrapper/frontend/node_modules", 500 * MIB),
+        ResourceBudget("aibenchie_runtime_reports", "/root/repos/Elabs/AIBenchie/reports/runtime", 500 * MIB),
         ResourceBudget("backend_logs", "/home/deploy/NullXoid/logs", 100 * MIB),
         ResourceBudget("deploy_user_cache", "/home/deploy/.cache", 100 * MIB),
         ResourceBudget("deploy_user_pip_cache", "/home/deploy/.cache/pip", 1 * MIB),

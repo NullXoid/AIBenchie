@@ -159,10 +159,12 @@ class EchoLabsStoreResult:
     repos: dict[str, str]
 
     def as_dict(self) -> dict[str, Any]:
+        gates = {name: gate.as_dict() for name, gate in self.gates.items()}
         return {
             "ok": self.ok,
             "blockingFailures": self.blocking_failures,
-            "echolabsStore": {name: gate.as_dict() for name, gate in self.gates.items()},
+            "elabsStore": gates,
+            "echolabsStore": gates,
             "repos": self.repos,
         }
 
@@ -1338,6 +1340,10 @@ def run_echolabs_store_check(env: dict[str, str] | None = None) -> EchoLabsStore
         gates=gates,
         repos=repos,
     )
+
+
+ElabsStoreResult = EchoLabsStoreResult
+run_Elabs_store_check = run_echolabs_store_check
 
 
 def run_from_env() -> EchoLabsStoreResult:

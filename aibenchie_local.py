@@ -125,7 +125,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--release-spine-validate-workflows",
         action="store_true",
-        help="Validate EchoLabs workflow proof folders and Store mappings.",
+        help="Validate Elabs workflow proof folders and Store mappings.",
     )
     parser.add_argument("--release-spine-build-id", default="", help="Build id for release-spine commands.")
     parser.add_argument(
@@ -347,9 +347,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run the M35 platform backend NullBridge adapter E2E gate.",
     )
     parser.add_argument(
+        "--elabs-store",
         "--echolabs-store",
+        dest="echolabs_store",
         action="store_true",
-        help="Run the EchoLabs Store + Creative Workflows Alpha source/integration gate.",
+        help="Run the Elabs Store + Creative Workflows Alpha source/integration gate.",
     )
     parser.add_argument(
         "--deploy-addon",
@@ -425,7 +427,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--android-onboarding-repo",
         default=os.environ.get(
             "AIBENCHIE_ANDROID_ONBOARDING_REPO",
-            os.environ.get("AIBENCHIE_ECHOLABS_ANDROID_ROOT", "../NullXoidAndroid"),
+            os.environ.get(
+                "AIBENCHIE_ELABS_ANDROID_ROOT",
+                os.environ.get("AIBENCHIE_ECHOLABS_ANDROID_ROOT", "../NullXoidAndroid"),
+            ),
         ),
         help="Android repository root for --android-onboarding-e2e.",
     )
@@ -1159,7 +1164,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
-            print("EchoLabs Auth Provider Configuration Gate")
+            print("Elabs Auth Provider Configuration Gate")
             print(f"Config: {result['config_path']}")
             print(f"Device proof: {result['device_proof_path']}")
             print(f"Template: {result['template']}")
@@ -1188,8 +1193,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.json:
             print(json.dumps(result, indent=2, sort_keys=True))
         else:
-            print("EchoLabs Store + Creative Workflows Alpha Gate")
-            for name, check in result["echolabsStore"].items():
+            print("Elabs Store + Creative Workflows Alpha Gate")
+            gates = result.get("elabsStore") or result["echolabsStore"]
+            for name, check in gates.items():
                 suffix = f" ({'; '.join(check.get('failures', []))})" if check.get("failures") else ""
                 print(f"{name}: {check['status'].upper()}{suffix}")
             print("Result: PASS" if result["ok"] else "Result: FAIL")

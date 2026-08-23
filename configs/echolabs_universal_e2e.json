@@ -1,10 +1,10 @@
 {
   "schema": "aibenchie.universal-e2e.manifest.v1",
   "id": "echolabs-suite",
-  "name": "EchoLabs Suite",
+  "name": "Elabs Suite",
   "lanes": {
     "api": {
-      "name": "EchoLabs API E2E",
+      "name": "Elabs API E2E",
       "type": "api",
       "targets": [
         {
@@ -46,7 +46,7 @@
       ]
     },
     "ux": {
-      "name": "EchoLabs UX E2E",
+      "name": "Elabs UX E2E",
       "type": "ux",
       "targets": [
         {
@@ -58,7 +58,7 @@
           "cwd": "${ENV:AIBENCHIE_ECHOLABS_WEB_ROOT:-../../NullXoid-live}",
           "command": ["npm", "run", "verify:nullxoid"],
           "timeout_seconds": 240,
-          "notes": "Runs the EchoLabs web shell build and NullXoid UI contract checks until the browser-driven Playwright adapter is promoted."
+          "notes": "Runs the Elabs web shell build and NullXoid UI contract checks until the browser-driven Playwright adapter is promoted."
         },
         {
           "id": "web-browser-ux",

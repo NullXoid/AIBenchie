@@ -68,11 +68,11 @@ def device_lifecycle_evidence(**overrides):
         "backend_key_material": "forbidden",
         "tests": list(REQUIRED_DEVICE_LIFECYCLE_CHECKS),
         "evidence": [
-            "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
-            "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
-            "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
-            "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs",
-            "EchoLabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
+            "Elabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+            "Elabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
+            "Elabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+            "Elabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs",
+            "Elabs/AIBenchie:aibenchie/zero_knowledge_devices.py",
         ],
     }
     payload.update(overrides)

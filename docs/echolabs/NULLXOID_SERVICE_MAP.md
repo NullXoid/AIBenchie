@@ -1,13 +1,13 @@
-# EchoLabs Suite Service And Pipeline Map
+# Elabs Suite Service And Pipeline Map
 
-This map is based on the current source under `C:\Users\kasom\projects` and is the source-of-truth architecture map during the stabilization pass.
+This map is based on the current source under the operator's suite workspace and is the source-of-truth architecture map during the stabilization pass.
 
 ## Locked Product Map
 
 | Product / module | Current repo or surface | Ownership meaning |
 | --- | --- | --- |
-| EchoLabs Suite | Cross-repo suite | The whole product family. |
-| EchoLabs | `NullXoid-live` | Web shell / lab interface. |
+| Elabs Suite | Cross-repo suite | The whole product family. |
+| Elabs | `NullXoid-live` | Web shell / lab interface. |
 | NullXoid / NullXoid Chat | Web, Android, Desktop chat surfaces | Assistant identity and default chat app. |
 | CoreEcho | Hosted/backend contracts plus embedded route mirrors | Auth, users, workspaces, projects, chats, permissions, settings. |
 | RuntimeEcho | `/models`, `/api/llms/*`, `/api/ollama/*` compatibility, desktop router | Model inventory, provider routing, model eligibility, LV7 hooks. |
@@ -127,7 +127,7 @@ Desktop adapters:
 - `NullXoidBackendBridge`: hosted/backend contract.
 - `OllamaModelAdapter`: direct local Ollama test/adapter path.
 - `NullBridgeServiceAdapter`: service-mesh integration surface.
-- `EchoLabsStoreAdapter`: store/media workflow integration.
+- `ElabsStoreAdapter`: store/media workflow integration.
 
 ## NullBridge Pipeline
 

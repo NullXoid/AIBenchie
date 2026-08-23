@@ -135,7 +135,7 @@ def _valid_suite_evidence(evidence_root: Path, build_id: str) -> Path:
             "ok": True,
         },
     )
-    (root / "release-notes.md").write_text(f"# EchoLabs MS7 Candidate\n\nBuild: {build_id}\n", encoding="utf-8")
+    (root / "release-notes.md").write_text(f"# Elabs MS7 Candidate\n\nBuild: {build_id}\n", encoding="utf-8")
     (root / "notes.md").write_text(f"MS7 local candidate evidence for {build_id}.\n", encoding="utf-8")
     return root
 

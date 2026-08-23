@@ -78,7 +78,7 @@ def _ms4_nullbridge_evidence(evidence_root: Path, build_id: str, *, expires_at: 
         {
             "schema_version": release.SCHEMA_VERSION,
             "build_id": build_id,
-            "suite": "echolabs",
+            "suite": "Elabs",
             "component": "NullBridge",
             "verdict": "pass",
             "generated_at": "2026-05-20T12:00:00Z",

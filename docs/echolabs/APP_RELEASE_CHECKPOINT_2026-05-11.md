@@ -1,4 +1,4 @@
-# EchoLabs App Release Checkpoint - 2026-05-11
+# Elabs App Release Checkpoint - 2026-05-11
 
 Status: release gates pass; package shape is locally verified. AIBenchie remains the suite tester/release gate and is not published as a downloadable standalone product for this app release.
 
@@ -6,7 +6,7 @@ Status: release gates pass; package shape is locally verified. AIBenchie remains
 
 | Repo | Branch | Commit | Notes |
 | --- | --- | --- | --- |
-| `echolabs-site` | `main` | `b6c44bc6ded730fb23e8e890e288bab92ede1f14` | Public site; hosted API E2E evidence refreshed after this snapshot. |
+| `Elabs-site` | `main` | `b6c44bc6ded730fb23e8e890e288bab92ede1f14` | Public site; hosted API E2E evidence refreshed after this snapshot. |
 | `NullXoid-live` | `main` | `d1679ea41ebe6a907cb800777c647453b7e7901a` | Web app / NullXoid shell; hosted API E2E evidence refreshed after this snapshot. |
 | `NullXoidAndroid` | `main` | `7f6cc678614e1a2445f9ba4d0669b0db8e670031` | Android app version `0.1.93` published as the current debug/prerelease foothold build. |
 | `AiAssistant` | `main` | `f3dc1add61010c9b1e0196c79c4fafb90ed6adcb` | Desktop / LV7 client. |
@@ -24,13 +24,13 @@ Full suite gate:
 
 Result: `PASS`
 
-Evidence path: `<workspace>\_validation\echolabs_suite_gate_latest.json`
+Evidence path: `<workspace>\_validation\Elabs_suite_gate_latest.json`
 
 Surfaces:
 
 | Surface | Result |
 | --- | --- |
-| EchoLabs web shell | PASS |
+| Elabs web shell | PASS |
 | NullXoid Android | PASS |
 | NullXoid Desktop | PASS |
 | BridgeEcho / NullBridge backend | PASS |
@@ -43,8 +43,8 @@ Additional checks:
 
 | Check | Result |
 | --- | --- |
-| Public route verification for `https://www.echolabs.diy` | PASS |
-| Hosted API E2E for `https://api.echolabs.diy/nullxoid` | PASS |
+| Public route verification for `https://www.elabs.test` | PASS |
+| Hosted API E2E for `https://api.elabs.test/nullxoid` | PASS |
 | Android real-device UX preflight | PASS |
 | Android release build | PASS, unsigned APK produced |
 
@@ -62,7 +62,7 @@ The package verifier passed with three required artifact kinds: `wrapper`, `andr
 | --- | --- |
 | `nullxoid-wrapper.zip` | `49d08dc8fc65a1837a6045f19c6896c49d5ad0ebcb58d3af4bcd0495f5ba0259` |
 | `nullxoid-companion.apk` | `7ddfdc55791351ff001398c8da211e0686cff432b0d1ad86d14d2f079da52126` |
-| `echolabs-public-site.zip` | `fdd53aca3b7ae4a01602e0cd609ce80406a1f2830b208a14b2235d2e3f8ce2db` |
+| `Elabs-public-site.zip` | `fdd53aca3b7ae4a01602e0cd609ce80406a1f2830b208a14b2235d2e3f8ce2db` |
 
 The local package proof used an ephemeral validation secret and key id `local-validation-key`. It proves package shape, manifest, SBOM, digest, and verifier behavior. It is not a production signing secret.
 
@@ -83,7 +83,7 @@ The current Android foothold channel is the signed debug/prerelease update path.
 
 The connected Android test phone was updated to `0.1.93`, and AIBenchie real-device preflight passed for `com.nullxoid.android` version `0.1.93`. Physical sign-in and chat were re-run after the RuntimeEcho model fix, and the current real-device UX proof is `android-real-device-ux-20260511T125801Z` for version `0.1.93`.
 
-RuntimeEcho now routes normal hosted chat to CT729's dedicated llama.cpp text service at `http://192.168.1.244:8081` with `Qwen/Qwen3-4B-GGUF`. CT729's existing VL service remains separate on port `8080` for `Qwen/Qwen3-VL-8B-Instruct-GGUF`, so Android normal chat no longer defaults to a VL model.
+RuntimeEcho routed normal hosted chat to CT729's dedicated llama.cpp text service at a redacted internal endpoint, with `Qwen/Qwen3-4B-GGUF`. CT729's existing VL service remained separate for `Qwen/Qwen3-VL-8B-Instruct-GGUF`, so Android normal chat no longer defaulted to a VL model.
 
 A production/store-style Android release still needs real signing credentials configured through `NULLXOID_SIGNING_STORE_FILE`, `NULLXOID_SIGNING_STORE_PASSWORD`, `NULLXOID_SIGNING_KEY_ALIAS`, and `NULLXOID_SIGNING_KEY_PASSWORD`, then a signed release artifact should be rebuilt and re-attested.
 
@@ -99,7 +99,7 @@ The fix was committed to `.NullXoid` as `51bc3c222d5a0aa5af3167412379fa63539fca0
 
 ## Release Interpretation
 
-- EchoLabs/NullXoid app release posture is green for the current prerelease/foothold channel.
+- Elabs/NullXoid app release posture is green for the current prerelease/foothold channel.
 - AIBenchie is active as the tester and release gate.
 - AIBenchie standalone product downloads remain deferred until after app release/deployment is stable.
 - Docker remains explicitly not supported as a release target.

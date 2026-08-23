@@ -8,9 +8,9 @@ from aibenchie import companion_remote_backend
 from aibenchie.hosted_nullxoid_stack import HostedStackResult, RouteResult
 
 
-PUBLIC_API = "https://api.echolabs.diy/nullxoid"
-PUBLIC_ORIGIN = "https://api.echolabs.diy"
-FORGEJO_RELEASES = "git.echolabs.diy/api/v1/repos/EchoLabs/NullXoidAndroid/releases"
+PUBLIC_API = "https://api.elabs.test/nullxoid"
+PUBLIC_ORIGIN = "https://api.elabs.test"
+FORGEJO_RELEASES = "git.example.test/api/v1/repos/Elabs/NullXoidAndroid/releases"
 
 
 def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
@@ -32,14 +32,14 @@ def write_android_fixture(root: Path, *, public_api: str = PUBLIC_API) -> None:
         ),
         "app/src/main/java/com/nullxoid/android/data/api/BackendEndpoint.kt": (
             "object BackendEndpoint {\n"
-            f'    const val PUBLIC_ECHOLABS_URL = "{public_api}"\n'
+            f'    const val PUBLIC_Elabs_URL = "{public_api}"\n'
             "    fun normalize(input: String) = if (input.startsWith(\"http\")) input else \"https://$input\"\n"
             "}\n"
         ),
         "app/src/main/java/com/nullxoid/android/data/prefs/SettingsStore.kt": (
             "class SettingsStore {\n"
             "    companion object {\n"
-            "        val PUBLIC_BACKEND_URL = BackendEndpoint.PUBLIC_ECHOLABS_URL\n"
+            "        val PUBLIC_BACKEND_URL = BackendEndpoint.PUBLIC_Elabs_URL\n"
             "    }\n"
             "}\n"
         ),

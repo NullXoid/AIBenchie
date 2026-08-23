@@ -1,11 +1,11 @@
 {
-  "schema": "echolabs.auth-provider-config.v1",
+  "schema": "Elabs.auth-provider-config.v1",
   "template": true,
-  "product": "EchoLabs Suite",
+  "product": "Elabs Suite",
   "passkey": {
-    "rp_id": "api.echolabs.diy",
-    "origin": "https://api.echolabs.diy",
-    "assetlinks_url": "https://api.echolabs.diy/.well-known/assetlinks.json",
+    "rp_id": "api.elabs.test",
+    "origin": "https://api.elabs.test",
+    "assetlinks_url": "https://api.elabs.test/.well-known/assetlinks.json",
     "android_package": "com.nullxoid.android",
     "relations": [
       "delegate_permission/common.get_login_creds"

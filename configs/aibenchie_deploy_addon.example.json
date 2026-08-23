@@ -4,14 +4,14 @@
   "provider": {
     "type": "forgejo",
     "base_url": "https://git.example.test",
-    "repository": "EchoLabs/NullXoid"
+    "repository": "Elabs/NullXoid"
   },
   "auth": {
     "token_env": "AIBENCHIE_DEPLOY_PROVIDER_TOKEN"
   },
   "release": {
     "tag": "v0.0.0-example",
-    "name": "EchoLabs Suite example release",
+    "name": "Elabs Suite example release",
     "prerelease": true
   },
   "evidence": {

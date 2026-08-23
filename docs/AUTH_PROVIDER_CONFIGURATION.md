@@ -1,4 +1,4 @@
-# EchoLabs Auth Provider Configuration
+# Elabs Auth Provider Configuration
 
 This contract covers the real provider setup for passkeys and OIDC without storing secrets in AIBenchie.
 

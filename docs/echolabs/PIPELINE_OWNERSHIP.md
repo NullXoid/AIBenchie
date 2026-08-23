@@ -1,4 +1,4 @@
-# EchoLabs Suite Pipeline Ownership
+# Elabs Suite Pipeline Ownership
 
 Every route or workflow should name its owner, callers, touched modules, writes, emitted events, and access rules.
 
@@ -8,7 +8,7 @@ Every route or workflow should name its owner, callers, touched modules, writes,
 pipeline: normal_chat
 owner: CoreEcho
 callers:
-  - EchoLabs
+  - Elabs
   - NullXoid Android
   - Desktop
 routes:
@@ -47,7 +47,7 @@ model_policy:
 pipeline: model_runtime_management
 owner: RuntimeEcho
 callers:
-  - EchoLabs
+  - Elabs
   - NullXoid Android
   - Desktop
 routes:
@@ -93,7 +93,7 @@ access:
 pipeline: speech_to_speech
 owner: CoreEcho
 callers:
-  - EchoLabs
+  - Elabs
   - NullXoid Android
 touches:
   - RuntimeEcho
@@ -130,7 +130,7 @@ rules:
 pipeline: studio_media
 owner: StudioEcho
 callers:
-  - EchoLabs
+  - Elabs
   - NullXoid Android
 touches:
   - AddonEcho
@@ -160,7 +160,7 @@ emits:
 pipeline: ccc_canvas
 owner: Command Center Codex
 callers:
-  - EchoLabs
+  - Elabs
 touches:
   - CoreEcho
   - RuntimeEcho
@@ -186,7 +186,7 @@ pipeline: bridgeecho
 owner: BridgeEcho
 callers:
   human_admin:
-    - EchoLabs admin console
+    - Elabs admin console
   service:
     - registered service accounts
 touches:
@@ -228,7 +228,7 @@ rules:
 ```yaml
 pipeline: release_readiness
 owner: AIBenchie
-surface: EchoLabs readiness dashboard
+surface: Elabs readiness dashboard
 touches:
   - CoreEcho
   - RuntimeEcho
@@ -248,5 +248,5 @@ gates:
   - Android
   - BridgeEcho
   - AIBenchie hosted/security/privacy
-rule: AIBenchie stays external, but EchoLabs may surface latest verdicts.
+rule: AIBenchie stays external, but Elabs may surface latest verdicts.
 ```

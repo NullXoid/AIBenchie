@@ -1,11 +1,11 @@
-# EchoLabs Suite Naming Glossary
+# Elabs Suite Naming Glossary
 
 This glossary is the source of truth for product and architecture names while the repos keep their current names.
 
 | Name | Meaning | Scope |
 | --- | --- | --- |
-| EchoLabs Suite | The full product family. | Web, Android, Desktop, services, validation. |
-| EchoLabs | The web shell / OS-like lab interface. | Primary user-facing web app. |
+| Elabs Suite | The full product family. | Web, Android, Desktop, services, validation. |
+| Elabs | The web shell / OS-like lab interface. | Primary user-facing web app. |
 | NullXoid | The assistant / agent identity. | Chat, agent actions, tool use. |
 | NullXoid Chat | The default installed assistant app. | Normal one-model chat flow. |
 | CoreEcho | Auth, users, workspaces, projects, chats, permissions, settings. | System authority. |
@@ -23,7 +23,7 @@ Rules:
 
 - Do not rename repos yet.
 - Do not break current public routes during the migration.
-- Use EchoLabs/CoreEcho/RuntimeEcho/etc. in docs, UI labels, and comments before broad code/module renames.
+- Use Elabs/CoreEcho/RuntimeEcho/etc. in docs, UI labels, and comments before broad code/module renames.
 - Normal NullXoid Chat uses one selected text model.
 - LV7 is the only current two-pass path.
 - BridgeEcho is not normal chat and must remain admin/service-only.

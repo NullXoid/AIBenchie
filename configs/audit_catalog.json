@@ -1,0 +1,77 @@
+{
+  "schema": "aibenchie.audit-catalog.v1",
+  "schema_version": "1.0",
+  "catalog_version": "1.0.0",
+  "audits": [
+    {
+      "id": "aibenchie.repository_health",
+      "version": "1.0.0",
+      "title": "AIBenchie repository health",
+      "description": "Runs live test collection, release freshness, generated-output policy, and distribution hygiene checks against AIBenchie itself.",
+      "owner": "AIBenchie",
+      "component": "AIBenchie",
+      "scope": "repository",
+      "runner": "repository_health",
+      "mutates_target": false,
+      "release_blocking": true,
+      "default_ttl_seconds": 900,
+      "timeout_seconds": 60
+    },
+    {
+      "id": "nullxoid.audit_freshness",
+      "version": "1.0.0",
+      "title": "NullXoid audit freshness",
+      "description": "Finds expired, contradictory, superseded, or incorrectly targeted audit evidence.",
+      "owner": "AIBenchie",
+      "component": "NullXoid",
+      "scope": "repository",
+      "runner": "audit_freshness",
+      "mutates_target": false,
+      "release_blocking": true,
+      "default_ttl_seconds": 86400,
+      "timeout_seconds": 60
+    },
+    {
+      "id": "nullxoid.runtime_processes",
+      "version": "1.0.0",
+      "title": "NullXoid runtime processes",
+      "description": "Classifies expected, idle, unhealthy, misconfigured, and probable orphan media runtimes without stopping them.",
+      "owner": "AIBenchie",
+      "component": "NullXoid",
+      "scope": "runtime",
+      "runner": "runtime_processes",
+      "mutates_target": false,
+      "release_blocking": false,
+      "default_ttl_seconds": 900,
+      "timeout_seconds": 30,
+      "config": {
+        "runtimes": [
+          {
+            "id": "krea_comfyui",
+            "port": 8188,
+            "desired_state": "running",
+            "health_contract": "comfyui",
+            "command_markers": ["ComfyUI", "main.py"],
+            "tunnel_required": true
+          },
+          {
+            "id": "wan_ltx_comfyui",
+            "port": 8195,
+            "desired_state": "running",
+            "health_contract": "comfyui",
+            "command_markers": ["ComfyUI", "main.py", "8195"],
+            "tunnel_required": true
+          },
+          {
+            "id": "legacy_comfyui_8196",
+            "port": 8196,
+            "desired_state": "retired",
+            "health_contract": "comfyui",
+            "command_markers": ["ComfyUI", "main.py", "8196"],
+            "tunnel_required": false
+          }
+        ]
+      }
+    }
+  ]
+}

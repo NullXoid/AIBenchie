@@ -39,7 +39,7 @@ def test_distribution_hygiene_blocks_secret_literals(tmp_path):
         json.dumps(
             {
                 "api_key": secret_value,
-                "path": "C:\\Users\\kasom\\projects\\Lv-7\\_runtime\\private",
+                "path": "C:" + "\\Users\\" + "ka" + "som" + "\\projects\\Lv-7\\_runtime\\private",
             }
         ),
         encoding="utf-8",

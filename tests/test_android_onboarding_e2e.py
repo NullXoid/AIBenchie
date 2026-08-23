@@ -52,8 +52,8 @@ data class NullBridgeSetupLink(
 internal fun parseNullBridgeSetupLink(raw: String): NullBridgeSetupLink? {
     scheme == "nullxoid"
     scheme == "nullbridge"
-    host == "setup.echolabs.diy"
-    host == "www.echolabs.diy"
+    host == "setup.elabs.test"
+    host == "www.elabs.test"
     BackendEndpoint.normalize(raw, SettingsStore.PUBLIC_BACKEND_URL)
     hasPairingToken
 }
@@ -96,8 +96,8 @@ override fun onNewIntent(intent: Intent) {
       <data android:host="pair" android:scheme="nullbridge" />
     </intent-filter>
     <intent-filter android:autoVerify="true">
-      <data android:host="setup.echolabs.diy" android:pathPrefix="/nullbridge/pair" android:scheme="https" />
-      <data android:host="www.echolabs.diy" android:pathPrefix="/setup/nullbridge" android:scheme="https" />
+      <data android:host="setup.elabs.test" android:pathPrefix="/nullbridge/pair" android:scheme="https" />
+      <data android:host="www.elabs.test" android:pathPrefix="/setup/nullbridge" android:scheme="https" />
     </intent-filter>
   </activity>
 </manifest>
@@ -110,7 +110,7 @@ setupLinksCanSeedConnectionWithoutReplacingManualOnboarding
 setupLinkParserRejectsUnrelatedUrls
 androidManifestKeepsSetupQrAsAdditiveDeepLink
 parseNullBridgeSetupLink
-setup.echolabs.diy
+setup.elabs.test
 android:host="auth"
 """.strip(),
         encoding="utf-8",

@@ -152,9 +152,9 @@ python aibenchie_local.py --universal-e2e --universal-e2e-manifest configs/echol
 
 Universal E2E separates API contract checks from UX workflow checks while keeping one manifest and one verdict format. See [docs/UNIVERSAL_E2E.md](docs/UNIVERSAL_E2E.md).
 
-The EchoLabs UX lane includes a release-blocking browser workflow. Runner machines must have the pinned Playwright package from `requirements.txt` and the Chromium browser installed with `python -m playwright install chromium`.
+The Elabs UX lane includes a release-blocking browser workflow. Runner machines must have the pinned Playwright package from `requirements.txt` and the Chromium browser installed with `python -m playwright install chromium`.
 
-EchoLabs suite architecture docs and the cross-repo release gate live under [docs/echolabs](docs/echolabs):
+Elabs suite architecture docs and the cross-repo release gate live under [docs/echolabs](docs/echolabs):
 
 - [Naming glossary](docs/echolabs/ECHOLABS_NAMING_GLOSSARY.md)
 - [Service and pipeline map](docs/echolabs/NULLXOID_SERVICE_MAP.md)
@@ -240,8 +240,8 @@ Run the Companion/Android remote backend gate:
 
 ```powershell
 $env:AIBENCHIE_COMPANION_ANDROID_REPO="..\NullXoidAndroid"
-$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.echolabs.diy/nullxoid"
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.elabs.test/nullxoid"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.elabs.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --companion-remote-backend --json
 ```
@@ -253,8 +253,8 @@ Run the secure sign-in setup gate:
 ```powershell
 $env:AIBENCHIE_ANDROID_REPO="..\NullXoidAndroid"
 $env:AIBENCHIE_NULLXOID_WRAPPER_REPO="..\Felnx\NullXoid\.NullXoid"
-$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.echolabs.diy/nullxoid"
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_COMPANION_PUBLIC_API="https://api.elabs.test/nullxoid"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.elabs.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --secure-signin-setup --json
 ```
@@ -302,12 +302,12 @@ python aibenchie_local.py --android-release-gate --android-release-repo ..\NullB
 
 This gate emits `aibenchie.android-release-verdict.v1` under `.suite/local/aibenchie/android-release-verdict.json` by default. It checks update-note completeness, APK digest evidence, package/base URL identity, and optional connected-device package readiness. Raw adb serials are used only for targeting and are not written to verdict output.
 
-Run the EchoLabs release truth spine when the suite needs a single local evidence root for build identity, latest verdict, latest passing candidate, workflow proof validation, and generated status exports:
+Run the Elabs release truth spine when the suite needs a single local evidence root for build identity, latest verdict, latest passing candidate, workflow proof validation, and generated status exports:
 
 ```powershell
-python -m aibenchie.release verify --suite echolabs --json
+python -m aibenchie.release verify --suite Elabs --json
 python aibenchie_local.py --release-spine-verify --json
-python -m aibenchie.release validate-workflows --matrix configs\echolabs_workflow_matrix.json --store-capabilities configs\echolabs_store_capabilities.json --json
+python -m aibenchie.release validate-workflows --matrix configs\Elabs_workflow_matrix.json --store-capabilities configs\Elabs_store_capabilities.json --json
 ```
 
 The default evidence root is ignored local state:
@@ -318,7 +318,7 @@ The default evidence root is ignored local state:
 
 `verify` writes `latest-build.json`, `latest-verdict.json`, `<build-id>/aibenchie-verdict.json`, and `<build-id>/repo-commits.json`. `promote-passing` is the only command that updates `latest-passing.json`, and it rejects missing, stale, malformed, or non-passing builds. Workflow validation is intentionally strict: prerelease workflows fail until real Android submit, job, gallery/artifact, open/save, failure, verdict, and notes proof files exist.
 
-Run the EchoLabs Store video + sound prerelease gate as part of `--echolabs-store` when real Android evidence exists for both generated audio and recorded voice:
+Run the Elabs Store video + sound prerelease gate as part of `--Elabs-store` when real Android evidence exists for both generated audio and recorded voice:
 
 ```powershell
 $env:AIBENCHIE_VIDEO_AUDIO_PRERELEASE_REQUIRED="1"
@@ -350,7 +350,7 @@ $env:AIBENCHIE_VIDEO_AUDIO_RECORDED_AUDIO_DURATION_MS="5000"
 $env:AIBENCHIE_VIDEO_AUDIO_RECORDED_MAX_VOLUME_DB="-12"
 $env:AIBENCHIE_VIDEO_AUDIO_RECORDED_PLAYER="true"
 $env:AIBENCHIE_VIDEO_AUDIO_RECORDED_SAVED_TO_DEVICE="true"
-python aibenchie_local.py --echolabs-store --json
+python aibenchie_local.py --Elabs-store --json
 ```
 
 The NullXoid Android helper can produce this evidence from connected phones:
@@ -457,7 +457,7 @@ $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runn
 python aibenchie_local.py --package-release-artifacts `
   --wrapper-package ..\NullXoid-live\frontend\dist `
   --android-package ..\NullXoidAndroid\app\build\outputs\apk\release\app-release.apk `
-  --public-package ..\echolabs-site\dist `
+  --public-package ..\Elabs-site\dist `
   --release-package-output-dir .\release-packages `
   --release-artifact-key-id release-attestation-key `
   --json
@@ -465,7 +465,7 @@ python aibenchie_local.py --package-release-artifacts `
 python aibenchie_local.py --emit-release-artifacts `
   --wrapper-package .\dist\nullxoid-wrapper.zip `
   --android-package .\dist\nullxoid-companion.apk `
-  --public-package .\dist\echolabs-site.zip `
+  --public-package .\dist\Elabs-site.zip `
   --release-artifacts-output .\release-artifacts.json `
   --release-artifact-key-id release-attestation-key `
   --json
@@ -473,7 +473,7 @@ python aibenchie_local.py --emit-release-artifacts `
 python aibenchie_local.py --verify-release-artifacts --release-artifacts .\release-artifacts.json --json
 ```
 
-The package command turns actual build outputs into release packages first: wrapper build output becomes `nullxoid-wrapper.zip`, NullXoid Companion/Android becomes `nullxoid-companion.apk` or `.aab`, and the public website build becomes `echolabs-public-site.zip`. The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, HMAC-SHA256 signature, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing, any recorded hash is stale, or the signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
+The package command turns actual build outputs into release packages first: wrapper build output becomes `nullxoid-wrapper.zip`, NullXoid Companion/Android becomes `nullxoid-companion.apk` or `.aab`, and the public website build becomes `Elabs-public-site.zip`. The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, HMAC-SHA256 signature, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing, any recorded hash is stale, or the signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
 
 To attach package evidence to a generated release report, pass an artifact manifest:
 

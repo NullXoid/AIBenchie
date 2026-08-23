@@ -50,14 +50,14 @@ def _write_config(tmp_path, release_artifacts, suite_verdict, overrides=None):
         "provider": {
             "type": "forgejo",
             "base_url": "https://git.example.test",
-            "repository": "EchoLabs/NullXoid",
+            "repository": "Elabs/NullXoid",
         },
         "auth": {
             "token_env": "AIBENCHIE_DEPLOY_PROVIDER_TOKEN",
         },
         "release": {
             "tag": "v1.2.3",
-            "name": "EchoLabs Suite v1.2.3",
+            "name": "Elabs Suite v1.2.3",
             "prerelease": True,
         },
         "evidence": {
@@ -159,7 +159,7 @@ def test_deploy_addon_cli_writes_sanitized_plan_output(tmp_path, capsys, monkeyp
     assert payload["deploy_plan_written"] is True
     assert payload["deploy_plan_output"] == str(plan_output.resolve())
     assert plan["schema"] == "aibenchie.deploy-plan.v1"
-    assert plan["provider"]["repository"] == "EchoLabs/NullXoid"
+    assert plan["provider"]["repository"] == "Elabs/NullXoid"
     assert {asset["kind"] for asset in plan["assets"]} == {"wrapper", "android", "public"}
     plan_text = json.dumps(plan).lower()
     assert "aibenchie_deploy_provider_token" not in plan_text
@@ -249,8 +249,8 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
         if kwargs.get("payload"):
             return 201, {
                 "id": 42,
-                "url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42",
-                "upload_url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}",
+                "url": "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/42",
+                "upload_url": "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/42/assets{?name,label}",
             }
         return 201, {"ok": True}
 
@@ -263,9 +263,9 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
     assert result["ok"] is True
     assert result["published"] is True
     assert requests[0]["method"] == "GET"
-    assert requests[0]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/tags/v1.2.3"
+    assert requests[0]["url"] == "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/tags/v1.2.3"
     assert requests[1]["method"] == "POST"
-    assert requests[1]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases"
+    assert requests[1]["url"] == "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases"
     assert requests[1]["payload"]["tag_name"] == "v1.2.3"
     assert requests[1]["payload"]["draft"] is True
     assert requests[1]["token"] == "runtime-token"
@@ -274,7 +274,7 @@ def test_deploy_addon_executor_publishes_release_and_assets(tmp_path, monkeypatc
     assert all(request["content_type"].startswith("multipart/form-data; boundary=") for request in requests[2:5])
     assert all(b'name="attachment"; filename="' in request["data"] for request in requests[2:5])
     assert requests[-1]["method"] == "PATCH"
-    assert requests[-1]["url"] == "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42"
+    assert requests[-1]["url"] == "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/42"
     assert requests[-1]["payload"]["draft"] is False
 
 
@@ -291,7 +291,7 @@ def test_deploy_addon_executor_uses_raw_asset_upload_for_github(tmp_path, monkey
             "provider": {
                 "type": "github",
                 "base_url": "https://github.com",
-                "repository": "EchoLabs/NullXoid",
+                "repository": "Elabs/NullXoid",
             },
         },
     )
@@ -306,8 +306,8 @@ def test_deploy_addon_executor_uses_raw_asset_upload_for_github(tmp_path, monkey
         if kwargs.get("payload"):
             return 201, {
                 "id": 42,
-                "url": "https://api.github.com/repos/EchoLabs/NullXoid/releases/42",
-                "upload_url": "https://uploads.github.com/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}",
+                "url": "https://api.github.com/repos/Elabs/NullXoid/releases/42",
+                "upload_url": "https://uploads.github.com/repos/Elabs/NullXoid/releases/42/assets{?name,label}",
             }
         uploads.append({"url": url, "content_type": kwargs.get("content_type"), "data": kwargs.get("data") or b""})
         return 201, {"ok": True}
@@ -337,7 +337,7 @@ def test_deploy_addon_executor_blocks_untrusted_provider_upload_url(tmp_path, mo
             "provider": {
                 "type": "github",
                 "base_url": "https://github.com",
-                "repository": "EchoLabs/NullXoid",
+                "repository": "Elabs/NullXoid",
             },
         },
     )
@@ -349,7 +349,7 @@ def test_deploy_addon_executor_blocks_untrusted_provider_upload_url(tmp_path, mo
         if method == "GET":
             return 404, {"message": "not found"}
         if kwargs.get("payload"):
-            return 201, {"id": 42, "upload_url": "https://evil.example.test/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}"}
+            return 201, {"id": 42, "upload_url": "https://evil.example.test/repos/Elabs/NullXoid/releases/42/assets{?name,label}"}
         raise AssertionError("asset upload should not run against untrusted host")
 
     result = execute_deploy_addon(
@@ -383,8 +383,8 @@ def test_deploy_addon_executor_reports_finalize_failure_after_uploads(tmp_path, 
         if kwargs.get("payload"):
             return 201, {
                 "id": 42,
-                "url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42",
-                "upload_url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/42/assets{?name,label}",
+                "url": "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/42",
+                "upload_url": "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/42/assets{?name,label}",
             }
         return 201, {"ok": True}
 
@@ -433,7 +433,7 @@ def test_deploy_addon_executor_blocks_existing_release_tag(tmp_path, monkeypatch
     assert requests == [
         {
             "method": "GET",
-            "url": "https://git.example.test/api/v1/repos/EchoLabs/NullXoid/releases/tags/v1.2.3",
+            "url": "https://git.example.test/api/v1/repos/Elabs/NullXoid/releases/tags/v1.2.3",
             "payload": None,
         }
     ]
@@ -523,11 +523,11 @@ def test_verify_deploy_plan_blocks_secret_like_values(tmp_path):
         "provider": {
             "type": "github",
             "base_url": "https://github.com",
-            "repository": "EchoLabs/NullXoid",
+            "repository": "Elabs/NullXoid",
         },
         "release": {
             "tag": "v1.2.3",
-            "name": "EchoLabs Suite v1.2.3",
+            "name": "Elabs Suite v1.2.3",
             "prerelease": True,
         },
         "assets": [
@@ -555,11 +555,11 @@ def test_verify_deploy_plan_cli(tmp_path, capsys):
         "provider": {
             "type": "forgejo",
             "base_url": "https://git.example.test",
-            "repository": "EchoLabs/NullXoid",
+            "repository": "Elabs/NullXoid",
         },
         "release": {
             "tag": "v1.2.3",
-            "name": "EchoLabs Suite v1.2.3",
+            "name": "Elabs Suite v1.2.3",
             "prerelease": True,
         },
         "assets": [

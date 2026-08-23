@@ -1,7 +1,7 @@
 {
   "schema": "aibenchie.workflow-matrix.v1",
   "schema_version": "1.0",
-  "suite": "echolabs",
+  "suite": "Elabs",
   "frozen_prerelease_workflows": [
     "standard-prompt-image",
     "reference-image-edit",

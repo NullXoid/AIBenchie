@@ -99,7 +99,7 @@ PUBLIC_FORBIDDEN_MARKERS = (
     "token",
     "secret",
     "private_key",
-    "c:\\users\\",
+    "c:" + "\\users\\",
     "/users/",
     "192.168.",
     "10.0.",
@@ -343,7 +343,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "Random public repo discovery",
     ),
     "docs/PLUG_MANIFEST_SCHEMA.md": (
-        "echolabs.plug",
+        "Elabs.plug",
         "schema_version",
         "provider_id",
         "privacy",
@@ -355,7 +355,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "public_safe",
     ),
     "docs/PLUG_INTAKE_PIPELINE.md": (
-        "EchoLabs Trusted / AIBenchie Certified",
+        "Elabs Trusted / AIBenchie Certified",
         "Local Personal Plug",
         "External Store / Community Store",
         "GitHub search",
@@ -364,7 +364,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "Local Only",
     ),
     "docs/PLUG_TRUST_LEVELS.md": (
-        "EchoLabs Trusted",
+        "Elabs Trusted",
         "AIBenchie Certified",
         "Local Only",
         "Manual Review",
@@ -377,7 +377,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "GitHub",
         "Forgejo",
         "must not search",
-        "must not become EchoLabs Trusted",
+        "must not become Elabs Trusted",
     ),
     "docs/RUNTIME_READINESS_API.md": (
         "GET /api/runtime/readiness",
@@ -391,7 +391,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "API keys",
     ),
     "docs/ADDING_A_PLUG.md": (
-        "EchoLabs-Owned Plug",
+        "Elabs-Owned Plug",
         "Local Personal Plug",
         "Future External Store Plug",
         "Add from Source",
@@ -418,9 +418,9 @@ MS8_FORBIDDEN_PACK_METADATA_MARKERS = (
 )
 MS8_REQUIRED_FRONTEND_MARKERS = (
     "ms8-first-run-onboarding",
-    "Welcome to EchoLabs / .NullXoid",
+    "Welcome to Elabs / .NullXoid",
     "Backend-only mode is available",
-    "EchoLabs Core is .NullXoid + NullBridge",
+    "Elabs Core is .NullXoid + NullBridge",
     "FIRST_RUN_REQUIRED_MESSAGE",
     "First-run setup is required before sign-in.",
     "Continue setup",
@@ -456,7 +456,7 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "Model Runtime",
     "Media Runtime",
     "ComfyUI is optional and separate from LLM chat.",
-    "Backend/browser mode works without NullBridge. EchoLabs Core requires NullBridge.",
+    "Backend/browser mode works without NullBridge. Elabs Core requires NullBridge.",
     "model_runtime_api_key_configured",
     "friendlyConnectionDetail",
     'states: ["not_configured", "manual-review", "unavailable", "configured", "healthy"]',
@@ -475,7 +475,7 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "routeToAppHome",
     "isSetupRoutePath",
     "LOCAL APP READY",
-    "EchoLabs is ready",
+    "Elabs is ready",
     "Choose an AI model",
     "Choose AI model",
     "AI model",
@@ -493,7 +493,7 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "setupDetailsVisible",
     "startChattingFromSetup",
     "Model runtime configured",
-    "Add NullBridge when you want EchoLabs Core approval/control/status.",
+    "Add NullBridge when you want Elabs Core approval/control/status.",
     "Core bridge: Optional",
     "Capability state:",
     "Runtime readiness:",
@@ -505,7 +505,7 @@ MS8_REQUIRED_STORE_ASSISTANT_MARKERS = (
     "store-assistant-status",
 )
 MS8_REQUIRED_LAUNCHER_MARKERS = (
-    "EchoLabs Scout",
+    "Elabs Scout",
     "EXIT_SUCCESS = 0",
     "EXIT_GENERAL = 1",
     "EXIT_MISSING_PREREQ = 2",
@@ -528,7 +528,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "getpass.getpass",
     "--no-use-colors",
     "Starter Chat + Code Pack",
-    "EchoLabs Core requires .NullXoid + NullBridge",
+    "Elabs Core requires .NullXoid + NullBridge",
     "Manual command:",
     "Port {args.backend_port} is in use, but it does not look like .NullXoid.",
     "Port {args.frontend_port} is in use, but it does not look like the .NullXoid frontend.",
@@ -543,7 +543,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "Using app setup for backward compatibility. Prefer explicit setup backend, setup app, or setup core.",
     "Choose setup profile:",
     "Browser App (recommended)",
-    "EchoLabs Core + Android",
+    "Elabs Core + Android",
     "Advanced Custom",
     "Base: .NullXoid backend will be prepared.",
     "Backend is always included and is not a removable component.",
@@ -553,10 +553,10 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "Continue?",
     "does not build, install, publish, or sideload APKs",
     "Backend is included and locked.",
-    "Android companion guidance depends on EchoLabs Core. NullBridge/Core will be included.",
+    "Android companion guidance depends on Elabs Core. NullBridge/Core will be included.",
     "Start backend now?",
     "Start the app now?",
-    "Start EchoLabs Core now?",
+    "Start Elabs Core now?",
     "App appears to already be running. Open {setup_url(args)}",
     "Backend-only setup is complete.",
     'model_setup": "skip"',
@@ -566,7 +566,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "--mode",
     "Backend-only: blocked because",
     "Browser app: blocked because",
-    "EchoLabs Core: blocked because",
+    "Elabs Core: blocked because",
     "local_command('start', 'backend')",
     "local_command('start', 'app')",
     'sub.add_parser("status"',
@@ -607,21 +607,21 @@ MS8_REQUIRED_STYLE_MARKERS = (
     ".store-addon-readiness",
 )
 MS8_REQUIRED_DOC_MARKERS = (
-    "EchoLabs Core is .NullXoid + NullBridge",
+    "Elabs Core is .NullXoid + NullBridge",
     "AIBenchie is validator",
     "127.0.0.1:8090",
     "127.0.0.1:5174",
 )
 MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
     "START_HERE.md": (
-        ".\\echolabs.cmd setup backend",
-        ".\\echolabs.cmd setup app",
-        ".\\echolabs.cmd setup core",
-        "./echolabs setup backend",
-        "./echolabs setup app",
-        "./echolabs setup core",
+        ".\\Elabs.cmd setup backend",
+        ".\\Elabs.cmd setup app",
+        ".\\Elabs.cmd setup core",
+        "./Elabs setup backend",
+        "./Elabs setup app",
+        "./Elabs setup core",
         "Browser App",
-        "EchoLabs Core + Android",
+        "Elabs Core + Android",
         "Advanced Custom",
         "backend is always included",
         "not setup profiles",
@@ -651,14 +651,14 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
     ),
     "docs/REPO_MAP.md": (
         "Do not treat Android, Lv-7, AIBenchie, or Nextcloud as required for first use.",
-        "Release validator/evidence tool. Not needed to use EchoLabs.",
+        "Release validator/evidence tool. Not needed to use Elabs.",
         "Android import QR is optional",
         "NullBridge pairing QR",
     ),
     "docs/WINDOWS_QUICKSTART.md": (
-        ".\\echolabs.cmd setup backend",
-        ".\\echolabs.cmd setup app",
-        ".\\echolabs.cmd setup core",
+        ".\\Elabs.cmd setup backend",
+        ".\\Elabs.cmd setup app",
+        ".\\Elabs.cmd setup core",
         "Node.js LTS",
         "The backend terminal stays open while the server runs.",
         "Press `Ctrl+C` to stop it.",
@@ -667,9 +667,9 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
         "Android import QR and NullBridge pairing QR are optional",
     ),
     "docs/LINUX_QUICKSTART.md": (
-        "./echolabs setup backend",
-        "./echolabs setup app",
-        "./echolabs setup core",
+        "./Elabs setup backend",
+        "./Elabs setup app",
+        "./Elabs setup core",
         "Node.js LTS",
         "The backend terminal stays open while the server runs.",
         "Press `Ctrl+C` to stop it.",
@@ -679,8 +679,8 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
     ),
     "docs/FRONTEND_QUICKSTART.md": (
         "The Vite proxy reads `NX_BACKEND_URL`",
-        ".\\echolabs.cmd start backend",
-        "./echolabs start backend",
+        ".\\Elabs.cmd start backend",
+        "./Elabs start backend",
         "disconnected/setup state",
         "setup app",
     ),
@@ -783,8 +783,8 @@ def collect_repo_commit_evidence(root: Path | None = None) -> tuple[dict[str, An
         ".NullXoid": parent / ".NullXoid",
         "NullXoidAndroid": parent / "NullXoidAndroid",
         "NullBridge": parent / "NullBridge",
-        "echolabs-site": parent / "echolabs-site",
-        "echolabs-portal": parent / "echolabs-portal",
+        "Elabs-site": parent / "Elabs-site",
+        "Elabs-portal": parent / "Elabs-portal",
         "Lv7": parent / "Lv-7",
     }
     repos = [_repo_info(label, path) for label, path in candidates.items()]
@@ -872,7 +872,7 @@ def validate_status_payload(payload: dict[str, Any], *, now: datetime | None = N
 
 def verify_release_spine(
     *,
-    suite: str = "echolabs",
+    suite: str = "Elabs",
     evidence_root: str | Path = DEFAULT_EVIDENCE_ROOT,
     build_id: str = "",
     suite_version: str = DEFAULT_SUITE_VERSION,
@@ -922,7 +922,7 @@ def verify_release_spine(
     notes = build_dir / "release-notes.md"
     if not notes.exists():
         notes.write_text(
-            f"# EchoLabs Release Notes\n\nBuild: {actual_build_id}\n\nStatus: {actual_status}\n\nVerdict: {verdict}\n",
+            f"# Elabs Release Notes\n\nBuild: {actual_build_id}\n\nStatus: {actual_status}\n\nVerdict: {verdict}\n",
             encoding="utf-8",
         )
     _write_json(resolved_root / "latest-build.json", payload)
@@ -999,7 +999,7 @@ def _load_latest_candidate(evidence_root: str | Path, *, prefer_passing: bool = 
             source_commits=source_commits,
         ),
         "ok": False,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "release_candidate_ok": False,
         "summary": {"repo_count": len(repo_evidence["repos"])},
     }
@@ -1523,7 +1523,7 @@ def _blocked_workflow_summary(workflows: list[dict[str, Any]], capabilities_by_w
 
 def _workflow_summary_markdown(summary: dict[str, Any]) -> str:
     lines = [
-        f"# EchoLabs MS3 Workflow Evidence Summary",
+        f"# Elabs MS3 Workflow Evidence Summary",
         "",
         f"Build: `{summary['build_id']}`",
         f"Verdict: `{summary['verdict']}`",
@@ -1793,7 +1793,7 @@ def validate_nullbridge_prerelease(
         "schema": NULLBRIDGE_PRERELEASE_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,
         "build_id": build_id,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "component": "NullBridge",
         "verdict": "pass" if ok else "blocked",
         "aibenchie_verdict": "pass" if ok else "blocked",
@@ -2059,7 +2059,7 @@ def validate_lv7_operator_loop(
         "schema": LV7_OPERATOR_LOOP_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,
         "build_id": build_id,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "component": "Lv-7",
         "verdict": "pass" if ok else "blocked",
         "aibenchie_verdict": "pass" if ok else "blocked",
@@ -2271,7 +2271,7 @@ def validate_store_addons(
         "schema": STORE_ADDONS_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,
         "build_id": build_id,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "component": "Store/Add-ons",
         "verdict": "pass" if ok else "blocked",
         "aibenchie_verdict": "pass" if ok else "blocked",
@@ -2430,7 +2430,7 @@ def _known_preserved_nullbridge_only(root: Path) -> bool:
         output = subprocess.check_output(["git", "status", "--porcelain"], cwd=root, text=True, stderr=subprocess.DEVNULL)
     except Exception:
         return False
-    allowed_exact = {"?? CON", "?? docs/ECHOLABS_BRIDGE_TUTORIAL.md"}
+    allowed_exact = {"?? CON", "?? docs/echolabs_BRIDGE_TUTORIAL.md"}
     allowed_prefixes = ("?? docs/assets/",)
     lines = [line.strip() for line in output.splitlines() if line.strip()]
     return bool(lines) and all(line in allowed_exact or line.startswith(allowed_prefixes) for line in lines)
@@ -2738,7 +2738,7 @@ def assemble_suite_candidate(
     (candidate_root / "release-notes.md").write_text(
         "\n".join(
             [
-                "# EchoLabs MS7 Prerelease Candidate Evidence",
+                "# Elabs MS7 Prerelease Candidate Evidence",
                 "",
                 f"Build: {build_id}",
                 "",
@@ -2904,7 +2904,7 @@ def validate_suite_candidate(
         "schema_version": SCHEMA_VERSION,
         "build_id": build_id,
         "suite_version": DEFAULT_SUITE_VERSION,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "verdict": "pass" if ok else "blocked",
         "aibenchie_verdict": "pass" if ok else "blocked",
         "source_commits": source_commits,
@@ -2964,8 +2964,8 @@ def validate_ms8_onboarding(
     root = Path(nullxoid_root).expanduser() if nullxoid_root else repo_root().parent / ".NullXoid"
     failures: list[str] = []
 
-    launcher = root / "scripts" / "echolabs.py"
-    wrappers = [root / "echolabs.cmd", root / "echolabs.sh", root / "echolabs"]
+    launcher = root / "scripts" / "Elabs.py"
+    wrappers = [root / "Elabs.cmd", root / "Elabs.sh", root / "Elabs"]
     frontend_app = root / "frontend" / "src" / "App.jsx"
     frontend_store_assistant = root / "frontend" / "src" / "components" / "StoreAssistant.jsx"
     frontend_styles = root / "frontend" / "src" / "styles.css"
@@ -2975,13 +2975,13 @@ def validate_ms8_onboarding(
     if not root.exists():
         failures.append("nullxoid_root:missing")
     if not launcher.exists():
-        failures.append("scripts/echolabs.py:missing")
+        failures.append("scripts/Elabs.py:missing")
     launcher_text = _read_text_or_empty(launcher)
     for marker in MS8_REQUIRED_LAUNCHER_MARKERS:
         if marker not in launcher_text:
-            failures.append(f"scripts/echolabs.py:marker_missing:{marker}")
+            failures.append(f"scripts/Elabs.py:marker_missing:{marker}")
     if "download" in launcher_text.lower():
-        failures.append("scripts/echolabs.py:forbidden_download_behavior")
+        failures.append("scripts/Elabs.py:forbidden_download_behavior")
     auth_store_text = _read_text_or_empty(root / "backend" / "auth_store.py")
     if "password='%s'" in auth_store_text or "Change it immediately." in auth_store_text:
         failures.append("backend/auth_store.py:bootstrap_password_value_logged")
@@ -3018,13 +3018,13 @@ def validate_ms8_onboarding(
         if forbidden in app_text:
             failures.append(f"frontend/src/App.jsx:stale_marker:{forbidden}")
     readme_text = _read_text_or_empty(root / "README.md")
-    if "git clone http://git.echolabs.diy/EchoLabs/.NullXoid.git" not in readme_text:
+    if "git clone http://git.example.test/Elabs/.NullXoid.git" not in readme_text:
         failures.append("README.md:http_clone_beginner_path_missing")
     if "Permission denied (publickey)" not in readme_text:
         failures.append("README.md:ssh_publickey_guidance_missing")
     if "start app" not in readme_text:
         failures.append("README.md:start_app_quickstart_missing")
-    if "echolabs.cmd setup app" not in readme_text and "./echolabs setup app" not in readme_text:
+    if "Elabs.cmd setup app" not in readme_text and "./Elabs setup app" not in readme_text:
         failures.append("README.md:setup_quickstart_missing")
     for marker in (
         "setup backend",
@@ -3032,7 +3032,7 @@ def validate_ms8_onboarding(
         "setup core",
         "Backend-only does not require",
         "Browser App",
-        "EchoLabs Core + Android",
+        "Elabs Core + Android",
         "Advanced Custom",
         "backend is always included",
         "not setup profiles",
@@ -3054,14 +3054,14 @@ def validate_ms8_onboarding(
     if "Terminal 1" not in readme_text or "Terminal 2" not in readme_text:
         failures.append("README.md:manual_terminal_fallback_missing")
     start_here_text = _read_text_or_empty(root / "START_HERE.md")
-    if "echolabs.cmd setup app" not in start_here_text and "./echolabs setup app" not in start_here_text:
+    if "Elabs.cmd setup app" not in start_here_text and "./Elabs setup app" not in start_here_text:
         failures.append("START_HERE.md:setup_quickstart_missing")
     for marker in (
         "setup backend",
         "setup app",
         "setup core",
         "Browser App",
-        "EchoLabs Core + Android",
+        "Elabs Core + Android",
         "Advanced Custom",
         "backend is always included",
         "not setup profiles",
@@ -3096,49 +3096,49 @@ def validate_ms8_onboarding(
             if marker not in text:
                 failures.append(f"{relative}:marker_missing:{marker}")
 
-    pack_metadata_path = root / "echolabs-pack.json"
+    pack_metadata_path = root / "Elabs-pack.json"
     pack_metadata_text = _read_text_or_empty(pack_metadata_path)
     pack_metadata: dict[str, Any] | None = None
     if not pack_metadata_path.exists():
-        failures.append("echolabs-pack.json:missing")
+        failures.append("Elabs-pack.json:missing")
     else:
         try:
             parsed = json.loads(pack_metadata_text)
             if isinstance(parsed, dict):
                 pack_metadata = parsed
             else:
-                failures.append("echolabs-pack.json:not_object")
+                failures.append("Elabs-pack.json:not_object")
         except json.JSONDecodeError:
-            failures.append("echolabs-pack.json:invalid_json")
+            failures.append("Elabs-pack.json:invalid_json")
     if pack_metadata is not None:
         for field in MS8_REQUIRED_PACK_METADATA_FIELDS:
             if field not in pack_metadata:
-                failures.append(f"echolabs-pack.json:missing_field:{field}")
+                failures.append(f"Elabs-pack.json:missing_field:{field}")
         if pack_metadata.get("public_safe") is not True:
-            failures.append("echolabs-pack.json:public_safe_not_true")
+            failures.append("Elabs-pack.json:public_safe_not_true")
         store_meta = pack_metadata.get("store")
         if not isinstance(store_meta, dict):
-            failures.append("echolabs-pack.json:store_not_object")
+            failures.append("Elabs-pack.json:store_not_object")
         elif store_meta.get("installable") is not False:
-            failures.append("echolabs-pack.json:installable_core_app")
+            failures.append("Elabs-pack.json:installable_core_app")
         docs_meta = pack_metadata.get("docs")
         if not isinstance(docs_meta, dict):
-            failures.append("echolabs-pack.json:docs_not_object")
+            failures.append("Elabs-pack.json:docs_not_object")
         else:
             for name, relative in docs_meta.items():
                 if not isinstance(relative, str) or not relative.strip():
-                    failures.append(f"echolabs-pack.json:docs_link_invalid:{name}")
+                    failures.append(f"Elabs-pack.json:docs_link_invalid:{name}")
                     continue
                 rel_path = Path(relative)
                 if rel_path.is_absolute() or ".." in rel_path.parts:
-                    failures.append(f"echolabs-pack.json:docs_link_public_unsafe:{name}")
+                    failures.append(f"Elabs-pack.json:docs_link_public_unsafe:{name}")
                     continue
                 if not (root / rel_path).exists():
-                    failures.append(f"echolabs-pack.json:docs_link_missing:{relative}")
+                    failures.append(f"Elabs-pack.json:docs_link_missing:{relative}")
         lower_pack_metadata = pack_metadata_text.lower()
         for marker in MS8_FORBIDDEN_PACK_METADATA_MARKERS:
             if marker.lower() in lower_pack_metadata:
-                failures.append(f"echolabs-pack.json:public_unsafe_marker:{marker}")
+                failures.append(f"Elabs-pack.json:public_unsafe_marker:{marker}")
     store_assistant_text = _read_text_or_empty(frontend_store_assistant)
     if not frontend_store_assistant.exists():
         failures.append("frontend/src/components/StoreAssistant.jsx:missing")
@@ -3173,11 +3173,11 @@ def validate_ms8_onboarding(
             if marker not in text:
                 failures.append(f"{relative}:marker_missing:{marker}")
     ok = not failures
-    command_failure_prefixes = ("scripts/echolabs.py", "echolabs.cmd", "echolabs.sh", "echolabs")
+    command_failure_prefixes = ("scripts/Elabs.py", "Elabs.cmd", "Elabs.sh", "Elabs")
     result = {
         "schema": MS8_ONBOARDING_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "component": ".NullXoid",
         "verdict": "pass" if ok else "blocked",
         "aibenchie_verdict": "pass" if ok else "blocked",
@@ -3209,7 +3209,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = subparsers.add_parser("verify", help="Write latest build and verdict evidence.")
     add_common(verify)
-    verify.add_argument("--suite", default="echolabs")
+    verify.add_argument("--suite", default="Elabs")
     verify.add_argument("--build-id", default="")
     verify.add_argument("--suite-version", default=DEFAULT_SUITE_VERSION)
     verify.add_argument("--verdict", default="not-run", choices=sorted(VERDICT_VALUES))

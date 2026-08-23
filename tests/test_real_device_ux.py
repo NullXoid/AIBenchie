@@ -28,7 +28,7 @@ def write_proof(path, overrides=None):
             "build_type": "release",
         },
         "environment": {
-            "base_url": "https://api.echolabs.diy/nullxoid",
+            "base_url": "https://api.elabs.test/nullxoid",
             "network": "cellular",
         },
         "runtime": {
@@ -67,7 +67,7 @@ def test_real_device_ux_accepts_public_safe_android_proof(tmp_path):
     assert result["platform"] == "android"
     assert result["workflows"] == ["signin", "chat"]
     assert result["app"]["version"] == "1.0.0"
-    assert result["environment"]["base_url"] == "https://api.echolabs.diy/nullxoid"
+    assert result["environment"]["base_url"] == "https://api.elabs.test/nullxoid"
     assert result["runtime"]["model"] == "Qwen/Qwen3-4B-GGUF"
 
 
@@ -154,7 +154,7 @@ def test_real_device_ux_cli_human_report_labels_runtime_and_environment(capsys, 
 
     assert exit_code == 0
     assert "App version: 1.0.0" in output
-    assert "Base URL: https://api.echolabs.diy/nullxoid" in output
+    assert "Base URL: https://api.elabs.test/nullxoid" in output
     assert "Network: cellular" in output
     assert "Runtime provider: llamacpp" in output
     assert "Runtime model: Qwen/Qwen3-4B-GGUF" in output

@@ -11,8 +11,8 @@ from urllib.parse import urlparse
 
 DEFAULT_CONFIG_PATH = Path("configs/echolabs_auth_provider_config.example.json")
 DEFAULT_DEVICE_PROOF_PATH = Path("configs/echolabs_auth_provider_device_proof.example.json")
-EXPECTED_SCHEMA = "echolabs.auth-provider-config.v1"
-EXPECTED_DEVICE_PROOF_SCHEMA = "echolabs.auth-provider-device-proof.v1"
+EXPECTED_SCHEMA = "Elabs.auth-provider-config.v1"
+EXPECTED_DEVICE_PROOF_SCHEMA = "Elabs.auth-provider-device-proof.v1"
 EXPECTED_ANDROID_PACKAGE = "com.nullxoid.android"
 EXPECTED_ASSETLINKS_RELATION = "delegate_permission/common.get_login_creds"
 EXPECTED_ASSETLINKS_PATH = "/.well-known/assetlinks.json"

@@ -13,8 +13,8 @@ from aibenchie.hosted_nullxoid_stack import json_payload, json_route_failure, re
 from training.release_fabric import validate_auth_policy, validate_setup_policy
 
 
-DEFAULT_PUBLIC_API = "https://api.echolabs.diy/nullxoid"
-DEFAULT_ORIGIN = "https://api.echolabs.diy"
+DEFAULT_PUBLIC_API = "https://api.elabs.test/nullxoid"
+DEFAULT_ORIGIN = "https://api.elabs.test"
 DEFAULT_BASE_PATH = "/nullxoid"
 ANDROID_PACKAGE_NAME = "com.nullxoid.android"
 ANDROID_ASSETLINKS_RELATION = "delegate_permission/common.get_login_creds"

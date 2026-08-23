@@ -1,7 +1,7 @@
 {
-  "schema": "echolabs.auth-provider-device-proof.v1",
+  "schema": "Elabs.auth-provider-device-proof.v1",
   "template": true,
-  "product": "EchoLabs Suite",
+  "product": "Elabs Suite",
   "device": {
     "platform": "android",
     "package": "com.nullxoid.android",
@@ -11,7 +11,7 @@
   },
   "enrollment": {
     "tested_at": "REPLACE_WITH_ISO8601_TIME",
-    "rp_id": "api.echolabs.diy",
+    "rp_id": "api.elabs.test",
     "credential_manager_used": true,
     "passkey_created": true,
     "assetlinks_verified": true,

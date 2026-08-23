@@ -10,8 +10,8 @@ from aibenchie.hosted_nullxoid_auth import normalize_base_path, normalize_origin
 from aibenchie.hosted_nullxoid_stack import HostedStackResult, run_hosted_nullxoid_stack_check
 
 
-DEFAULT_PUBLIC_API = "https://api.echolabs.diy/nullxoid"
-DEFAULT_ORIGIN = "https://api.echolabs.diy"
+DEFAULT_PUBLIC_API = "https://api.elabs.test/nullxoid"
+DEFAULT_ORIGIN = "https://api.elabs.test"
 DEFAULT_BASE_PATH = "/nullxoid"
 
 REQUIRED_ANDROID_FILES = (
@@ -245,7 +245,7 @@ def run_companion_remote_backend_check(
                 "NULLXOID_APP_UPDATE_FALLBACK_RELEASES_URL",
                 "PUBLIC_BACKEND_URL",
                 resolved_public_api,
-                "git.echolabs.diy/api/v1/repos/EchoLabs/NullXoidAndroid/releases",
+                "git.example.test/api/v1/repos/Elabs/NullXoidAndroid/releases",
             ],
         )
     )
@@ -254,7 +254,7 @@ def run_companion_remote_backend_check(
             repo,
             "app/src/main/java/com/nullxoid/android/data/api/BackendEndpoint.kt",
             [
-                "PUBLIC_ECHOLABS_URL",
+                "PUBLIC_Elabs_URL",
                 resolved_public_api,
                 "https://",
             ],
@@ -266,7 +266,7 @@ def run_companion_remote_backend_check(
             "app/src/main/java/com/nullxoid/android/data/prefs/SettingsStore.kt",
             [
                 "PUBLIC_BACKEND_URL",
-                "BackendEndpoint.PUBLIC_ECHOLABS_URL",
+                "BackendEndpoint.PUBLIC_Elabs_URL",
             ],
         )
     )
@@ -322,7 +322,7 @@ def run_companion_remote_backend_check(
                 relative,
                 [
                     "api.example.test",
-                    "http://api.echolabs.diy",
+                    "http://api.elabs.test",
                 ],
             )
         )

@@ -36,10 +36,10 @@ Durable engineering decisions live here when they affect release trust, deploy c
   - `python aibenchie_local.py --execute-deploy-addon --deploy-addon-config <private-config.json> --deploy-publish-confirm <release-tag> --json`
   - `python aibenchie_local.py --verify-release-artifacts --release-artifacts <release-artifacts.json> --json`
 
-## 2026-05-10: EchoLabs Stabilization Backlog Is Complete
+## 2026-05-10: Elabs Stabilization Backlog Is Complete
 
 - Status: accepted
-- Decision: treat the EchoLabs stabilization backlog as complete and require future suite work to enter as new scoped backlog rows, not by reopening completed stabilization rows.
+- Decision: treat the Elabs stabilization backlog as complete and require future suite work to enter as new scoped backlog rows, not by reopening completed stabilization rows.
 - Context: Web, Android, Desktop, BridgeEcho/NullBridge, Universal API/UX E2E, release artifact attestation, suite-security, generated-output policy, deploy add-on dry run, deploy-plan verification, and hosted API E2E all passed in the current workspace.
 - Rationale: the suite now has enough release evidence that old "next work" labels create confusion and duplicate effort. A handoff record should distinguish completed stabilization from new product/release lanes.
 - Consequences: future work should start from a clean lane such as broader provider-backed deployment, supported-mode Docker gate support, broader real-device UX coverage, or the paused standalone AIBenchie expansion. Docker is currently guarded by a `--docker-support` boundary gate, but it is still not a supported deployment path.
@@ -47,7 +47,7 @@ Durable engineering decisions live here when they affect release trust, deploy c
 - Related files: `docs/SUITE_PRIORITY_BACKLOG.md`, `docs/echolabs/ECHOLABS_RELEASE_GATES.md`, `docs/echolabs/STABILIZATION_HANDOFF.md`.
 - Validation commands:
   - `.\scripts\echolabs_suite_release_gate.ps1`
-  - `.\scripts\echolabs_hosted_api_e2e.ps1`
+  - `.\scripts\Elabs_hosted_api_e2e.ps1`
   - `python aibenchie_local.py --suite-security --json`
 
 ## 2026-04-27: Prioritize Narrow E2EE Before Broad Privacy Claims
@@ -72,7 +72,7 @@ Durable engineering decisions live here when they affect release trust, deploy c
 - Rationale: device lifecycle is security-critical. A deterministic proof gives the UI a clear contract and prevents broad zero-knowledge claims before enrollment, recovery, revocation, backend key absence, and audit redaction are proven.
 - Consequences: `--e2ee-readiness` now requires zero-knowledge device lifecycle evidence. Future UI work should consume the lifecycle primitives rather than creating a separate key path.
 - Revisit trigger: revisit when passkey/OIDC setup and device approval UI are ready, or if platform keychain APIs require a different envelope format.
-- Related files: `aibenchie/zero_knowledge_devices.py`, `tests/test_zero_knowledge_devices.py`, `docs/E2EE_READINESS.md`, `EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js`.
+- Related files: `aibenchie/zero_knowledge_devices.py`, `tests/test_zero_knowledge_devices.py`, `docs/E2EE_READINESS.md`, `Elabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js`.
 - Validation commands:
   - `python aibenchie_local.py --zero-knowledge-device-proof --json`
   - `python aibenchie_local.py --e2ee-readiness --json`
@@ -90,7 +90,7 @@ Durable engineering decisions live here when they affect release trust, deploy c
 - Rationale: the UI should not weaken the security boundary. Keeping the UI on top of the same tested primitives means AIBenchie can reject regressions where key material leaks, revocation fails to rotate the recovery kit, or the setup contract is removed.
 - Consequences: the master suite now includes a `nullxoid_wrapper_frontend_e2ee` target. The v1 UI is local/browser scoped; live cross-device sync and platform keychain integration remain future work.
 - Revisit trigger: revisit when Android/Companion enrollment uses the public API route or when passkey/OIDC device identity changes the storage/envelope design.
-- Related files: `EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js`, `EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs`, `aibenchie/suite_test_catalog.py`, `docs/E2EE_READINESS.md`.
+- Related files: `Elabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js`, `Elabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs`, `aibenchie/suite_test_catalog.py`, `docs/E2EE_READINESS.md`.
 - Validation commands:
   - `npm run test:e2ee`
   - `python -m pytest tests/test_e2ee_readiness.py tests/test_suite_test_catalog.py -q`

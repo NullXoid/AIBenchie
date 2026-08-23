@@ -15,7 +15,7 @@ python -m lv7_autonomy.evidence --output reports\lv7-autonomy-evidence.json
 Or run the cross-repo proof in one command from AIBenchie:
 
 ```powershell
-python scripts\run_lv7_autonomy_gate.py --lv7-root C:\Users\kasom\projects\Lv-7
+python scripts\run_lv7_autonomy_gate.py --lv7-root $env:USERPROFILE\projects\Lv-7
 ```
 
 The integrated runner records local resource telemetry while evidence is generated. It samples CPU usage, memory usage, and GPU usage when `nvidia-smi` is available, then prints a peak summary.

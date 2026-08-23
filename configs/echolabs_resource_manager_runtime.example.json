@@ -1,5 +1,5 @@
 {
-  "schema": "echolabs.resource-manager-runtime.v1",
+  "schema": "Elabs.resource-manager-runtime.v1",
   "template": true,
   "profiles": {
     "ct400-wrapper": {

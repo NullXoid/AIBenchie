@@ -736,7 +736,7 @@ def test_universal_e2e_cli_outputs_json_and_optional_output_file(monkeypatch, ca
     assert file_payload == payload
 
 
-def test_echolabs_manifest_has_executable_ux_targets():
+def test_elabs_manifest_has_executable_ux_targets():
     manifest_path = Path("configs/echolabs_universal_e2e.json")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
@@ -785,7 +785,7 @@ def test_echolabs_manifest_has_executable_ux_targets():
     ]
 
 
-def test_echolabs_manifest_has_executable_api_targets():
+def test_elabs_manifest_has_executable_api_targets():
     manifest_path = Path("configs/echolabs_universal_e2e.json")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 

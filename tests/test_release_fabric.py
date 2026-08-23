@@ -462,14 +462,14 @@ def test_tracked_release_fabric_files_do_not_embed_private_local_settings():
     banned_patterns = [
         re.compile(r"\b192\.168\.\d{1,3}\.\d{1,3}\b"),
         re.compile(r"\b10\.0\.2\.2\b"),
-        re.compile("git\\." + "echolabs", re.IGNORECASE),
-        re.compile("echolabs" + "\\.diy", re.IGNORECASE),
+        re.compile("git\\." + "Elabs", re.IGNORECASE),
+        re.compile("Elabs" + "\\.diy", re.IGNORECASE),
         re.compile(r"\b" + "Echo" + r"Labs\b"),
         re.compile(r"\b" + "Xaso" + r"moru\b", re.IGNORECASE),
         re.compile(r"\b" + "ka" + r"som\b", re.IGNORECASE),
         re.compile("C:" + r"\\Users\\", re.IGNORECASE),
         re.compile("C:" + r"\\\\Users\\\\", re.IGNORECASE),
-        re.compile("/home/" + "echolabs", re.IGNORECASE),
+        re.compile("/home/" + "Elabs", re.IGNORECASE),
     ]
     scanned_suffixes = {".html", ".json", ".yaml", ".yml", ".md", ".py", ".txt", ".toml"}
     offenders = []

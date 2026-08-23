@@ -102,7 +102,7 @@ def test_ct400_default_profile_blocks_heavy_venv_backup(monkeypatch, tmp_path):
 
 def valid_runtime_evidence() -> dict:
     return {
-        "schema": "echolabs.resource-manager-runtime.v1",
+        "schema": "Elabs.resource-manager-runtime.v1",
         "template": False,
         "profiles": {
             "ct400-wrapper": {

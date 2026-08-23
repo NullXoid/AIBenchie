@@ -1,6 +1,6 @@
 # Docker Support Status
 
-Status: coming soon. Docker is not a supported EchoLabs Suite deployment path yet.
+Status: coming soon. Docker is not a supported Elabs Suite deployment path yet.
 
 The current release path is still repo-native: each surface runs its own local release gate, AIBenchie verifies the suite verdict, and release packages are attested before deployment. Do not advertise Docker, Docker Compose, or container images as production-ready until this document changes status and a Docker-specific AIBenchie gate passes.
 
@@ -8,12 +8,12 @@ The current release path is still repo-native: each surface runs its own local r
 
 - No tracked `Dockerfile`, `docker-compose.yml`, or published container image is part of the supported suite.
 - Docker commands in outside notes are experimental operator work only.
-- Existing release gates remain authoritative: EchoLabs web, Android, Desktop, NullBridge, and AIBenchie Universal E2E.
+- Existing release gates remain authoritative: Elabs web, Android, Desktop, NullBridge, and AIBenchie Universal E2E.
 - Provider tokens, service credentials, private hostnames, E2EE recovery material, and release signing secrets must stay in runtime secret storage, never in images or compose files.
 
 ## Required Before Support
 
-- A minimal multi-service topology for EchoLabs web, wrapper/backend, NullBridge, AIBenchie, and optional model/media runtimes.
+- A minimal multi-service topology for Elabs web, wrapper/backend, NullBridge, AIBenchie, and optional model/media runtimes.
 - Explicit persistent volumes for VaultEcho/E2EE data, artifacts, logs, and AIBenchie evidence, with backup and restore notes.
 - Resource Manager limits for CPU, memory, disk, generated output, logs, caches, and long-running media/model jobs.
 - GPU/runtime profiles for Ollama, llama.cpp, ComfyUI, image/video/3D generation, and CPU-only fallback behavior.

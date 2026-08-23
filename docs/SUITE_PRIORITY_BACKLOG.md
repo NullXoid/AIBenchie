@@ -23,11 +23,11 @@ This backlog ranks cross-repo work by release impact, risk reduction, user value
 | NullPrivacy E2EE readiness gate | Done | local proof plus evidence for saved chats, private artifacts, CCC memory, workspace notes, private uploads, offline cache, sync blobs, and private AIBenchie reports |
 | Zero-knowledge device lifecycle proof | Done | AIBenchie proof plus wrapper frontend helper for device enrollment, recovery-secret restore, wrong-secret rejection, revocation/key rotation, backend key absence, and redacted audit |
 | Zero-knowledge setup UI v1 | Done | Wrapper Privacy/Security panel can initialize a device, show a recovery kit, approve a Companion device, recover, revoke, rotate the recovery kit, and expose redacted audit evidence |
-| Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.echolabs.diy/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
+| Android/Companion remote profile | Done | Companion defaults and release BuildConfig point at `https://api.elabs.test/nullxoid`; AIBenchie verifies hosted API plumbing, Forgejo-first app update metadata, release network-security config, and endpoint tests |
 | Secure sign-in setup contract | Done | AIBenchie validates passkey/OIDC-first policy, guided setup policy, Android setup UI, wrapper `/health/features` auth metadata, hosted JSON route behavior, and configured-provider Android Digital Asset Links |
 | Passkey/OIDC provider configuration and physical Android proof | Done | Public-safe provider config template, real-value enforcement mode, live Digital Asset Links, and physical Android Credential Manager enrollment proof passed without committing secrets |
 | Android real-device UX proof | Done | Physical Android sign-in and chat proof passed for `com.nullxoid.android` version `0.1.93`; public release evidence shows proof id `android-real-device-ux-20260511T125801Z` |
-| Public AIBenchie release evidence deploy | Done | `https://www.echolabs.diy/aibenchie` shows public-safe release evidence, suite gate `8/8`, and Android real-device UX `pass`; CT400 deploy timer now delegates to the public-site guard |
+| Public AIBenchie release evidence deploy | Done | `https://www.elabs.test/aibenchie` shows public-safe release evidence, suite gate `8/8`, and Android real-device UX `pass`; CT400 deploy timer now delegates to the public-site guard |
 
 ## Visual Status Tracks
 
@@ -49,14 +49,14 @@ Public dashboards should show the completed gate as green instead of "work in pr
 
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
-| 1 | Universal E2E Playwright web UX adapter | 470 | Full UX lane proof complete | Required `web_browser` adapter builds EchoLabs, serves `/nullxoid`, sends a mocked chat, verifies release evidence, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict; the UX lane also verifies web command, Android, and desktop targets together. |
+| 1 | Universal E2E Playwright web UX adapter | 470 | Full UX lane proof complete | Required `web_browser` adapter builds Elabs, serves `/nullxoid`, sends a mocked chat, verifies release evidence, and emits screenshot/HTML/trace evidence through the existing Universal E2E verdict; the UX lane also verifies web command, Android, and desktop targets together. |
 | 2 | Passkey/OIDC provider configuration | 455 | Production proof complete | Real WebAuthn provider settings, live Android Digital Asset Links, and ignored physical Android Credential Manager proof are validated by AIBenchie. |
 | 3 | NullBridge trust fabric hardening | 440 | Hardened / gated | Signed backend identity, JWT audience binding, unknown-service rejection, explicit deny-by-default service routing, redacted audits, and AIBenchie end-to-end denial/proof gates are release-blocking. |
 | 4 | Resource Manager v1 runtime enforcement | 420 | Backend proof complete | NullBridge emits AIBenchie-compatible evidence for backend lease issuance, active lease enforcement, cleanup jobs, retention caps, pressure snapshots, and bounded heavy work. |
-| 5 | Backend Operations UI v1 | 390 | Resource proof aware | EchoLabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, Resource Manager runtime proof, runtime status, and notifications without exposing secrets. |
+| 5 | Backend Operations UI v1 | 390 | Resource proof aware | Elabs read-only Ops panel shows health, deploy, AIBenchie gates, resource pressure, Resource Manager runtime proof, runtime status, and notifications without exposing secrets. |
 | 6 | AIBenchie website scoreboard and release evidence display | 365 | Evidence cards ready | Website consumes public-safe scoreboard and release evidence exports, then shows latest valid score per class/test, overall score, release details, progress bars, and trust/privacy/notification/resource evidence cards. |
-| 7 | Notification system through NullBridge | 345 | Proof aware | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; EchoLabs Ops/readiness now consume notification proof, flag private-material persistence, and keep route-only installs in warning state. |
-| 8 | AIBenchie deploy add-on | 295 | Staged executor gated | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; read-only deploy-plan verification is in the suite gate when local proof exists, EchoLabs exposes the public-safe release evidence card, and the guarded executor can publish only with private config, `dry_run: false`, runtime token, exact release-tag confirmation, release-tag absence preflight, trusted upload host checks, and draft-first finalization after asset uploads. |
+| 7 | Notification system through NullBridge | 345 | Proof aware | NullBridge policy-gated publish/query routes and AIBenchie smoke coverage exist; Elabs Ops/readiness now consume notification proof, flag private-material persistence, and keep route-only installs in warning state. |
+| 8 | AIBenchie deploy add-on | 295 | Staged executor gated | Provider-neutral deploy plan gate validates Forgejo/Gitea/GitHub-style config, suite verdict, release attestation, and runtime-token boundary; read-only deploy-plan verification is in the suite gate when local proof exists, Elabs exposes the public-safe release evidence card, and the guarded executor can publish only with private config, `dry_run: false`, runtime token, exact release-tag confirmation, release-tag absence preflight, trusted upload host checks, and draft-first finalization after asset uploads. |
 | 9 | Docker support boundary | 210 | Proof contract ready | Website/docs mark Docker as coming soon, explicitly not supported yet, with constraints, non-goals, future AIBenchie gate acceptance criteria, a first-class `--docker-support` gate blocking tracked Docker entrypoints, and a private `--docker-support-proof` verifier for future supported-mode evidence. |
 
 Current state: all ranked stabilization work above is implemented and covered by the suite release gate. Future work should be added as a new scored row instead of reusing these completed rows.
@@ -66,9 +66,9 @@ Current state: all ranked stabilization work above is implemented and covered by
 | Rank | Item | Score | Status | Completion target |
 | --- | --- | ---: | --- | --- |
 | F1 | Real-device UX proof gate | 360 | Android sign-in/chat proof complete | Public-safe proof verifier, Android adb readiness preflight, and Android adb generator validate physical-device UX runs without committing raw device IDs, session tokens, screenshots, or local paths; optional screenshot capture stores ignored local artifacts and records only digests; Android proofs require operator-confirmed sign-in and chat workflows before they can count as release evidence. Next expansion is broader workflow coverage beyond sign-in and chat. |
-| F2 | Standalone AIBenchie productization | 340 | Post app release/deployment | Resume after EchoLabs/NullXoid has app foothold and release deployment is stable. Keep AIBenchie active as the suite tester/release gate, but do not publish it as a downloadable standalone product yet. Productize AIBenchie later as its own universal API + UX E2E release gate with stable CLI commands, versioned config/schema, Playwright web adapter, API adapter, Android adapter, evidence bundles, secret redaction, standalone scoreboard, CI examples, packaging, and non-EchoLabs demo targets. |
+| F2 | Standalone AIBenchie productization | 340 | Post app release/deployment | Resume after Elabs/NullXoid has app foothold and release deployment is stable. Keep AIBenchie active as the suite tester/release gate, but do not publish it as a downloadable standalone product yet. Productize AIBenchie later as its own universal API + UX E2E release gate with stable CLI commands, versioned config/schema, Playwright web adapter, API adapter, Android adapter, evidence bundles, secret redaction, standalone scoreboard, CI examples, packaging, and non-Elabs demo targets. |
 
-Post-release rule: do not treat standalone AIBenchie publishing as a blocker for the EchoLabs/NullXoid app release. Keep using AIBenchie as the suite release gate now; productize and publish it as a separate public product only after release deployment is proven.
+Post-release rule: do not treat standalone AIBenchie publishing as a blocker for the Elabs/NullXoid app release. Keep using AIBenchie as the suite release gate now; productize and publish it as a separate public product only after release deployment is proven.
 
 ## Paused Automation Pickup
 
@@ -83,7 +83,7 @@ Resume trigger: pick this up when returning to standalone AIBenchie end-to-end t
 Current foundation:
 
 - `configs/echolabs_universal_e2e.json` runs API and UX lanes.
-- `npm run aibenchie:e2e` in EchoLabs delegates to standalone AIBenchie and runs all lanes by default.
+- `npm run aibenchie:e2e` in Elabs delegates to standalone AIBenchie and runs all lanes by default.
 - `scripts/echolabs_suite_release_gate.ps1` runs Universal E2E and persists `_validation/aibenchie_universal_e2e_latest.json`.
 - UX command targets cover web build/UI contracts, Android release gate, and desktop release gate.
 
@@ -91,7 +91,7 @@ Current implementation:
 
 - `web_browser` adapter exists in `aibenchie/universal_e2e.py`.
 - `web-browser-ux` target exists in `configs/echolabs_universal_e2e.json` and is release-blocking.
-- The target builds EchoLabs with the local embedded app flag, serves static output with SPA fallback, can serve target-scoped mock API/SSE routes, opens `/nullxoid`, verifies the chat composer, sends a mocked NullXoid chat through `/chat/stream`, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
+- The target builds Elabs with the local embedded app flag, serves static output with SPA fallback, can serve target-scoped mock API/SSE routes, opens `/nullxoid`, verifies the chat composer, sends a mocked NullXoid chat through `/chat/stream`, opens `/aibenchie`, verifies release evidence, and captures screenshot, HTML, and trace evidence when Playwright is installed.
 - Playwright is pinned in the Python requirements; the configured runner has executed the full UX lane with web command, browser, Android, and desktop targets passing while capturing screenshot, HTML, and trace evidence.
 
 Maintenance:
@@ -134,8 +134,8 @@ Current production proof:
 
 - Physical Android device: Samsung SM-A176U.
 - Installed package: `com.nullxoid.android`.
-- RP ID: `echolabs.diy`.
-- Origin and Digital Asset Links host: `https://www.echolabs.diy`.
+- RP ID: `elabs.test`.
+- Origin and Digital Asset Links host: `https://www.elabs.test`.
 - Credential Manager provider: Samsung Pass.
 - Result: `readiness_stage=production_ready` with no missing requirements.
 

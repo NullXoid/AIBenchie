@@ -35,7 +35,7 @@ def _matrix(path: Path, *, blocked_prerelease: bool = False) -> Path:
     payload = {
         "schema": release.WORKFLOW_MATRIX_SCHEMA,
         "schema_version": release.SCHEMA_VERSION,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "workflows": [
             {
                 "workflow_id": "text-to-video",
@@ -58,7 +58,7 @@ def _store(path: Path, *, include_mapping: bool = True) -> Path:
     payload = {
         "schema": release.STORE_CAPABILITIES_SCHEMA,
         "schema_version": release.SCHEMA_VERSION,
-        "suite": "echolabs",
+        "suite": "Elabs",
         "capabilities": [],
     }
     if include_mapping:
@@ -161,7 +161,7 @@ def _ms3_matrix(path: Path, *, unsafe_display_name: bool = False) -> Path:
         {
             "schema": release.WORKFLOW_MATRIX_SCHEMA,
             "schema_version": release.SCHEMA_VERSION,
-            "suite": "echolabs",
+            "suite": "Elabs",
             "frozen_prerelease_workflows": list(release.EXPECTED_MS3_PRERELEASE_WORKFLOWS),
             "workflows": workflows,
         },
@@ -203,7 +203,7 @@ def _ms3_store(path: Path) -> Path:
         {
             "schema": release.STORE_CAPABILITIES_SCHEMA,
             "schema_version": release.SCHEMA_VERSION,
-            "suite": "echolabs",
+            "suite": "Elabs",
             "capabilities": capabilities,
         },
     )
@@ -474,7 +474,7 @@ def test_website_status_export_is_public_safe(tmp_path):
 
     assert result["schema"] == release.SUITE_STATUS_SCHEMA
     assert result["public_safe"] is True
-    assert "c:\\users\\" not in text
+    assert "c:" + "\\users\\" not in text
     assert "192.168." not in text
     assert "service_token" not in text
 

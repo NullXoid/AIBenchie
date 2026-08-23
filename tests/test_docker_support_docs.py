@@ -39,7 +39,7 @@ def test_docker_support_is_explicitly_not_supported_yet():
     assert "e2ee" in docker_doc
     assert "persistent data survives container recreation" in docker_doc
     assert "status: coming soon" in docker_doc
-    assert "not a supported echolabs suite deployment path yet" in docker_doc
+    assert "not a supported elabs suite deployment path yet" in docker_doc
     assert "docker-specific aibenchie gate" in docker_doc
     assert "provider tokens, service credentials, private hostnames" in docker_doc
     assert "docker support is coming soon" in aibenchie_readme

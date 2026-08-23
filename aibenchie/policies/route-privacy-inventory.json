@@ -42,7 +42,7 @@
       "status": "covered"
     },
     {
-      "routeId": "aibenchie.cli.echolabs-store",
+      "routeId": "aibenchie.cli.Elabs-store",
       "platform": "aibenchie",
       "authRequirement": "local operator",
       "sensitiveDataClass": "Store Alpha source/integration verdict",
@@ -51,7 +51,7 @@
       "frontendExposure": "none",
       "nullbridgeCapability": "suite.media.image.generate",
       "expectedPrivacyGate": "credential isolation",
-      "evidence": ["aibenchie/echolabs_store.py"],
+      "evidence": ["aibenchie/Elabs_store.py"],
       "status": "covered"
     },
     {
@@ -220,7 +220,7 @@
       "frontendExposure": "safe Store catalog manifest",
       "nullbridgeCapability": "",
       "expectedPrivacyGate": "credential isolation",
-      "evidence": ["wrapper /api/store/catalog", "EchoLabs Store Alpha gate"],
+      "evidence": ["wrapper /api/store/catalog", "Elabs Store Alpha gate"],
       "status": "covered"
     },
     {
@@ -233,7 +233,7 @@
       "frontendExposure": "Local Image Studio safe detail",
       "nullbridgeCapability": "suite.media.image.generate",
       "expectedPrivacyGate": "credential isolation",
-      "evidence": ["wrapper /api/store/addons/{addonId}", "EchoLabs Store Alpha gate"],
+      "evidence": ["wrapper /api/store/addons/{addonId}", "Elabs Store Alpha gate"],
       "status": "covered"
     },
     {
@@ -246,7 +246,7 @@
       "frontendExposure": "Store assistant context with local-debug, approval, provider safe status, and privacy summaries",
       "nullbridgeCapability": "suite.media.image.generate",
       "expectedPrivacyGate": "credential isolation",
-      "evidence": ["wrapper /api/store/addons/{addonId}/assistant-context", "EchoLabs Store assistant grounding gate"],
+      "evidence": ["wrapper /api/store/addons/{addonId}/assistant-context", "Elabs Store assistant grounding gate"],
       "status": "covered"
     },
     {
@@ -272,7 +272,7 @@
       "frontendExposure": "approval/result status and sanitized artifact refs only",
       "nullbridgeCapability": "suite.media.image.generate",
       "expectedPrivacyGate": "prompt editor leakage",
-      "evidence": ["wrapper /api/store/addons/local-image-studio/actions/media.image.generate.local", "EchoLabs Store Alpha gate"],
+      "evidence": ["wrapper /api/store/addons/local-image-studio/actions/media.image.generate.local", "Elabs Store Alpha gate"],
       "status": "covered"
     },
     {
@@ -285,7 +285,7 @@
       "frontendExposure": "artifactId, thumbnailId, thumbnail route, status, mimeType",
       "nullbridgeCapability": "",
       "expectedPrivacyGate": "artifact sandboxing",
-      "evidence": ["wrapper /api/store/addons/local-image-studio/gallery", "EchoLabs Store Alpha gate"],
+      "evidence": ["wrapper /api/store/addons/local-image-studio/gallery", "Elabs Store Alpha gate"],
       "status": "covered"
     },
     {
@@ -298,7 +298,7 @@
       "frontendExposure": "approval/result status and sanitized video artifact refs only",
       "nullbridgeCapability": "suite.media.video.generate",
       "expectedPrivacyGate": "prompt editor leakage",
-      "evidence": ["wrapper /api/store/addons/local-video-studio/actions/media.video.generate.local", "EchoLabs Store gate"],
+      "evidence": ["wrapper /api/store/addons/local-video-studio/actions/media.video.generate.local", "Elabs Store gate"],
       "status": "covered"
     },
     {
@@ -311,7 +311,7 @@
       "frontendExposure": "artifactId, thumbnail/poster route, optional preview route, durationMs, status, mimeType",
       "nullbridgeCapability": "",
       "expectedPrivacyGate": "artifact sandboxing",
-      "evidence": ["wrapper /api/store/addons/local-video-studio/gallery", "EchoLabs Store gate"],
+      "evidence": ["wrapper /api/store/addons/local-video-studio/gallery", "Elabs Store gate"],
       "status": "covered"
     },
     {
@@ -324,7 +324,7 @@
       "frontendExposure": "approval/result status and sanitized model artifact refs only",
       "nullbridgeCapability": "suite.media.model3d.generate",
       "expectedPrivacyGate": "prompt editor leakage",
-      "evidence": ["wrapper /api/store/addons/local-3d-studio/actions/media.model3d.generate.local", "EchoLabs Store gate"],
+      "evidence": ["wrapper /api/store/addons/local-3d-studio/actions/media.model3d.generate.local", "Elabs Store gate"],
       "status": "covered"
     },
     {
@@ -337,7 +337,7 @@
       "frontendExposure": "artifactId, thumbnail route, optional modelPreviewUrl, format, status, mimeType",
       "nullbridgeCapability": "",
       "expectedPrivacyGate": "artifact sandboxing",
-      "evidence": ["wrapper /api/store/addons/local-3d-studio/gallery", "EchoLabs Store gate"],
+      "evidence": ["wrapper /api/store/addons/local-3d-studio/gallery", "Elabs Store gate"],
       "status": "covered"
     },
     {

@@ -205,7 +205,7 @@ def queue_request_via_approval_grant():
 def safe_approval_grant(grant):
     return {"grantId": grant.get("grantId"), "duration": grant.get("duration"), "durationSeconds": grant.get("durationSeconds"), "expiresAt": grant.get("expiresAt")}
 def safe_approval_grant_metadata(grant):
-    return {"grantId": grant.get("grantId"), "displayId": "GRT-safe", "status": grant.get("status"), "serviceId": "store", "serviceName": "EchoLabs Store", "platform": "android", "targetRole": "store-generation", "addonId": "local-video-studio", "addonName": "Local Video Studio", "mediaKind": "video", "capability": "suite.media.video.generate", "action": "media.video.generate.local", "friendlyScope": "Local Video Studio video generation for this requester", "requesterHash": "req_safe", "approvedBy": "admin", "revokedBy": "admin", "duration": "8h", "durationSeconds": 28800, "createdAt": "2026-05-04T00:00:00Z", "expiresAt": "2026-05-04T08:00:00Z", "revokedAt": None}
+    return {"grantId": grant.get("grantId"), "displayId": "GRT-safe", "status": grant.get("status"), "serviceId": "store", "serviceName": "Elabs Store", "platform": "android", "targetRole": "store-generation", "addonId": "local-video-studio", "addonName": "Local Video Studio", "mediaKind": "video", "capability": "suite.media.video.generate", "action": "media.video.generate.local", "friendlyScope": "Local Video Studio video generation for this requester", "requesterHash": "req_safe", "approvedBy": "admin", "revokedBy": "admin", "duration": "8h", "durationSeconds": 28800, "createdAt": "2026-05-04T00:00:00Z", "expiresAt": "2026-05-04T08:00:00Z", "revokedAt": None}
 def read_approval_grant(path):
     return None
 def list_approval_grants(includeExpired=False, includeRevoked=False):
@@ -677,7 +677,7 @@ def test_echolabs_store_cli_outputs_json(monkeypatch, capsys):
 
     monkeypatch.setattr(aibenchie_local, "run_echolabs_store_from_env", lambda: FakeResult())
 
-    code = aibenchie_local.main(["--echolabs-store", "--json"])
+    code = aibenchie_local.main(["--elabs-store", "--json"])
     payload = json.loads(capsys.readouterr().out)
 
     assert code == 0

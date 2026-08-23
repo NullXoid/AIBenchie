@@ -7,8 +7,8 @@ import aibenchie_local
 from aibenchie import secure_signin_setup
 
 
-PUBLIC_API = "https://api.echolabs.diy/nullxoid"
-PUBLIC_ORIGIN = "https://api.echolabs.diy"
+PUBLIC_API = "https://api.elabs.test/nullxoid"
+PUBLIC_ORIGIN = "https://api.elabs.test"
 
 
 def write_policies(root: Path) -> None:
@@ -495,8 +495,8 @@ def test_secure_signin_setup_gate_fails_configured_passkey_without_assetlinks(mo
             payload["auth_passkey_registration_enabled"] = True
             payload["auth_provider_status"] = {
                 "passkey": {
-                    "rp_id": "api.echolabs.diy",
-                    "origin": "https://api.echolabs.diy",
+                    "rp_id": "api.elabs.test",
+                    "origin": "https://api.elabs.test",
                     "verification": "webauthn_assertion_verifier",
                 }
             }
@@ -505,7 +505,7 @@ def test_secure_signin_setup_gate_fails_configured_passkey_without_assetlinks(mo
             public_key = {
                 "challenge": "challenge",
                 "timeout": 60000,
-                "rpId": "api.echolabs.diy",
+                "rpId": "api.elabs.test",
                 "userVerification": "preferred",
             }
             return (
@@ -571,8 +571,8 @@ def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatc
             payload["auth_passkey_registration_enabled"] = True
             payload["auth_provider_status"] = {
                 "passkey": {
-                    "rp_id": "api.echolabs.diy",
-                    "origin": "https://api.echolabs.diy",
+                    "rp_id": "api.elabs.test",
+                    "origin": "https://api.elabs.test",
                     "verification": "webauthn_assertion_verifier",
                 }
             }
@@ -581,7 +581,7 @@ def test_secure_signin_setup_gate_accepts_configured_passkey_ceremony(monkeypatc
             public_key = {
                 "challenge": "challenge",
                 "timeout": 60000,
-                "rpId": "api.echolabs.diy",
+                "rpId": "api.elabs.test",
                 "userVerification": "preferred",
             }
             return (

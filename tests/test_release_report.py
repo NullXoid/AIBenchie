@@ -38,11 +38,11 @@ def test_build_release_report_surfaces_public_safe_deploy_plan_summary(tmp_path)
         "provider": {
             "type": "forgejo",
             "base_url": "https://git.example.test",
-            "repository": "EchoLabs/NullXoid",
+            "repository": "Elabs/NullXoid",
         },
         "release": {
             "tag": "v1.2.3",
-            "name": "EchoLabs Suite v1.2.3",
+            "name": "Elabs Suite v1.2.3",
             "prerelease": True,
         },
         "assets": [
@@ -93,7 +93,7 @@ def test_build_release_report_surfaces_public_safe_real_device_ux_summary(tmp_pa
             "build_type": "release",
         },
         "environment": {
-            "base_url": "https://api.echolabs.diy/nullxoid",
+            "base_url": "https://api.elabs.test/nullxoid",
             "network": "cellular",
         },
         "runtime": {
@@ -128,7 +128,7 @@ def test_build_release_report_surfaces_public_safe_real_device_ux_summary(tmp_pa
         "app_package": "com.nullxoid.android",
         "app_version": "1.0.0",
         "app_build_type": "release",
-        "base_url": "https://api.echolabs.diy/nullxoid",
+        "base_url": "https://api.elabs.test/nullxoid",
         "network": "cellular",
         "runtime_provider": "llamacpp",
         "runtime_model": "Qwen/Qwen3-4B-GGUF",

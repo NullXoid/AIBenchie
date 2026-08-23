@@ -77,10 +77,10 @@ Schema shape:
       "guided_setup_ui_contract"
     ],
     "evidence": [
-      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
-      "EchoLabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
-      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
-      "EchoLabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs"
+      "Elabs/.NullXoid:frontend/src/lib/e2eeDeviceLifecycle.js",
+      "Elabs/.NullXoid:frontend/src/lib/e2eeDeviceSetupState.js",
+      "Elabs/.NullXoid:frontend/scripts/test-e2ee-device-lifecycle.mjs",
+      "Elabs/.NullXoid:frontend/scripts/test-e2ee-device-setup-state.mjs"
     ]
   },
   "targets": [

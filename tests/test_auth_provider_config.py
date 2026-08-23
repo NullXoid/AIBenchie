@@ -8,12 +8,12 @@ from aibenchie.auth_provider_config import validate_auth_provider_config
 
 
 VALID_REAL_CONFIG = {
-    "schema": "echolabs.auth-provider-config.v1",
+    "schema": "Elabs.auth-provider-config.v1",
     "template": False,
     "passkey": {
-        "rp_id": "api.echolabs.diy",
-        "origin": "https://api.echolabs.diy",
-        "assetlinks_url": "https://api.echolabs.diy/.well-known/assetlinks.json",
+        "rp_id": "api.elabs.test",
+        "origin": "https://api.elabs.test",
+        "assetlinks_url": "https://api.elabs.test/.well-known/assetlinks.json",
         "android_package": "com.nullxoid.android",
         "relations": ["delegate_permission/common.get_login_creds"],
         "android_sha256_fingerprints": [
@@ -21,7 +21,7 @@ VALID_REAL_CONFIG = {
         ],
     },
     "oidc": {
-        "issuer": "https://id.echolabs.diy",
+        "issuer": "https://id.elabs.test",
         "client_id": "nullxoid-android",
         "redirect_uri": "nullxoid://auth/oidc/callback",
         "flow": "authorization_code_pkce",
@@ -40,9 +40,9 @@ VALID_REAL_CONFIG = {
 }
 
 VALID_DEVICE_PROOF = {
-    "schema": "echolabs.auth-provider-device-proof.v1",
+    "schema": "Elabs.auth-provider-device-proof.v1",
     "template": False,
-    "product": "EchoLabs Suite",
+    "product": "Elabs Suite",
     "device": {
         "platform": "android",
         "package": "com.nullxoid.android",
@@ -52,7 +52,7 @@ VALID_DEVICE_PROOF = {
     },
     "enrollment": {
         "tested_at": "2026-05-10T00:00:00Z",
-        "rp_id": "api.echolabs.diy",
+        "rp_id": "api.elabs.test",
         "credential_manager_used": True,
         "passkey_created": True,
         "assetlinks_verified": True,
@@ -121,9 +121,9 @@ def test_real_auth_provider_config_passes(tmp_path):
 
 def test_passkey_origin_can_be_rp_id_subdomain(tmp_path):
     payload = json.loads(json.dumps(VALID_REAL_CONFIG))
-    payload["passkey"]["rp_id"] = "echolabs.diy"
-    payload["passkey"]["origin"] = "https://www.echolabs.diy"
-    payload["passkey"]["assetlinks_url"] = "https://www.echolabs.diy/.well-known/assetlinks.json"
+    payload["passkey"]["rp_id"] = "elabs.test"
+    payload["passkey"]["origin"] = "https://www.elabs.test"
+    payload["passkey"]["assetlinks_url"] = "https://www.elabs.test/.well-known/assetlinks.json"
     path = write_config(tmp_path / "auth-provider.json", payload)
 
     result = validate_auth_provider_config(path, require_real=True)

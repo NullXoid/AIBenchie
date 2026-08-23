@@ -1,17 +1,17 @@
-# EchoLabs Stabilization Handoff
+# Elabs Stabilization Handoff
 
 Status: complete as of 2026-05-11.
 
-This handoff records the current release posture for the EchoLabs Suite stabilization lane. It should be updated only when the suite release posture changes; new product work should get a new backlog row instead of reopening completed stabilization items.
+This handoff records the current release posture for the Elabs Suite stabilization lane. It should be updated only when the suite release posture changes; new product work should get a new backlog row instead of reopening completed stabilization items.
 
 ## Completed Scope
 
-- EchoLabs web shell release gate.
+- Elabs web shell release gate.
 - NullXoid Android release gate.
 - NullXoid Desktop release gate.
 - BridgeEcho / NullBridge backend release gate.
 - AIBenchie Universal API/UX E2E, including the Playwright-style browser target.
-- Hosted API E2E for `https://api.echolabs.diy/nullxoid`.
+- Hosted API E2E for `https://api.elabs.test/nullxoid`.
 - Suite security gate with hosted stack, public secret scan, generated-output policy, and release artifact attestation.
 - Release artifact package verification for wrapper, Android, and public-site assets.
 - Deploy add-on dry-run plan gate, read-only plan verifier, release-summary proof hook, and optional suite-gate surface.
@@ -19,20 +19,20 @@ This handoff records the current release posture for the EchoLabs Suite stabiliz
 - Resource Manager runtime evidence and release evidence display.
 - Android real-device UX proof for physical sign-in and chat on app version `0.1.93`.
 - RuntimeEcho hosted chat routed to CT729's dedicated llama.cpp text runtime on port `8081`, with the existing CT729 VL runtime isolated on port `8080`.
-- Public EchoLabs AIBenchie evidence display on `https://www.echolabs.diy/aibenchie`.
-- CT400 public-site deploy path corrected so the root-owned timer deploys `echolabs-site`, not the NullXoid suite app.
+- Public Elabs AIBenchie evidence display on `https://www.elabs.test/aibenchie`.
+- CT400 public-site deploy path corrected so the root-owned timer deploys `Elabs-site`, not the NullXoid suite app.
 
 ## Current Gate Commands
 
 ```powershell
 .\scripts\echolabs_suite_release_gate.ps1
-.\scripts\echolabs_hosted_api_e2e.ps1
+.\scripts\Elabs_hosted_api_e2e.ps1
 ```
 
 ```powershell
 $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<runtime secret>"
 $env:AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST="<path to release-artifacts.json>"
-$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.echolabs.diy"
+$env:AIBENCHIE_NULLXOID_ORIGIN="https://api.elabs.test"
 $env:AIBENCHIE_NULLXOID_BASE_PATH="/nullxoid"
 python aibenchie_local.py --suite-security --json
 python aibenchie_local.py --verify-release-artifacts --release-artifacts <path to release-artifacts.json> --json
@@ -42,14 +42,14 @@ python aibenchie_local.py --verify-deploy-plan --deploy-plan .suite\local\aibenc
 
 ## Evidence Locations
 
-- Suite gate: `C:\Users\kasom\projects\_validation\echolabs_suite_gate_latest.json`
-- Universal E2E: `C:\Users\kasom\projects\_validation\aibenchie_universal_e2e_latest.json`
-- Hosted API E2E: `C:\Users\kasom\projects\_validation\aibenchie_hosted_api_e2e_latest.json`
+- Suite gate: `%USERPROFILE%\projects\_validation\elabs_suite_gate_latest.json`
+- Universal E2E: `%USERPROFILE%\projects\_validation\aibenchie_universal_e2e_latest.json`
+- Hosted API E2E: `%USERPROFILE%\projects\_validation\aibenchie_hosted_api_e2e_latest.json`
 - Local release packages, deploy plan, and attestation: `AIBenchie\.suite\local\aibenchie\`
 - Optional real-device UX proof: `AIBenchie\.suite\local\aibenchie\android-real-device-ux.json`
-- Public AIBenchie page: `https://www.echolabs.diy/aibenchie`
-- Public latest verdict: `https://www.echolabs.diy/content/verdicts/aibenchie-latest-verdict.json`
-- Public release evidence: `https://www.echolabs.diy/content/verdicts/aibenchie-release-evidence.json`
+- Public AIBenchie page: `https://www.elabs.test/aibenchie`
+- Public latest verdict: `https://www.elabs.test/content/verdicts/aibenchie-latest-verdict.json`
+- Public release evidence: `https://www.elabs.test/content/verdicts/aibenchie-release-evidence.json`
 
 The `_validation` and `.suite/local` paths are runtime evidence paths and are intentionally ignored by Git.
 

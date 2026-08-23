@@ -293,8 +293,8 @@ def run_android_onboarding_e2e(
         "internal fun parseNullBridgeSetupLink",
         "scheme == \"nullxoid\"",
         "scheme == \"nullbridge\"",
-        "host == \"setup.echolabs.diy\"",
-        "host == \"www.echolabs.diy\"",
+        "host == \"setup.elabs.test\"",
+        "host == \"www.elabs.test\"",
         "BackendEndpoint.normalize",
         "hasPairingToken",
         "applySetupLink",
@@ -363,8 +363,8 @@ def run_android_onboarding_e2e(
         'android:host="setup"',
         'android:host="pair"',
         'android:scheme="nullbridge"',
-        'android:host="setup.echolabs.diy"',
-        'android:host="www.echolabs.diy"',
+        'android:host="setup.elabs.test"',
+        'android:host="www.elabs.test"',
         'android:autoVerify="true"',
     ]
     missing_manifest = _missing_needles(manifest, manifest_needles)
@@ -383,7 +383,7 @@ def run_android_onboarding_e2e(
         "setupLinkParserRejectsUnrelatedUrls",
         "androidManifestKeepsSetupQrAsAdditiveDeepLink",
         "parseNullBridgeSetupLink",
-        "setup.echolabs.diy",
+        "setup.elabs.test",
     ]
     missing_tests = _missing_needles(onboarding_test, test_needles)
     if 'android:host="auth"' not in onboarding_test and 'android:host=\\"auth\\"' not in onboarding_test:

@@ -342,18 +342,18 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
         ),
         SuiteTestTarget(
             name="aibenchie_echolabs_store",
-            description="EchoLabs Store Alpha catalog, cross-platform parity, approval gating, artifact privacy, and credential isolation gate",
+            description="Elabs Store Alpha catalog, cross-platform parity, approval gating, artifact privacy, and credential isolation gate",
             repo_env="AIBENCHIE_REPO",
             repo_candidates=(".",),
             required_paths=(
-                "aibenchie/echolabs_store.py",
-                "tests/test_echolabs_store.py",
+                "aibenchie/Elabs_store.py",
+                "tests/test_Elabs_store.py",
             ),
             command=(
                 sys.executable,
                 "-m",
                 "pytest",
-                "tests/test_echolabs_store.py",
+                "tests/test_Elabs_store.py",
             ),
             timeout_seconds=240,
         ),
