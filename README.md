@@ -307,7 +307,7 @@ Run the Elabs release truth spine when the suite needs a single local evidence r
 ```powershell
 python -m aibenchie.release verify --suite Elabs --json
 python aibenchie_local.py --release-spine-verify --json
-python -m aibenchie.release validate-workflows --matrix configs\Elabs_workflow_matrix.json --store-capabilities configs\Elabs_store_capabilities.json --json
+python -m aibenchie.release validate-workflows --matrix configs\echolabs_workflow_matrix.json --store-capabilities configs\echolabs_store_capabilities.json --json
 ```
 
 The default evidence root is ignored local state:
@@ -457,7 +457,7 @@ $env:AIBENCHIE_RELEASE_ATTESTATION_SECRET="<release-attestation-secret-from-runn
 python aibenchie_local.py --package-release-artifacts `
   --wrapper-package ..\NullXoid-live\frontend\dist `
   --android-package ..\NullXoidAndroid\app\build\outputs\apk\release\app-release.apk `
-  --public-package ..\Elabs-site\dist `
+  --public-package ..\echolabs-site\dist `
   --release-package-output-dir .\release-packages `
   --release-artifact-key-id release-attestation-key `
   --json
@@ -465,7 +465,7 @@ python aibenchie_local.py --package-release-artifacts `
 python aibenchie_local.py --emit-release-artifacts `
   --wrapper-package .\dist\nullxoid-wrapper.zip `
   --android-package .\dist\nullxoid-companion.apk `
-  --public-package .\dist\Elabs-site.zip `
+  --public-package .\dist\echolabs-site.zip `
   --release-artifacts-output .\release-artifacts.json `
   --release-artifact-key-id release-attestation-key `
   --json
@@ -473,7 +473,7 @@ python aibenchie_local.py --emit-release-artifacts `
 python aibenchie_local.py --verify-release-artifacts --release-artifacts .\release-artifacts.json --json
 ```
 
-The package command turns actual build outputs into release packages first: wrapper build output becomes `nullxoid-wrapper.zip`, NullXoid Companion/Android becomes `nullxoid-companion.apk` or `.aab`, and the public website build becomes `Elabs-public-site.zip`. The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, HMAC-SHA256 signature, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing, any recorded hash is stale, or the signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
+The package command turns actual build outputs into release packages first: wrapper build output becomes `nullxoid-wrapper.zip`, NullXoid Companion/Android becomes `nullxoid-companion.apk` or `.aab`, and the public website build becomes `echolabs-public-site.zip`. The emitted `release-artifacts.json` is the release evidence contract. It records wrapper, Android/Companion, and public-site package digests plus generated SBOM, HMAC-SHA256 signature, and package-manifest sidecars. AIBenchie's suite security gate reads `AIBENCHIE_RELEASE_ARTIFACTS_MANIFEST` or `release-artifacts.json` and fails if wrapper, Android, or public package evidence is missing, any recorded hash is stale, or the signature cannot be verified with `AIBENCHIE_RELEASE_ATTESTATION_SECRET`.
 
 To attach package evidence to a generated release report, pass an artifact manifest:
 

@@ -343,7 +343,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "Random public repo discovery",
     ),
     "docs/PLUG_MANIFEST_SCHEMA.md": (
-        "Elabs.plug",
+        "echolabs.plug",
         "schema_version",
         "provider_id",
         "privacy",
@@ -355,7 +355,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "public_safe",
     ),
     "docs/PLUG_INTAKE_PIPELINE.md": (
-        "Elabs Trusted / AIBenchie Certified",
+        "LibreStead Trusted / AIBenchie Certified",
         "Local Personal Plug",
         "External Store / Community Store",
         "GitHub search",
@@ -364,7 +364,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "Local Only",
     ),
     "docs/PLUG_TRUST_LEVELS.md": (
-        "Elabs Trusted",
+        "LibreStead Trusted",
         "AIBenchie Certified",
         "Local Only",
         "Manual Review",
@@ -377,7 +377,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "GitHub",
         "Forgejo",
         "must not search",
-        "must not become Elabs Trusted",
+        "must not become LibreStead Trusted",
     ),
     "docs/RUNTIME_READINESS_API.md": (
         "GET /api/runtime/readiness",
@@ -391,7 +391,7 @@ MS8_REQUIRED_PLUG_DOC_MARKERS = {
         "API keys",
     ),
     "docs/ADDING_A_PLUG.md": (
-        "Elabs-Owned Plug",
+        "LibreStead-Owned Plug",
         "Local Personal Plug",
         "Future External Store Plug",
         "Add from Source",
@@ -418,9 +418,9 @@ MS8_FORBIDDEN_PACK_METADATA_MARKERS = (
 )
 MS8_REQUIRED_FRONTEND_MARKERS = (
     "ms8-first-run-onboarding",
-    "Welcome to Elabs / .NullXoid",
+    "Welcome to NullXoid",
     "Backend-only mode is available",
-    "Elabs Core is .NullXoid + NullBridge",
+    "NullXoid Core adds NullBridge for approval, control, and status.",
     "FIRST_RUN_REQUIRED_MESSAGE",
     "First-run setup is required before sign-in.",
     "Continue setup",
@@ -456,7 +456,7 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "Model Runtime",
     "Media Runtime",
     "ComfyUI is optional and separate from LLM chat.",
-    "Backend/browser mode works without NullBridge. Elabs Core requires NullBridge.",
+    "Backend/browser mode works without NullBridge. NullXoid Core requires NullBridge.",
     "model_runtime_api_key_configured",
     "friendlyConnectionDetail",
     'states: ["not_configured", "manual-review", "unavailable", "configured", "healthy"]',
@@ -475,7 +475,7 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "routeToAppHome",
     "isSetupRoutePath",
     "LOCAL APP READY",
-    "Elabs is ready",
+    "NullXoid is ready",
     "Choose an AI model",
     "Choose AI model",
     "AI model",
@@ -493,7 +493,7 @@ MS8_REQUIRED_FRONTEND_MARKERS = (
     "setupDetailsVisible",
     "startChattingFromSetup",
     "Model runtime configured",
-    "Add NullBridge when you want Elabs Core approval/control/status.",
+    "Add NullBridge when you want NullXoid Core approval/control/status.",
     "Core bridge: Optional",
     "Capability state:",
     "Runtime readiness:",
@@ -505,7 +505,7 @@ MS8_REQUIRED_STORE_ASSISTANT_MARKERS = (
     "store-assistant-status",
 )
 MS8_REQUIRED_LAUNCHER_MARKERS = (
-    "Elabs Scout",
+    "LibreStead Scout",
     "EXIT_SUCCESS = 0",
     "EXIT_GENERAL = 1",
     "EXIT_MISSING_PREREQ = 2",
@@ -528,7 +528,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "getpass.getpass",
     "--no-use-colors",
     "Starter Chat + Code Pack",
-    "Elabs Core requires .NullXoid + NullBridge",
+    "NullXoid Core requires .NullXoid + NullBridge",
     "Manual command:",
     "Port {args.backend_port} is in use, but it does not look like .NullXoid.",
     "Port {args.frontend_port} is in use, but it does not look like the .NullXoid frontend.",
@@ -543,7 +543,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "Using app setup for backward compatibility. Prefer explicit setup backend, setup app, or setup core.",
     "Choose setup profile:",
     "Browser App (recommended)",
-    "Elabs Core + Android",
+    "NullXoid Core + Android",
     "Advanced Custom",
     "Base: .NullXoid backend will be prepared.",
     "Backend is always included and is not a removable component.",
@@ -553,10 +553,10 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "Continue?",
     "does not build, install, publish, or sideload APKs",
     "Backend is included and locked.",
-    "Android companion guidance depends on Elabs Core. NullBridge/Core will be included.",
+    "Android companion guidance depends on NullXoid Core. NullBridge/Core will be included.",
     "Start backend now?",
     "Start the app now?",
-    "Start Elabs Core now?",
+    "Start NullXoid Core now?",
     "App appears to already be running. Open {setup_url(args)}",
     "Backend-only setup is complete.",
     'model_setup": "skip"',
@@ -566,7 +566,7 @@ MS8_REQUIRED_LAUNCHER_MARKERS = (
     "--mode",
     "Backend-only: blocked because",
     "Browser app: blocked because",
-    "Elabs Core: blocked because",
+    "NullXoid Core: blocked because",
     "local_command('start', 'backend')",
     "local_command('start', 'app')",
     'sub.add_parser("status"',
@@ -607,21 +607,21 @@ MS8_REQUIRED_STYLE_MARKERS = (
     ".store-addon-readiness",
 )
 MS8_REQUIRED_DOC_MARKERS = (
-    "Elabs Core is .NullXoid + NullBridge",
+    "NullXoid Core is .NullXoid + NullBridge",
     "AIBenchie is validator",
     "127.0.0.1:8090",
     "127.0.0.1:5174",
 )
 MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
     "START_HERE.md": (
-        ".\\Elabs.cmd setup backend",
-        ".\\Elabs.cmd setup app",
-        ".\\Elabs.cmd setup core",
-        "./Elabs setup backend",
-        "./Elabs setup app",
-        "./Elabs setup core",
+        ".\\librestead.cmd setup backend",
+        ".\\librestead.cmd setup app",
+        ".\\librestead.cmd setup core",
+        "./librestead setup backend",
+        "./librestead setup app",
+        "./librestead setup core",
         "Browser App",
-        "Elabs Core + Android",
+        "NullXoid Core + Android",
         "Advanced Custom",
         "backend is always included",
         "not setup profiles",
@@ -651,14 +651,14 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
     ),
     "docs/REPO_MAP.md": (
         "Do not treat Android, Lv-7, AIBenchie, or Nextcloud as required for first use.",
-        "Release validator/evidence tool. Not needed to use Elabs.",
+        "Release validator/evidence tool. Not needed to use LibreStead.",
         "Android import QR is optional",
         "NullBridge pairing QR",
     ),
     "docs/WINDOWS_QUICKSTART.md": (
-        ".\\Elabs.cmd setup backend",
-        ".\\Elabs.cmd setup app",
-        ".\\Elabs.cmd setup core",
+        ".\\librestead.cmd setup backend",
+        ".\\librestead.cmd setup app",
+        ".\\librestead.cmd setup core",
         "Node.js LTS",
         "The backend terminal stays open while the server runs.",
         "Press `Ctrl+C` to stop it.",
@@ -667,9 +667,9 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
         "Android import QR and NullBridge pairing QR are optional",
     ),
     "docs/LINUX_QUICKSTART.md": (
-        "./Elabs setup backend",
-        "./Elabs setup app",
-        "./Elabs setup core",
+        "./librestead setup backend",
+        "./librestead setup app",
+        "./librestead setup core",
         "Node.js LTS",
         "The backend terminal stays open while the server runs.",
         "Press `Ctrl+C` to stop it.",
@@ -679,8 +679,8 @@ MS8_REQUIRED_SPECIFIC_DOC_MARKERS = {
     ),
     "docs/FRONTEND_QUICKSTART.md": (
         "The Vite proxy reads `NX_BACKEND_URL`",
-        ".\\Elabs.cmd start backend",
-        "./Elabs start backend",
+        ".\\librestead.cmd start backend",
+        "./librestead start backend",
         "disconnected/setup state",
         "setup app",
     ),
@@ -783,8 +783,8 @@ def collect_repo_commit_evidence(root: Path | None = None) -> tuple[dict[str, An
         ".NullXoid": parent / ".NullXoid",
         "NullXoidAndroid": parent / "NullXoidAndroid",
         "NullBridge": parent / "NullBridge",
-        "Elabs-site": parent / "Elabs-site",
-        "Elabs-portal": parent / "Elabs-portal",
+        "echolabs-site": parent / "echolabs-site",
+        "echolabs-portal": parent / "echolabs-portal",
         "Lv7": parent / "Lv-7",
     }
     repos = [_repo_info(label, path) for label, path in candidates.items()]
@@ -2964,8 +2964,8 @@ def validate_ms8_onboarding(
     root = Path(nullxoid_root).expanduser() if nullxoid_root else repo_root().parent / ".NullXoid"
     failures: list[str] = []
 
-    launcher = root / "scripts" / "Elabs.py"
-    wrappers = [root / "Elabs.cmd", root / "Elabs.sh", root / "Elabs"]
+    launcher = root / "scripts" / "echolabs.py"
+    wrappers = [root / "librestead.cmd", root / "librestead.sh", root / "librestead"]
     frontend_app = root / "frontend" / "src" / "App.jsx"
     frontend_store_assistant = root / "frontend" / "src" / "components" / "StoreAssistant.jsx"
     frontend_styles = root / "frontend" / "src" / "styles.css"
@@ -2975,13 +2975,13 @@ def validate_ms8_onboarding(
     if not root.exists():
         failures.append("nullxoid_root:missing")
     if not launcher.exists():
-        failures.append("scripts/Elabs.py:missing")
+        failures.append("scripts/echolabs.py:missing")
     launcher_text = _read_text_or_empty(launcher)
     for marker in MS8_REQUIRED_LAUNCHER_MARKERS:
         if marker not in launcher_text:
-            failures.append(f"scripts/Elabs.py:marker_missing:{marker}")
+            failures.append(f"scripts/echolabs.py:marker_missing:{marker}")
     if "download" in launcher_text.lower():
-        failures.append("scripts/Elabs.py:forbidden_download_behavior")
+        failures.append("scripts/echolabs.py:forbidden_download_behavior")
     auth_store_text = _read_text_or_empty(root / "backend" / "auth_store.py")
     if "password='%s'" in auth_store_text or "Change it immediately." in auth_store_text:
         failures.append("backend/auth_store.py:bootstrap_password_value_logged")
@@ -3018,13 +3018,17 @@ def validate_ms8_onboarding(
         if forbidden in app_text:
             failures.append(f"frontend/src/App.jsx:stale_marker:{forbidden}")
     readme_text = _read_text_or_empty(root / "README.md")
-    if "git clone http://git.example.test/Elabs/.NullXoid.git" not in readme_text:
+    has_http_clone = (
+        ("git clone http://" in readme_text or "git clone https://" in readme_text)
+        and ".NullXoid.git" in readme_text
+    )
+    if not has_http_clone:
         failures.append("README.md:http_clone_beginner_path_missing")
     if "Permission denied (publickey)" not in readme_text:
         failures.append("README.md:ssh_publickey_guidance_missing")
     if "start app" not in readme_text:
         failures.append("README.md:start_app_quickstart_missing")
-    if "Elabs.cmd setup app" not in readme_text and "./Elabs setup app" not in readme_text:
+    if "librestead.cmd setup app" not in readme_text and "./librestead setup app" not in readme_text:
         failures.append("README.md:setup_quickstart_missing")
     for marker in (
         "setup backend",
@@ -3032,7 +3036,7 @@ def validate_ms8_onboarding(
         "setup core",
         "Backend-only does not require",
         "Browser App",
-        "Elabs Core + Android",
+        "NullXoid Core + Android",
         "Advanced Custom",
         "backend is always included",
         "not setup profiles",
@@ -3054,14 +3058,14 @@ def validate_ms8_onboarding(
     if "Terminal 1" not in readme_text or "Terminal 2" not in readme_text:
         failures.append("README.md:manual_terminal_fallback_missing")
     start_here_text = _read_text_or_empty(root / "START_HERE.md")
-    if "Elabs.cmd setup app" not in start_here_text and "./Elabs setup app" not in start_here_text:
+    if "librestead.cmd setup app" not in start_here_text and "./librestead setup app" not in start_here_text:
         failures.append("START_HERE.md:setup_quickstart_missing")
     for marker in (
         "setup backend",
         "setup app",
         "setup core",
         "Browser App",
-        "Elabs Core + Android",
+        "NullXoid Core + Android",
         "Advanced Custom",
         "backend is always included",
         "not setup profiles",
@@ -3096,49 +3100,49 @@ def validate_ms8_onboarding(
             if marker not in text:
                 failures.append(f"{relative}:marker_missing:{marker}")
 
-    pack_metadata_path = root / "Elabs-pack.json"
+    pack_metadata_path = root / "echolabs-pack.json"
     pack_metadata_text = _read_text_or_empty(pack_metadata_path)
     pack_metadata: dict[str, Any] | None = None
     if not pack_metadata_path.exists():
-        failures.append("Elabs-pack.json:missing")
+        failures.append("echolabs-pack.json:missing")
     else:
         try:
             parsed = json.loads(pack_metadata_text)
             if isinstance(parsed, dict):
                 pack_metadata = parsed
             else:
-                failures.append("Elabs-pack.json:not_object")
+                failures.append("echolabs-pack.json:not_object")
         except json.JSONDecodeError:
-            failures.append("Elabs-pack.json:invalid_json")
+            failures.append("echolabs-pack.json:invalid_json")
     if pack_metadata is not None:
         for field in MS8_REQUIRED_PACK_METADATA_FIELDS:
             if field not in pack_metadata:
-                failures.append(f"Elabs-pack.json:missing_field:{field}")
+                failures.append(f"echolabs-pack.json:missing_field:{field}")
         if pack_metadata.get("public_safe") is not True:
-            failures.append("Elabs-pack.json:public_safe_not_true")
+            failures.append("echolabs-pack.json:public_safe_not_true")
         store_meta = pack_metadata.get("store")
         if not isinstance(store_meta, dict):
-            failures.append("Elabs-pack.json:store_not_object")
+            failures.append("echolabs-pack.json:store_not_object")
         elif store_meta.get("installable") is not False:
-            failures.append("Elabs-pack.json:installable_core_app")
+            failures.append("echolabs-pack.json:installable_core_app")
         docs_meta = pack_metadata.get("docs")
         if not isinstance(docs_meta, dict):
-            failures.append("Elabs-pack.json:docs_not_object")
+            failures.append("echolabs-pack.json:docs_not_object")
         else:
             for name, relative in docs_meta.items():
                 if not isinstance(relative, str) or not relative.strip():
-                    failures.append(f"Elabs-pack.json:docs_link_invalid:{name}")
+                    failures.append(f"echolabs-pack.json:docs_link_invalid:{name}")
                     continue
                 rel_path = Path(relative)
                 if rel_path.is_absolute() or ".." in rel_path.parts:
-                    failures.append(f"Elabs-pack.json:docs_link_public_unsafe:{name}")
+                    failures.append(f"echolabs-pack.json:docs_link_public_unsafe:{name}")
                     continue
                 if not (root / rel_path).exists():
-                    failures.append(f"Elabs-pack.json:docs_link_missing:{relative}")
+                    failures.append(f"echolabs-pack.json:docs_link_missing:{relative}")
         lower_pack_metadata = pack_metadata_text.lower()
         for marker in MS8_FORBIDDEN_PACK_METADATA_MARKERS:
             if marker.lower() in lower_pack_metadata:
-                failures.append(f"Elabs-pack.json:public_unsafe_marker:{marker}")
+                failures.append(f"echolabs-pack.json:public_unsafe_marker:{marker}")
     store_assistant_text = _read_text_or_empty(frontend_store_assistant)
     if not frontend_store_assistant.exists():
         failures.append("frontend/src/components/StoreAssistant.jsx:missing")
@@ -3173,7 +3177,7 @@ def validate_ms8_onboarding(
             if marker not in text:
                 failures.append(f"{relative}:marker_missing:{marker}")
     ok = not failures
-    command_failure_prefixes = ("scripts/Elabs.py", "Elabs.cmd", "Elabs.sh", "Elabs")
+    command_failure_prefixes = ("scripts/echolabs.py", "librestead.cmd", "librestead.sh", "librestead")
     result = {
         "schema": MS8_ONBOARDING_VERDICT_SCHEMA,
         "schema_version": SCHEMA_VERSION,

@@ -346,14 +346,14 @@ def build_suite_test_catalog() -> list[SuiteTestTarget]:
             repo_env="AIBENCHIE_REPO",
             repo_candidates=(".",),
             required_paths=(
-                "aibenchie/Elabs_store.py",
-                "tests/test_Elabs_store.py",
+                "aibenchie/echolabs_store.py",
+                "tests/test_echolabs_store.py",
             ),
             command=(
                 sys.executable,
                 "-m",
                 "pytest",
-                "tests/test_Elabs_store.py",
+                "tests/test_echolabs_store.py",
             ),
             timeout_seconds=240,
         ),

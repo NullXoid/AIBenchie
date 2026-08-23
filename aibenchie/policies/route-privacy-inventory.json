@@ -51,7 +51,7 @@
       "frontendExposure": "none",
       "nullbridgeCapability": "suite.media.image.generate",
       "expectedPrivacyGate": "credential isolation",
-      "evidence": ["aibenchie/Elabs_store.py"],
+      "evidence": ["aibenchie/echolabs_store.py"],
       "status": "covered"
     },
     {

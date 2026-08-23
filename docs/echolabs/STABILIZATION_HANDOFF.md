@@ -20,7 +20,7 @@ This handoff records the current release posture for the Elabs Suite stabilizati
 - Android real-device UX proof for physical sign-in and chat on app version `0.1.93`.
 - RuntimeEcho hosted chat routed to CT729's dedicated llama.cpp text runtime on port `8081`, with the existing CT729 VL runtime isolated on port `8080`.
 - Public Elabs AIBenchie evidence display on `https://www.elabs.test/aibenchie`.
-- CT400 public-site deploy path corrected so the root-owned timer deploys `Elabs-site`, not the NullXoid suite app.
+- CT400 public-site deploy path corrected so the root-owned timer deploys `echolabs-site`, not the NullXoid suite app.
 
 ## Current Gate Commands
 

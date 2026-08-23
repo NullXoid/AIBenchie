@@ -28,7 +28,7 @@ FIXED_ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 PACKAGE_BASENAMES = {
     "wrapper": "nullxoid-wrapper",
     "android": "nullxoid-companion",
-    "public": "Elabs-public-site",
+    "public": "echolabs-public-site",
 }
 REQUIRED_SOURCE_KINDS = ("wrapper", "android", "public")
 

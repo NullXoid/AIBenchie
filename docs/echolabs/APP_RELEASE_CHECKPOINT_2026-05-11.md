@@ -6,7 +6,7 @@ Status: release gates pass; package shape is locally verified. AIBenchie remains
 
 | Repo | Branch | Commit | Notes |
 | --- | --- | --- | --- |
-| `Elabs-site` | `main` | `b6c44bc6ded730fb23e8e890e288bab92ede1f14` | Public site; hosted API E2E evidence refreshed after this snapshot. |
+| `echolabs-site` | `main` | `b6c44bc6ded730fb23e8e890e288bab92ede1f14` | Public site; hosted API E2E evidence refreshed after this snapshot. |
 | `NullXoid-live` | `main` | `d1679ea41ebe6a907cb800777c647453b7e7901a` | Web app / NullXoid shell; hosted API E2E evidence refreshed after this snapshot. |
 | `NullXoidAndroid` | `main` | `7f6cc678614e1a2445f9ba4d0669b0db8e670031` | Android app version `0.1.93` published as the current debug/prerelease foothold build. |
 | `AiAssistant` | `main` | `f3dc1add61010c9b1e0196c79c4fafb90ed6adcb` | Desktop / LV7 client. |
@@ -62,7 +62,7 @@ The package verifier passed with three required artifact kinds: `wrapper`, `andr
 | --- | --- |
 | `nullxoid-wrapper.zip` | `49d08dc8fc65a1837a6045f19c6896c49d5ad0ebcb58d3af4bcd0495f5ba0259` |
 | `nullxoid-companion.apk` | `7ddfdc55791351ff001398c8da211e0686cff432b0d1ad86d14d2f079da52126` |
-| `Elabs-public-site.zip` | `fdd53aca3b7ae4a01602e0cd609ce80406a1f2830b208a14b2235d2e3f8ce2db` |
+| `echolabs-public-site.zip` | `fdd53aca3b7ae4a01602e0cd609ce80406a1f2830b208a14b2235d2e3f8ce2db` |
 
 The local package proof used an ephemeral validation secret and key id `local-validation-key`. It proves package shape, manifest, SBOM, digest, and verifier behavior. It is not a production signing secret.
 

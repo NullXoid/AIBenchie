@@ -13,12 +13,12 @@ def _write(path: Path, text: str) -> None:
 
 def _valid_nullxoid(root: Path) -> None:
     _write(
-        root / "scripts" / "Elabs.py",
+        root / "scripts" / "echolabs.py",
         "\n".join(release.MS8_REQUIRED_LAUNCHER_MARKERS),
     )
-    _write(root / "Elabs.cmd", "@echo off\n")
-    _write(root / "Elabs.sh", "#!/usr/bin/env sh\n")
-    _write(root / "Elabs", "#!/usr/bin/env sh\n")
+    _write(root / "librestead.cmd", "@echo off\n")
+    _write(root / "librestead.sh", "#!/usr/bin/env sh\n")
+    _write(root / "librestead", "#!/usr/bin/env sh\n")
     _write(root / ".gitignore", ".suite/local/nullxoid/bootstrap.env\n")
     _write(
         root / "backend" / "auth_store.py",
@@ -29,17 +29,17 @@ def _valid_nullxoid(root: Path) -> None:
         root / "README.md",
         "\n".join(
             [
-                "git clone http://git.example.test/Elabs/.NullXoid.git",
+                "git clone https://git.example.test/LibreStead/.NullXoid.git",
                 "Permission denied (publickey)",
-                ".\\Elabs.cmd setup backend",
-                ".\\Elabs.cmd setup app",
-                ".\\Elabs.cmd setup core",
-                ".\\Elabs.cmd start app",
-                "./Elabs setup backend",
-                "./Elabs setup app",
-                "./Elabs setup core",
+                ".\\librestead.cmd setup backend",
+                ".\\librestead.cmd setup app",
+                ".\\librestead.cmd setup core",
+                ".\\librestead.cmd start app",
+                "./librestead setup backend",
+                "./librestead setup app",
+                "./librestead setup core",
                 "Browser App",
-                "Elabs Core + Android",
+                "NullXoid Core + Android",
                 "Advanced Custom",
                 "backend is always included",
                 "not setup profiles",
@@ -53,7 +53,7 @@ def _valid_nullxoid(root: Path) -> None:
             ]
         ),
     )
-    _write(root / "START_HERE.md", ".\\Elabs.cmd setup backend\n.\\Elabs.cmd setup app\n.\\Elabs.cmd setup core\n./Elabs setup backend\n./Elabs setup app\n./Elabs setup core\nBrowser App\nElabs Core + Android\nAdvanced Custom\nbackend is always included\nnot setup profiles\ndoes not build, install, publish, or sideload APKs\nAndroid import QR and NullBridge pairing QR are optional\nhttp://127.0.0.1:5174/setup\n")
+    _write(root / "START_HERE.md", ".\\librestead.cmd setup backend\n.\\librestead.cmd setup app\n.\\librestead.cmd setup core\n./librestead setup backend\n./librestead setup app\n./librestead setup core\nBrowser App\nNullXoid Core + Android\nAdvanced Custom\nbackend is always included\nnot setup profiles\ndoes not build, install, publish, or sideload APKs\nAndroid import QR and NullBridge pairing QR are optional\nhttp://127.0.0.1:5174/setup\n")
     _write(
         root / "docs" / "STORE_METADATA.md",
         "\n".join(release.MS8_REQUIRED_STORE_METADATA_MARKERS),
@@ -61,15 +61,15 @@ def _valid_nullxoid(root: Path) -> None:
     for relative, markers in release.MS8_REQUIRED_PLUG_DOC_MARKERS.items():
         _write(root / relative, "\n".join(markers))
     _write(
-        root / "Elabs-pack.json",
+        root / "echolabs-pack.json",
         json.dumps(
             {
                 "schema_version": "1.0",
                 "id": "nullxoid",
                 "display_name": ".NullXoid",
-                "summary": "Local Elabs backend and browser app.",
+                "summary": "Local LibreStead backend and browser app.",
                 "type": "core_app",
-                "repo_url": "http://git.example.test/Elabs/.NullXoid",
+                "repo_url": "https://git.example.test/LibreStead/.NullXoid",
                 "docs": {
                     "start_here": "START_HERE.md",
                     "commands": "docs/COMMANDS.md",
@@ -80,7 +80,7 @@ def _valid_nullxoid(root: Path) -> None:
                 "modes": {
                     "backend": {"label": "Backend-only", "required_components": [".NullXoid"]},
                     "app": {"label": "Browser app", "required_components": [".NullXoid", "frontend"]},
-                    "core": {"label": "Elabs Core", "required_components": [".NullXoid", "NullBridge"]},
+                    "core": {"label": "NullXoid Core", "required_components": [".NullXoid", "NullBridge"]},
                 },
                 "store": {"role": "core", "installable": False, "core_required": True, "stage": "prerelease"},
                 "public_safe": True,
@@ -120,7 +120,7 @@ def _valid_nullxoid(root: Path) -> None:
     )
     for relative in release.MS8_REQUIRED_DOCS:
         _write(root / relative, doc)
-    _write(root / "START_HERE.md", f"{doc}\n.\\Elabs.cmd setup\nhttp://127.0.0.1:5174/setup\n")
+    _write(root / "START_HERE.md", f"{doc}\n.\\librestead.cmd setup\nhttp://127.0.0.1:5174/setup\n")
 
 
 def test_ms8_onboarding_validator_accepts_valid_contract(tmp_path):
@@ -148,7 +148,7 @@ def test_ms8_onboarding_validator_blocks_stale_guest_marker(tmp_path):
 def test_ms8_onboarding_validator_blocks_missing_launcher_exit_code(tmp_path):
     root = tmp_path / ".NullXoid"
     _valid_nullxoid(root)
-    launcher = root / "scripts" / "Elabs.py"
+    launcher = root / "scripts" / "echolabs.py"
     launcher.write_text(
         launcher.read_text(encoding="utf-8").replace("EXIT_PORT_CONFLICT = 3", ""),
         encoding="utf-8",
@@ -157,19 +157,19 @@ def test_ms8_onboarding_validator_blocks_missing_launcher_exit_code(tmp_path):
     result = release.validate_ms8_onboarding(nullxoid_root=root)
 
     assert result["ok"] is False
-    assert "scripts/Elabs.py:marker_missing:EXIT_PORT_CONFLICT = 3" in result["failures"]
+    assert "scripts/echolabs.py:marker_missing:EXIT_PORT_CONFLICT = 3" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_launcher_download_behavior(tmp_path):
     root = tmp_path / ".NullXoid"
     _valid_nullxoid(root)
-    launcher = root / "scripts" / "Elabs.py"
+    launcher = root / "scripts" / "echolabs.py"
     launcher.write_text(launcher.read_text(encoding="utf-8") + "\ndownload model\n", encoding="utf-8")
 
     result = release.validate_ms8_onboarding(nullxoid_root=root)
 
     assert result["ok"] is False
-    assert "scripts/Elabs.py:forbidden_download_behavior" in result["failures"]
+    assert "scripts/echolabs.py:forbidden_download_behavior" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_bootstrap_password_logging(tmp_path):
@@ -223,18 +223,18 @@ def test_ms8_onboarding_validator_blocks_missing_store_metadata(tmp_path):
 def test_ms8_onboarding_validator_blocks_missing_pack_metadata(tmp_path):
     root = tmp_path / ".NullXoid"
     _valid_nullxoid(root)
-    (root / "Elabs-pack.json").unlink()
+    (root / "echolabs-pack.json").unlink()
 
     result = release.validate_ms8_onboarding(nullxoid_root=root)
 
     assert result["ok"] is False
-    assert "Elabs-pack.json:missing" in result["failures"]
+    assert "echolabs-pack.json:missing" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_installable_pack_metadata(tmp_path):
     root = tmp_path / ".NullXoid"
     _valid_nullxoid(root)
-    metadata_path = root / "Elabs-pack.json"
+    metadata_path = root / "echolabs-pack.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     metadata["store"]["installable"] = True
     metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
@@ -242,13 +242,13 @@ def test_ms8_onboarding_validator_blocks_installable_pack_metadata(tmp_path):
     result = release.validate_ms8_onboarding(nullxoid_root=root)
 
     assert result["ok"] is False
-    assert "Elabs-pack.json:installable_core_app" in result["failures"]
+    assert "echolabs-pack.json:installable_core_app" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_pack_metadata_private_marker(tmp_path):
     root = tmp_path / ".NullXoid"
     _valid_nullxoid(root)
-    metadata_path = root / "Elabs-pack.json"
+    metadata_path = root / "echolabs-pack.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     metadata["docs"]["unsafe"] = "C:" + "\\Users\\" + "ka" + "som" + "\\secret.txt"
     metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
@@ -256,8 +256,8 @@ def test_ms8_onboarding_validator_blocks_pack_metadata_private_marker(tmp_path):
     result = release.validate_ms8_onboarding(nullxoid_root=root)
 
     assert result["ok"] is False
-    assert "Elabs-pack.json:docs_link_public_unsafe:unsafe" in result["failures"]
-    assert "Elabs-pack.json:path_detail_redacted" in result["failures"]
+    assert "echolabs-pack.json:docs_link_public_unsafe:unsafe" in result["failures"]
+    assert "echolabs-pack.json:path_detail_redacted" in result["failures"]
 
 
 def test_ms8_onboarding_validator_blocks_ambiguous_qr_required_path(tmp_path):

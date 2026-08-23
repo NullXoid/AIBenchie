@@ -59,7 +59,7 @@ def test_package_release_artifacts_emits_attestable_bundle(tmp_path, monkeypatch
     assert verification.ok is True
     assert (output_dir / "nullxoid-wrapper.zip").exists()
     assert (output_dir / "nullxoid-companion.apk").exists()
-    assert (output_dir / "Elabs-public-site.zip").exists()
+    assert (output_dir / "echolabs-public-site.zip").exists()
     assert json.loads(manifest_output.read_text(encoding="utf-8"))["required_artifact_kinds"] == [
         "wrapper",
         "android",
@@ -81,7 +81,7 @@ def test_package_release_artifacts_excludes_generated_dependency_dirs(tmp_path, 
 
     with zipfile.ZipFile(output_dir / "nullxoid-wrapper.zip") as archive:
         wrapper_names = set(archive.namelist())
-    with zipfile.ZipFile(output_dir / "Elabs-public-site.zip") as archive:
+    with zipfile.ZipFile(output_dir / "echolabs-public-site.zip") as archive:
         public_names = set(archive.namelist())
 
     assert "index.html" in wrapper_names
