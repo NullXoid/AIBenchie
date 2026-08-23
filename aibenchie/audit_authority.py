@@ -520,8 +520,16 @@ def run_runtime_processes(
         command = str((listener or {}).get("command") or "")
         markers = [str(marker) for marker in item.get("command_markers") or [] if str(marker)]
         marker_match = bool(listener) and all(marker.lower() in command.lower() for marker in markers)
+        process_name = str((listener or {}).get("process_name") or "")
+        proxy_listener_names = {
+            str(name).strip().lower()
+            for name in item.get("proxy_listener_names") or []
+            if str(name).strip()
+        }
+        proxy_listener_match = bool(listener) and process_name.lower() in proxy_listener_names
+        identity_match = marker_match or proxy_listener_match
         health = dict(probe(port)) if listener and item.get("health_contract") == "comfyui" else {}
-        tunnel_match = any(f":{port}:" in str(command_line) for command_line in tunnels)
+        tunnel_match = proxy_listener_match or any(f":{port}:" in str(command_line) for command_line in tunnels)
         classification = "unknown_owner"
         severity = "medium"
         recommended = "Review the listener ownership and expected runtime configuration."
@@ -538,7 +546,7 @@ def run_runtime_processes(
             classification = "unhealthy"
             severity = "high"
             recommended = "Start or repair the expected runtime using its approved launcher."
-        elif markers and not marker_match:
+        elif markers and not identity_match:
             classification = "misconfigured"
             severity = "high"
             recommended = "Verify the process identity before routing work to this port."
@@ -573,6 +581,7 @@ def run_runtime_processes(
             "process_age_hours": age_hours,
             "command_fingerprint": _sha256_bytes(command.encode("utf-8")) if command else None,
             "identity_markers_match": marker_match,
+            "proxy_listener_match": proxy_listener_match,
             "tunnel_present": tunnel_match,
             "healthy": bool(health.get("healthy")) if health else None,
             "queue_running": int(health.get("running") or 0),

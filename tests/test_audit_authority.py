@@ -2,10 +2,25 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
 from aibenchie import audit_authority
+
+
+def test_audit_runtime_requirements_are_bounded_and_pinned():
+    requirements = (
+        Path(__file__).resolve().parents[1] / "requirements-audit.txt"
+    ).read_text(encoding="utf-8").splitlines()
+
+    assert requirements == [
+        "pytest==8.3.4",
+        "PyYAML==6.0.2",
+        "jsonschema==4.23.0",
+        "psutil==5.9.8",
+        "numpy==2.4.6",
+    ]
 
 
 NOW = datetime(2026, 8, 23, 12, 0, tzinfo=timezone.utc)
@@ -257,6 +272,53 @@ def test_process_audit_classifies_expected_and_probable_orphan():
     assert [item["code"] for item in findings] == ["runtime.probable_orphan"]
     assert all("command" not in item for item in evidence["runtimes"])
     assert all(item["command_fingerprint"] for item in evidence["runtimes"])
+
+
+def test_process_audit_accepts_declared_reverse_tunnel_listener():
+    config = {
+        "runtimes": [
+            {
+                "id": "hosted_reverse_tunnel",
+                "port": 8188,
+                "desired_state": "running",
+                "health_contract": "comfyui",
+                "command_markers": ["ComfyUI", "main.py"],
+                "proxy_listener_names": ["sshd"],
+                "tunnel_required": True,
+            }
+        ]
+    }
+    snapshot = {
+        "available": True,
+        "listeners": {
+            8188: {
+                "pid": 10,
+                "process_name": "sshd",
+                "command": "sshd: root",
+                "created_at_epoch": NOW.timestamp(),
+            }
+        },
+        "tunnels": [],
+    }
+
+    findings, evidence = audit_authority.run_runtime_processes(
+        config,
+        snapshot=snapshot,
+        health_probe=lambda _port: {
+            "healthy": True,
+            "running": 0,
+            "pending": 0,
+            "version": "test",
+        },
+        now=NOW,
+    )
+
+    runtime = evidence["runtimes"][0]
+    assert findings == []
+    assert runtime["classification"] == "expected_idle"
+    assert runtime["identity_markers_match"] is False
+    assert runtime["proxy_listener_match"] is True
+    assert runtime["tunnel_present"] is True
 
 
 def test_immutable_result_detects_tampering_and_expiration(tmp_path):

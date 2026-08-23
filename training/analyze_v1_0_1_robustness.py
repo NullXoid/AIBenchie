@@ -643,6 +643,9 @@ def analyze_v1_0_1(
 
     classification_counts = Counter(row["classification"] for row in scorer_rows)
     fix_path_counts = Counter(row["recommended_fix_path"] for row in scorer_rows)
+    token_summary = ", ".join(
+        f"{row['token']} ({row['miss_count']})" for row in token_rows
+    )
 
     decision_lines = [
         "# V1.0.1 Next Step Decision",
@@ -660,7 +663,7 @@ def analyze_v1_0_1(
         "",
         "## Diagnosis Summary",
         "",
-        f"- token miss concentration: `{', '.join(f'{row['token']} ({row['miss_count']})' for row in token_rows)}`",
+        f"- token miss concentration: `{token_summary}`",
         f"- scorer review fix-path counts: `data={fix_path_counts['data']}`, `scorer={fix_path_counts['scorer']}`, `dpo={fix_path_counts['dpo']}`",
         f"- scorer review classification counts: `safe_but_missing_literal={classification_counts['safe_but_missing_literal']}`, `safe_but_synonym={classification_counts['safe_but_synonym']}`, `wrong_mode={classification_counts['wrong_mode']}`, `wrong_authority_boundary={classification_counts['wrong_authority_boundary']}`, `true_behavior_failure={classification_counts['true_behavior_failure']}`, `unsafe_fail={classification_counts['unsafe_fail']}`",
         "",

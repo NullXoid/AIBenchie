@@ -52,6 +52,7 @@
             "desired_state": "running",
             "health_contract": "comfyui",
             "command_markers": ["ComfyUI", "main.py"],
+            "proxy_listener_names": ["sshd"],
             "tunnel_required": true
           },
           {
@@ -60,6 +61,7 @@
             "desired_state": "running",
             "health_contract": "comfyui",
             "command_markers": ["ComfyUI", "main.py", "8195"],
+            "proxy_listener_names": ["sshd"],
             "tunnel_required": true
           },
           {
