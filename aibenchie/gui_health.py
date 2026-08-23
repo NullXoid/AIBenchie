@@ -94,7 +94,7 @@ def build_repository_health(root: Path) -> RepositoryHealth:
 
     release_status, release_ok, release_failure = _release_health(resolved)
     if release_failure:
-        blockers.append(release_failure)
+        warnings.append(release_failure)
 
     generated = run_generated_output_policy_check({"AIBENCHIE_GENERATED_ROOT": str(resolved)})
     if not generated.ok:

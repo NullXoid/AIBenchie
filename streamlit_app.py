@@ -325,9 +325,11 @@ def main() -> None:
 
     if health["blockers"]:
         st.error("Live repository health is blocked. Expand the details below before treating this build as releasable.")
+    elif health["warnings"]:
+        st.warning("AIBenchie is healthy, but monitored suite evidence needs attention. Expand the details below.")
     else:
         st.success("Live repository health checks currently pass.")
-    with st.expander("Live health details", expanded=bool(health["blockers"])):
+    with st.expander("Live health details", expanded=bool(health["blockers"] or health["warnings"])):
         st.caption(f"Checked at {health['generated_at']}. Cached for up to 60 seconds.")
         for blocker in health["blockers"]:
             st.write(f"- {blocker}")

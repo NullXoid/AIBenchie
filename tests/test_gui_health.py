@@ -41,7 +41,7 @@ def test_collect_pytest_health_reports_real_collection_count(tmp_path, monkeypat
     assert (count, ok, failure) == (864, True, "")
 
 
-def test_repository_health_blocks_stale_status_and_live_policy_failures(tmp_path, monkeypatch):
+def test_repository_health_warns_on_stale_status_and_blocks_live_policy_failures(tmp_path, monkeypatch):
     (tmp_path / ".git").mkdir()
     _write_status(tmp_path, expires_delta=timedelta(days=-1))
     monkeypatch.setattr(gui_health, "collect_pytest_health", lambda *_args, **_kwargs: (864, True, ""))
@@ -69,9 +69,9 @@ def test_repository_health_blocks_stale_status_and_live_policy_failures(tmp_path
     assert health.release_ok is False
     assert health.generated_output_ok is False
     assert health.distribution_ok is True
-    assert health.critical_blockers == 2
+    assert health.critical_blockers == 1
     assert health.publish_mode == "Blocked"
-    assert any("status_stale" in item for item in health.blockers)
+    assert any("status_stale" in item for item in health.warnings)
     assert any("file_count_exceeded" in item for item in health.blockers)
 
 
