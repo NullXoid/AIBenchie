@@ -1,9 +1,9 @@
 {
   "aibenchie_verdict": "pass",
-  "build_id": "ms7-prerelease-candidate-20260622-195825",
-  "expires_at": "2026-06-30T00:00:22.484540Z",
-  "generated_at": "2026-06-23T00:00:22.484540Z",
-  "latest_passing_build_id": "ms7-prerelease-candidate-20260622-195825",
+  "build_id": "suite-status-refresh-20260823-235702",
+  "expires_at": "2026-08-30T23:57:03.307563Z",
+  "generated_at": "2026-08-23T23:57:03.307563Z",
+  "latest_passing_build_id": "suite-status-refresh-20260823-235702",
   "latest_source": "latest-passing.json",
   "ok": true,
   "public_safe": true,
@@ -11,13 +11,13 @@
   "schema": "aibenchie.suite-status.v1",
   "schema_version": "1.0",
   "source_commits": {
-    ".NullXoid": "f9abf7996826b9be8179485d750c4c503433b6fb",
-    "AIBenchie": "e164efed955b730488043831a558016a0c4e6f4a",
-    "Lv7": "994e2bb29b0a202b79be67bf796081c741e2b4a9",
-    "NullBridge": "a4f16c8ffa5916c3c604d21d0cad4fb0e67952c4",
-    "NullXoidAndroid": "da516d2642c4d89d17257a774b366b8106e845ec",
+    ".NullXoid": "3fe466ee2801aee7a7427743d5e2ed850d8cf17b",
+    "AIBenchie": "8a0b8ba02601ffe4bc111eb457e4c842721b0d2a",
+    "Lv7": "13bafa0f03f8f5c5309e267a57008c74f614104d",
+    "NullBridge": "211e1972a6c2981e782632cf4a87f749a42fb46b",
+    "NullXoidAndroid": "66a3f4da490e6fad3bed21ff037f034baf949b17",
     "echolabs-portal": "104f5f157402134290945dbd733ba785cfa1a618",
-    "echolabs-site": "321225f893f674fea975b8c9641a838cc87c66ec"
+    "echolabs-site": "204e394a5affb1285e50300bf338b095055987d7"
   },
   "source_selection": "latest_passing",
   "status": "passing",
