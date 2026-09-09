@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from aibenchie.nullprivacy import run_e2ee_storage_proof
+from aibenchie.e2ee_product_evidence import ProductEvidence
 from aibenchie.zero_knowledge_devices import run_zero_knowledge_device_lifecycle_proof
 
 
@@ -105,19 +106,28 @@ def _resolve_path(root: Path, value: str, default: Path) -> Path:
 
 
 def _json_file(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("expected_object")
+    return data
 
 
 def _required_targets(policy: dict[str, Any], env: dict[str, str]) -> list[str]:
     configured = env.get("AIBENCHIE_E2EE_REQUIRED_TARGETS", "").strip()
     if configured:
-        return [target.strip() for target in configured.split(",") if target.strip()]
+        return list(dict.fromkeys(target.strip() for target in configured.split(",") if target.strip())) or list(DEFAULT_REQUIRED_TARGETS)
     targets = policy.get("e2ee_storage_targets") or []
-    return [str(target) for target in targets] or list(DEFAULT_REQUIRED_TARGETS)
+    return _strings(targets) or list(DEFAULT_REQUIRED_TARGETS)
+
+
+def _strings(value: Any) -> list[str]:
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()] if isinstance(value, list) else []
 
 
 def _evidence_by_target(evidence: dict[str, Any]) -> dict[str, dict[str, Any]]:
     raw_targets = evidence.get("targets") or evidence.get("storage_targets") or []
+    if not isinstance(raw_targets, list):
+        return {}
     return {
         str(item.get("target") or item.get("name") or ""): item
         for item in raw_targets
@@ -155,12 +165,12 @@ def _target_readiness(target: str, policy_targets: set[str], evidence: dict[str,
     if plaintext_storage not in SAFE_PLAINTEXT_STORAGE:
         failures.append(f"{target}:plaintext_storage_not_forbidden")
 
-    tests = {str(item).strip() for item in evidence.get("tests") or [] if str(item).strip()}
+    tests = set(_strings(evidence.get("tests")))
     for check in REQUIRED_TARGET_CHECKS:
         if check not in tests:
             failures.append(f"{target}:test_missing:{check}")
 
-    proof_paths = [str(item) for item in evidence.get("evidence") or [] if str(item).strip()]
+    proof_paths = _strings(evidence.get("evidence"))
     if not proof_paths:
         failures.append(f"{target}:evidence_missing")
 
@@ -218,12 +228,12 @@ def _device_lifecycle_readiness(evidence: dict[str, Any] | None, proof: dict[str
     if backend_key_material not in {"forbidden", "absent", "encrypted_envelopes_only"}:
         failures.append("device_lifecycle:backend_key_material_not_absent")
 
-    tests = {str(item).strip() for item in evidence.get("tests") or [] if str(item).strip()}
+    tests = set(_strings(evidence.get("tests")))
     for check in REQUIRED_DEVICE_LIFECYCLE_CHECKS:
         if check not in tests:
             failures.append(f"device_lifecycle:test_missing:{check}")
 
-    proof_paths = [str(item) for item in evidence.get("evidence") or [] if str(item).strip()]
+    proof_paths = _strings(evidence.get("evidence"))
     if not proof_paths:
         failures.append("device_lifecycle:evidence_missing")
 
@@ -262,27 +272,38 @@ def run_e2ee_readiness_check(
     policy: dict[str, Any] = {}
     evidence: dict[str, Any] = {}
     if policy_path.exists():
-        policy = _json_file(policy_path)
+        try:
+            policy = _json_file(policy_path)
+        except (OSError, ValueError):
+            failures.append("privacy_policy_invalid")
     else:
         failures.append("privacy_policy_missing")
 
     required = _required_targets(policy, source)
-    policy_targets = {str(target) for target in policy.get("e2ee_storage_targets", [])}
+    policy_targets = set(_strings(policy.get("e2ee_storage_targets")))
 
     if evidence_path.exists():
-        evidence = _json_file(evidence_path)
+        try:
+            evidence = _json_file(evidence_path)
+        except (OSError, ValueError):
+            failures.append("e2ee_evidence_manifest_invalid")
     else:
         failures.append("e2ee_evidence_manifest_missing")
 
     proof = run_e2ee_storage_proof().as_dict()
+    proof["scope"] = "local_crypto_simulation_not_product_acceptance"
     if not proof.get("ok"):
         failures.append("e2ee_crypto_proof_failed")
 
     device_proof = run_zero_knowledge_device_lifecycle_proof().as_dict()
+    device_proof["scope"] = "local_lifecycle_simulation_not_device_enrollment"
+    product_evidence = ProductEvidence(resolved_root, policy, evidence)
     device_lifecycle_ok, device_lifecycle_detail, device_lifecycle_failures = _device_lifecycle_readiness(
         _device_lifecycle_evidence(evidence),
         device_proof,
     )
+    device_lifecycle_failures.extend(product_evidence.check("device_lifecycle", _device_lifecycle_evidence(evidence), REQUIRED_DEVICE_LIFECYCLE_CHECKS))
+    device_lifecycle_ok = device_lifecycle_ok and not device_lifecycle_failures
     failures.extend(device_lifecycle_failures)
 
     evidence_targets = _evidence_by_target(evidence)
@@ -291,7 +312,15 @@ def run_e2ee_readiness_check(
         for target in required
     ]
     for target_result in target_results:
+        product_failures = product_evidence.check(target_result.target, evidence_targets.get(target_result.target), REQUIRED_TARGET_CHECKS)
+        if product_failures:
+            target_result.failures.extend(product_failures)
         failures.extend(target_result.failures)
+
+    target_results = [
+        E2EETargetReadiness(target=item.target, ok=not item.failures, status="fail" if item.failures else item.status, failures=item.failures, detail=item.detail)
+        for item in target_results
+    ]
 
     ok = (
         bool(proof.get("ok"))

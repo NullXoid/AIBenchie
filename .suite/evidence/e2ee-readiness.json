@@ -1,6 +1,7 @@
 {
   "version": 1,
-  "status": "complete",
+  "status": "unverified",
+  "evidence_scope": "legacy_source_references_only_not_product_acceptance",
   "device_lifecycle": {
     "status": "implemented",
     "encryption_boundary": "device_to_device_zero_knowledge",

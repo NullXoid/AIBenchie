@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+from datetime import datetime, timezone
 
 import pytest
 
@@ -89,8 +91,27 @@ def env_for(policy_path, evidence_path):
 def test_e2ee_readiness_passes_only_with_complete_target_evidence(tmp_path):
     policy_path = tmp_path / "privacy-levels.json"
     evidence_path = tmp_path / "e2ee-readiness.json"
-    write_json(policy_path, policy())
-    write_json(evidence_path, evidence())
+    config = policy()
+    config["e2ee_required_products"] = {target: ["test-client:web"] for target in [*TARGETS, "device_lifecycle"]}
+    manifest = evidence()
+    artifact = tmp_path / "client.bundle"
+    artifact.write_bytes(b"synthetic test artifact, not a real product acceptance run")
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    revision = "a" * 40
+    manifest["builds"] = {"test-client:web": {"source_revision": revision, "artifact": artifact.name, "sha256": digest}}
+    for target in [*TARGETS, "device_lifecycle"]:
+        checks = REQUIRED_DEVICE_LIFECYCLE_CHECKS if target == "device_lifecycle" else REQUIRED_TARGET_CHECKS
+        receipt = tmp_path / f"{target}-result.json"
+        write_json(receipt, {
+            "schema": "librestead.e2ee-product-result.v1", "target": target,
+            "product": "test-client:web", "execution": "product_integration", "ok": True,
+            "artifact_sha256": digest, "source_revision": revision,
+            "executed_at": datetime.now(timezone.utc).isoformat(), "checks": {check: True for check in checks},
+        })
+        entry = manifest["device_lifecycle"] if target == "device_lifecycle" else next(x for x in manifest["targets"] if x["target"] == target)
+        entry["receipts"] = [{"path": receipt.name, "sha256": hashlib.sha256(receipt.read_bytes()).hexdigest()}]
+    write_json(policy_path, config)
+    write_json(evidence_path, manifest)
 
     result = run_e2ee_readiness_check(root=tmp_path, env=env_for(policy_path, evidence_path))
 
@@ -98,6 +119,27 @@ def test_e2ee_readiness_passes_only_with_complete_target_evidence(tmp_path):
     assert result.proof["ok"] is True
     assert result.device_lifecycle["ok"] is True
     assert {target.target for target in result.targets} == set(TARGETS)
+
+
+def test_legacy_source_references_do_not_prove_product_encryption(tmp_path):
+    policy_path = tmp_path / "policy.json"
+    evidence_path = tmp_path / "evidence.json"
+    write_json(policy_path, policy())
+    write_json(evidence_path, evidence())
+    result = run_e2ee_readiness_check(root=tmp_path, env=env_for(policy_path, evidence_path))
+    assert not result.ok
+    assert "saved_chats:product_scope_missing" in result.failures
+    assert result.proof["ok"] is True
+    assert "not_product_acceptance" in result.proof["scope"]
+
+
+@pytest.mark.parametrize("invalid", ["not-json", "[]", "null", '{"targets": true, "device_lifecycle": []}'])
+def test_malformed_manifest_is_not_a_pass(tmp_path, invalid):
+    policy_path = tmp_path / "policy.json"
+    evidence_path = tmp_path / "evidence.json"
+    write_json(policy_path, policy())
+    evidence_path.write_text(invalid, encoding="utf-8")
+    assert not run_e2ee_readiness_check(root=tmp_path, env=env_for(policy_path, evidence_path)).ok
 
 
 def test_e2ee_readiness_fails_when_evidence_manifest_is_missing(tmp_path):
