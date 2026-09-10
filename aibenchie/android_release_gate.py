@@ -10,8 +10,10 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import urlsplit
 
 from aibenchie.real_device_ux import check_android_real_device_ux_preflight
+from aibenchie.android_release_evidence import EVIDENCE_POLICY, validate_device_proof, valid_https_url
 
 
 ANDROID_RELEASE_VERDICT_SCHEMA = "aibenchie.android-release-verdict.v1"
@@ -21,7 +23,7 @@ KNOWN_ANDROID_RELEASE_APPS = {
     "nullxoid_android": "com.nullxoid.android",
     "nullbridge_android": "com.nullxoid.nullbridge",
 }
-PUBLISH_ACTIONS = {"publish", "latest-debug"}
+PUBLISH_ACTIONS = {"publish", "latest-debug", "ready_to_publish"}
 SHA256_FINGERPRINT_RE = re.compile(r"^([0-9A-F]{2}:){31}[0-9A-F]{2}$")
 REQUIRED_UPDATE_NOTE_SECTIONS = (
     "Summary",
@@ -159,6 +161,7 @@ def _extract_apk_signing_fingerprint(apk_path: Path) -> str:
                 [apksigner, "verify", "--print-certs", str(apk_path)],
                 text=True,
                 stderr=subprocess.STDOUT,
+                timeout=30,
             )
         except Exception:
             continue
@@ -166,6 +169,24 @@ def _extract_apk_signing_fingerprint(apk_path: Path) -> str:
             if "SHA-256 digest:" in line:
                 return _normalize_fingerprint(line.split("SHA-256 digest:", 1)[1])
     return ""
+
+
+def _extract_apk_metadata(apk_path: Path) -> dict[str, str]:
+    candidates = [shutil.which("aapt")]
+    for env_name in ("ANDROID_HOME", "ANDROID_SDK_ROOT"):
+        if os.environ.get(env_name):
+            candidates.extend(str(p) for p in sorted((Path(os.environ[env_name]) / "build-tools").glob("*/aapt*"), reverse=True)
+                              if p.is_file() and p.stem == "aapt")
+    for executable in dict.fromkeys(c for c in candidates if c):
+        try:
+            output = subprocess.check_output([executable, "dump", "badging", str(apk_path)],
+                                             text=True, stderr=subprocess.STDOUT, timeout=30)
+            match = re.search(r"^package: name='([^']+)' versionCode='(\d+)' versionName='([^']*)'", output, re.M)
+            if match:
+                return dict(package_name=match[1], version_code=match[2], app_version=match[3])
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return {}
 
 
 def _load_expected_fingerprint(root: Path, app_id: str) -> tuple[str, str]:
@@ -189,28 +210,13 @@ def _load_expected_fingerprint(root: Path, app_id: str) -> tuple[str, str]:
     return "", ""
 
 
-def _proof_summary(path: Path, root: Path) -> dict[str, Any]:
-    summary: dict[str, Any] = {"path": _safe_path(path, root), "present": path.exists()}
-    if not path.exists():
-        return summary
-    summary["sha256"] = _sha256_file(path)
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return summary
-    if isinstance(payload, dict):
-        summary.update(
-            {
-                "schema": str(payload.get("schema") or payload.get("schema_version") or ""),
-                "device_alias": str(payload.get("serial_alias") or payload.get("device_alias") or ""),
-                "model": str(payload.get("model") or payload.get("device_model") or ""),
-                "package_name": str(payload.get("package_name") or payload.get("package") or ""),
-                "version_code": str(payload.get("version_code") or payload.get("versionCode") or ""),
-                "app_version": str(payload.get("app_version") or payload.get("version_name") or payload.get("versionName") or ""),
-                "install_state": str(payload.get("install_state") or payload.get("installState") or ""),
-            }
-        )
-    return summary
+def _proof_summary(path: Path, root: Path, expected: dict) -> dict[str, Any]:
+    return {"path": _safe_path(path, root), **validate_device_proof(path, expected)}
+
+
+def _proof_path(root: Path, value: str | Path, fallback: str) -> Path:
+    path = Path(value).expanduser() if str(value).strip() else Path(fallback)
+    return path if path.is_absolute() else root / path
 
 
 def _latest_update_note(lines: list[str]) -> tuple[str, list[str]]:
@@ -231,8 +237,14 @@ def _section_titles(lines: list[str]) -> list[str]:
 
 
 def _valid_base_url(value: str) -> bool:
-    text = value.strip().lower()
-    return text.startswith("https://") or text.startswith("http://127.0.0.1") or text.startswith("http://localhost")
+    if valid_https_url(value):
+        return True
+    try:
+        url = urlsplit(value)
+        return (url.scheme == "http" and url.hostname in {"127.0.0.1", "localhost", "::1"}
+                and valid_https_url("https:" + value[5:]))
+    except ValueError:
+        return False
 
 
 def _device_version(preflight: dict[str, Any]) -> str:
@@ -254,6 +266,7 @@ def run_android_release_gate(
     update_notes: str | Path,
     package_name: str,
     base_url: str,
+    backend_revision: str = "",
     app_id: str = "",
     app_version: str = "",
     version_code: str = "",
@@ -279,8 +292,7 @@ def run_android_release_gate(
     if not app_key and package_name.strip():
         app_key = next((key for key, package in KNOWN_ANDROID_RELEASE_APPS.items() if package == package_name.strip()), "")
     publish_mode = (publish_action or "diagnostic").strip().lower()
-    if publish_mode not in {"diagnostic", "publish", "latest-debug"}:
-        publish_mode = "diagnostic"
+    mode_valid = publish_mode in {"diagnostic", *PUBLISH_ACTIONS}
     expected_package = KNOWN_ANDROID_RELEASE_APPS.get(app_key, "")
     actual_fingerprint = _normalize_fingerprint(signing_fingerprint_sha256)
     actual_fingerprint_source = "argument" if actual_fingerprint else ""
@@ -300,6 +312,8 @@ def run_android_release_gate(
         "app_version": app_version.strip(),
         "version_code": str(version_code or "").strip(),
         "publish_action": publish_mode,
+        "backend_revision": backend_revision,
+        "evidence_policy": EVIDENCE_POLICY,
         "device_required": bool(require_device),
         "device_checked": False,
         "signing": {
@@ -309,6 +323,22 @@ def run_android_release_gate(
             "match": bool(actual_fingerprint and expected_fingerprint and actual_fingerprint == expected_fingerprint),
         },
     }
+
+    checks.append(_check("release_mode", "pass" if mode_valid else "fail",
+                         "Release mode is explicitly supported.", failure="release_mode_invalid"))
+    if publish_mode in PUBLISH_ACTIONS:
+        checks.append(_check("release_https", "pass" if valid_https_url(base_url) else "fail",
+                             "Publication evidence uses HTTPS.", failure="release_https_required"))
+        checks.append(_check("backend_revision", "pass" if re.fullmatch(r"[a-f0-9]{40}", backend_revision) else "fail",
+                             "Backend candidate is pinned.", failure="backend_revision_required"))
+        # A supplied fingerprint is useful diagnostically, but cannot replace APK verification.
+        verified_fingerprint = _extract_apk_signing_fingerprint(apk_path)
+        checks.append(_check("apk_signer_verified", "pass" if verified_fingerprint and verified_fingerprint == actual_fingerprint else "fail",
+                             "Signer was verified from the candidate APK.", failure="apk_signer_unverified"))
+        metadata = _extract_apk_metadata(apk_path)
+        matches = metadata == dict(package_name=package_name.strip(), version_code=str(version_code), app_version=app_version.strip())
+        checks.append(_check("apk_metadata_verified", "pass" if matches else "fail",
+                             "Package and version were read from the candidate APK.", failure="apk_metadata_mismatch_or_unavailable"))
 
     checks.append(_check("repo_exists", "pass" if root.exists() else "fail", "Repository path is available.", failure="repo_missing"))
     checks.append(
@@ -453,38 +483,48 @@ def run_android_release_gate(
     )
 
     proof_required = publish_mode in PUBLISH_ACTIONS
-    primary_proof = _proof_summary(_resolve_under_root(root, primary_device_proof) if str(primary_device_proof).strip() else root / "__missing_s23_fe_device_proof__", root)
-    secondary_proof = _proof_summary(_resolve_under_root(root, secondary_device_proof) if str(secondary_device_proof).strip() else root / "__missing_a17_device_proof__", root)
+    expected_proof = dict(app_id=app_key, package_name=package_name.strip(), app_version=app_version.strip(),
+                          version_code=str(version_code), apk_sha256=artifacts[0]["sha256"] if artifacts else "",
+                          signing_fingerprint_sha256=actual_fingerprint, base_url=base_url.strip(),
+                          backend_revision=backend_revision)
+    primary_proof = _proof_summary(_proof_path(root, primary_device_proof, "__missing_primary_device_proof__"), root, expected_proof)
+    secondary_proof = _proof_summary(_proof_path(root, secondary_device_proof, "__missing_secondary_device_proof__"), root, expected_proof)
     android["device_proofs"] = {"primary": primary_proof, "secondary": secondary_proof}
     checks.append(
         _check(
             "primary_device_proof",
-            "pass" if primary_proof.get("present") else ("fail" if proof_required else "skip"),
-            "S23 FE device proof is recorded.",
-            required=proof_required,
-            failure="primary_device_proof_missing",
+            "pass" if primary_proof.get("valid") else ("fail" if proof_required or primary_proof.get("present") else "skip"),
+            "Primary physical-device acceptance proof is valid.",
+            required=proof_required or primary_proof.get("present", False),
+            failure="primary_device_proof_invalid" if primary_proof.get("present") else "primary_device_proof_missing",
             path=primary_proof.get("path"),
         )
     )
     checks.append(
         _check(
             "secondary_device_proof",
-            "pass" if secondary_proof.get("present") else ("fail" if proof_required else "skip"),
-            "A17 device proof is recorded.",
-            required=proof_required,
-            failure="secondary_device_proof_missing",
+            "pass" if secondary_proof.get("valid") else ("fail" if proof_required or secondary_proof.get("present") else "skip"),
+            "Secondary physical-device acceptance proof is valid.",
+            required=proof_required or secondary_proof.get("present", False),
+            failure="secondary_device_proof_invalid" if secondary_proof.get("present") else "secondary_device_proof_missing",
             path=secondary_proof.get("path"),
         )
     )
     checks.append(
         _check(
             "publish_action",
-            "pass" if publish_mode == "diagnostic" or (primary_proof.get("present") and secondary_proof.get("present")) else "fail",
+            "pass" if mode_valid and (publish_mode == "diagnostic" or (primary_proof.get("valid") and secondary_proof.get("valid"))) else "fail",
             "Publish/latest-debug actions require complete device proof.",
             failure="publish_action_missing_device_proof",
             action=publish_mode,
         )
     )
+    if proof_required or (primary_proof.get("valid") and secondary_proof.get("valid")):
+        distinct = bool(primary_proof.get("valid") and secondary_proof.get("valid")
+                        and primary_proof.get("serial_hash") != secondary_proof.get("serial_hash"))
+        checks.append(_check("distinct_physical_devices", "pass" if distinct else "fail",
+                             "Two distinct physical devices supplied acceptance evidence.",
+                             failure="distinct_physical_devices_required"))
 
     should_check_device = bool(require_device or adb_serial.strip())
     if should_check_device:
@@ -538,6 +578,8 @@ def run_android_release_gate(
         "artifacts": artifacts,
         "summary": {
             "checks_total": len(checks),
+            "passed": sum(check.status == "pass" for check in checks),
+            "skipped": sum(check.status == "skip" for check in checks),
             "required_failures": len(required_failures),
             "warnings": len(warnings),
             "device_checked": bool(android.get("device_checked")),

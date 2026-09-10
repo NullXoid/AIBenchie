@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+# This v1 producer records device inventory only. It must not mark acceptance
+# scenarios passed or be relabeled as a v2 normal-app release proof.
+
 import argparse
 import json
 import re
@@ -117,7 +120,7 @@ def emit_android_release_device_proof(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Emit sanitized Android release device proof.")
+    parser = argparse.ArgumentParser(description="Emit diagnostic Android device inventory (v1), not release acceptance.")
     parser.add_argument("--output", default=str(DEFAULT_ANDROID_RELEASE_DEVICE_PROOF_OUTPUT))
     parser.add_argument("--app-id", required=True)
     parser.add_argument("--package-name", required=True)

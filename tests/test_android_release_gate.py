@@ -267,7 +267,7 @@ def test_android_release_gate_blocks_missing_expected_signing_fingerprint(tmp_pa
     assert checks["expected_signing_fingerprint"]["failure"] == "expected_signing_fingerprint_missing_or_invalid"
 
 
-def test_android_release_gate_accepts_nullbridge_publish_with_device_proofs(tmp_path):
+def test_android_release_gate_rejects_nullbridge_publish_with_legacy_metadata_only(tmp_path):
     repo = tmp_path / "NullBridge"
     notes = repo / "frontend" / "app" / "UPDATE_NOTES.md"
     apk = repo / "release" / "NullBridge-debug.apk"
@@ -297,12 +297,12 @@ def test_android_release_gate_accepts_nullbridge_publish_with_device_proofs(tmp_
         publish_action="latest-debug",
     )
 
-    assert result["ok"] is True
-    assert result["verdict"] == "pass"
-    assert result["android"]["app_id"] == "nullbridge_android"
+    assert result["ok"] is False
+    assert result["verdict"] == "fail"
+    assert result["android"]["device_proofs"]["primary"]["valid"] is False
 
 
-def test_android_release_gate_accepts_nullxoid_android_with_device_proofs(tmp_path):
+def test_android_release_gate_rejects_nullxoid_publish_with_legacy_metadata_only(tmp_path):
     repo = tmp_path / "NullXoidAndroid"
     notes = repo / "release" / "UPDATE_NOTES.md"
     apk = repo / "release" / "NullXoidAndroid-debug.apk"
@@ -332,9 +332,9 @@ def test_android_release_gate_accepts_nullxoid_android_with_device_proofs(tmp_pa
         publish_action="publish",
     )
 
-    assert result["ok"] is True
-    assert result["verdict"] == "pass"
-    assert result["android"]["app_id"] == "nullxoid_android"
+    assert result["ok"] is False
+    assert result["verdict"] == "fail"
+    assert result["android"]["device_proofs"]["secondary"]["valid"] is False
 
 
 def test_android_release_gate_cli(capsys, monkeypatch, tmp_path):

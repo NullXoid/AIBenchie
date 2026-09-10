@@ -518,9 +518,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--android-release-publish-action",
         default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_PUBLISH_ACTION", "diagnostic"),
-        choices=("diagnostic", "publish", "latest-debug"),
+        choices=("diagnostic", "publish", "latest-debug", "ready_to_publish"),
         help="Release action being gated. publish/latest-debug require complete device proof.",
     )
+    parser.add_argument("--android-release-backend-revision", default="",
+                        help="Pinned backend commit required for publication acceptance evidence.")
     parser.add_argument(
         "--android-release-base-url",
         default=os.environ.get("AIBENCHIE_ANDROID_RELEASE_BASE_URL", ""),
@@ -1314,6 +1316,7 @@ def main(argv: list[str] | None = None) -> int:
             primary_device_proof=args.android_release_primary_device_proof,
             secondary_device_proof=args.android_release_secondary_device_proof,
             publish_action=args.android_release_publish_action,
+            backend_revision=args.android_release_backend_revision,
             output=args.android_release_output,
             adb=args.android_release_adb,
             adb_serial=args.android_release_adb_serial,
