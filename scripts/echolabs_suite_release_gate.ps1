@@ -27,7 +27,12 @@ param(
     [string]$RealDeviceUXRuntimeModel = "",
     [string]$RealDeviceUXRuntimeEndpointLabel = "",
     [string]$ReportPath = "_validation\echolabs_suite_gate_latest.json",
-    [string]$SuiteRoot = ""
+    [string]$SuiteRoot = "",
+    [string]$WebRepository = "",
+    [string]$AndroidRepository = "",
+    [string]$DesktopRepository = "",
+    [string]$BridgeRepository = "",
+    [string]$Lv7Repository = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,17 +57,23 @@ $webRepoCandidates = @(
     (Join-Path $workspaceRoot ".NullXoid"),
     (Join-Path $workspaceRoot "NullXoid-live")
 )
-$webRepoPath = $webRepoCandidates |
+$existingWebRepos = @($webRepoCandidates |
     Where-Object { Test-Path -LiteralPath (Join-Path $_ "package.json") } |
-    Select-Object -First 1
-if (-not $webRepoPath) {
-    $webRepoPath = $webRepoCandidates |
-        Where-Object { Test-Path -LiteralPath $_ } |
-        Select-Object -First 1
+    Select-Object -Unique)
+function Resolve-RepositoryInput {
+    param([string]$ExplicitPath, [string]$DefaultPath)
+    $selected = if ($ExplicitPath) { $ExplicitPath } else { $DefaultPath }
+    if (-not [System.IO.Path]::IsPathRooted($selected)) {
+        $selected = Join-Path $workspaceRoot $selected
+    }
+    return [System.IO.Path]::GetFullPath($selected)
 }
-if (-not $webRepoPath) {
-    $webRepoPath = Join-Path $workspaceRoot "NullXoid-live"
-}
+$webDefault = if ($existingWebRepos.Count -eq 1) { $existingWebRepos[0] } else { Join-Path $workspaceRoot "NullXoid-live" }
+$webRepoPath = Resolve-RepositoryInput $WebRepository $webDefault
+$androidRepoPath = Resolve-RepositoryInput $AndroidRepository (Join-Path $workspaceRoot "NullXoidAndroid")
+$desktopRepoPath = Resolve-RepositoryInput $DesktopRepository (Join-Path $workspaceRoot "AiAssistant")
+$bridgeRepoPath = Resolve-RepositoryInput $BridgeRepository (Join-Path $workspaceRoot "NullBridge")
+$lv7RepoPath = Resolve-RepositoryInput $Lv7Repository (Join-Path $workspaceRoot "Lv-7")
 
 function Get-SuiteRelativePath {
     param(
@@ -101,6 +112,17 @@ function Write-SuiteGateReport {
         started_at = $startedAt.ToString("o")
         finished_at = $finishedAt.ToString("o")
         duration_ms = [int]($finishedAt - $startedAt).TotalMilliseconds
+        coverage_complete = $Verdict -eq "pass"
+        deployment_authorized = $false
+        scope = "Selected gate execution only; requires pinned artifacts, current evidence and deployment authorization."
+        repositories = [ordered]@{
+            web = $webRepoPath
+            android = $androidRepoPath
+            desktop = $desktopRepoPath
+            bridge = $bridgeRepoPath
+            lv7 = $lv7RepoPath
+            aibenchie = $aibenchieRoot
+        }
         options = [ordered]@{
             skip_web = [bool]$SkipWeb
             skip_android = [bool]$SkipAndroid
@@ -121,6 +143,26 @@ function Write-SuiteGateReport {
     }
 
     $report | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $resolvedReportPath -Encoding UTF8
+}
+
+function Add-UnfinishedGate {
+    param([string]$Id, [string]$Status, [string]$Reason)
+    $results.Add([pscustomobject]@{
+        id = $Id
+        name = $Id
+        owner = "suite release"
+        status = $Status
+        reason = $Reason
+        duration_ms = 0
+    }) | Out-Null
+}
+
+function Stop-MissingPrerequisite {
+    param([string]$Id, [string]$Reason)
+    Add-UnfinishedGate $Id "BLOCKED" $Reason
+    Write-SuiteGateReport -Verdict "blocked" -FailedSurface $Id
+    Write-Host "[echolabs-suite-gate] BLOCKED ${Id}: $Reason" -ForegroundColor Red
+    exit 2
 }
 
 function Get-RedactedCommandText {
@@ -165,12 +207,18 @@ function Invoke-SuiteGate {
     Write-Host ""
     Write-Host "[echolabs-suite-gate] $Name" -ForegroundColor Cyan
     $started = Get-Date
-    Push-Location $WorkingDirectory
+    $entered = $false
+    $exitCode = 1
     try {
+        Push-Location $WorkingDirectory
+        $entered = $true
         & $Command @Arguments
         $exitCode = $LASTEXITCODE
+    } catch {
+        # Report failure even when a checkout or gate command disappears.
+        $exitCode = 1
     } finally {
-        Pop-Location
+        if ($entered) { Pop-Location }
     }
 
     $elapsed = [int]((Get-Date) - $started).TotalMilliseconds
@@ -201,6 +249,48 @@ function Invoke-SuiteGate {
     Write-Host "[echolabs-suite-gate] PASS $Name ${elapsed}ms" -ForegroundColor Green
 }
 
+Write-SuiteGateReport -Verdict "running"
+$omitted = [ordered]@{
+    echolabs_web = [bool]$SkipWeb
+    nullxoid_android = [bool]$SkipAndroid
+    nullxoid_desktop = [bool]$SkipDesktop
+    bridgeecho_nullbridge = [bool]$SkipBridge
+    aibenchie_universal_e2e = [bool]$SkipUniversalE2E
+    aibenchie_deploy_plan = [bool]$SkipDeployPlan
+    aibenchie_docker_support = [bool]$SkipDockerSupport
+    aibenchie_distribution_hygiene = [bool]$SkipDistributionHygiene
+    aibenchie_real_device_ux = [bool]$SkipRealDeviceUX
+    desktop_ui = (-not $SkipDesktop) -and (-not $DesktopIncludeUi)
+    bridge_full = (-not $SkipBridge) -and (-not $BridgeFull)
+}
+foreach ($gate in $omitted.GetEnumerator()) {
+    if ($gate.Value) { Add-UnfinishedGate $gate.Key "SKIPPED" "Not run by this invocation; cannot qualify a complete release." }
+}
+
+$resolvedDeployPlanPath = [System.IO.Path]::GetFullPath($(if ([System.IO.Path]::IsPathRooted($DeployPlanPath)) { $DeployPlanPath } else { Join-Path $aibenchieRoot $DeployPlanPath }))
+$resolvedRealDeviceUXProofPath = [System.IO.Path]::GetFullPath($(if ([System.IO.Path]::IsPathRooted($RealDeviceUXProofPath)) { $RealDeviceUXProofPath } else { Join-Path $aibenchieRoot $RealDeviceUXProofPath }))
+if ((-not $SkipDeployPlan) -and (-not (Test-Path -LiteralPath $resolvedDeployPlanPath -PathType Leaf))) {
+    Stop-MissingPrerequisite "aibenchie_deploy_plan" "Required deployment proof is missing."
+}
+if ((-not $SkipRealDeviceUX) -and (-not $GenerateAndroidRealDeviceUXProof) -and (-not (Test-Path -LiteralPath $resolvedRealDeviceUXProofPath -PathType Leaf))) {
+    Stop-MissingPrerequisite "aibenchie_real_device_ux" "Required real-device proof is missing."
+}
+if ((-not $WebRepository) -and ($existingWebRepos.Count -gt 1) -and ((-not $SkipWeb) -or (-not $SkipDistributionHygiene))) {
+    Stop-MissingPrerequisite "web_repository" "More than one web checkout exists; select -WebRepository explicitly."
+}
+$requiredRepos = @(
+    @{ Id = "web_repository"; Path = $webRepoPath; Required = (-not $SkipWeb) -or (-not $SkipDistributionHygiene) },
+    @{ Id = "android_repository"; Path = $androidRepoPath; Required = (-not $SkipAndroid) -or (-not $SkipDistributionHygiene) },
+    @{ Id = "desktop_repository"; Path = $desktopRepoPath; Required = (-not $SkipDesktop) -or (-not $SkipDistributionHygiene) },
+    @{ Id = "bridge_repository"; Path = $bridgeRepoPath; Required = (-not $SkipBridge) -or (-not $SkipDistributionHygiene) },
+    @{ Id = "lv7_repository"; Path = $lv7RepoPath; Required = -not $SkipDistributionHygiene }
+)
+foreach ($repo in $requiredRepos) {
+    if ($repo.Required -and (-not (Test-Path -LiteralPath $repo.Path -PathType Container))) {
+        Stop-MissingPrerequisite $repo.Id "Selected repository directory is missing."
+    }
+}
+
 if (-not $SkipWeb) {
     Invoke-SuiteGate `
         -Id "echolabs_web" `
@@ -216,7 +306,7 @@ if (-not $SkipAndroid) {
         -Id "nullxoid_android" `
         -Name "NullXoid Android" `
         -Owner "NullXoid Android" `
-        -WorkingDirectory (Join-Path $workspaceRoot "NullXoidAndroid") `
+        -WorkingDirectory $androidRepoPath `
         -Command ".\scripts\android_release_gate.ps1"
 }
 
@@ -229,7 +319,7 @@ if (-not $SkipDesktop) {
         -Id "nullxoid_desktop" `
         -Name "NullXoid Desktop" `
         -Owner "NullXoid Desktop / LV7" `
-        -WorkingDirectory (Join-Path $workspaceRoot "AiAssistant") `
+        -WorkingDirectory $desktopRepoPath `
         -Command ".\scripts\desktop_release_gate.ps1" `
         -Arguments $desktopArgs
 }
@@ -243,7 +333,7 @@ if (-not $SkipBridge) {
         -Id "bridgeecho_nullbridge" `
         -Name "BridgeEcho / NullBridge backend" `
         -Owner "BridgeEcho" `
-        -WorkingDirectory (Join-Path $workspaceRoot "NullBridge\backend") `
+        -WorkingDirectory (Join-Path $bridgeRepoPath "backend") `
         -Command ".\scripts\nullbridge_release_gate.ps1" `
         -Arguments $bridgeArgs
 }
@@ -289,8 +379,7 @@ if ((-not $SkipDeployPlan) -and (Test-Path -LiteralPath $resolvedDeployPlanPath)
             "--json"
         )
 } elseif (-not $SkipDeployPlan) {
-    Write-Host ""
-    Write-Host "[echolabs-suite-gate] AIBenchie deploy plan proof skipped (no deploy plan at $resolvedDeployPlanPath)" -ForegroundColor DarkYellow
+    Stop-MissingPrerequisite "aibenchie_deploy_plan" "Required deployment proof disappeared during the run."
 }
 
 if (-not $SkipDockerSupport) {
@@ -407,25 +496,22 @@ if ((-not $SkipRealDeviceUX) -and (Test-Path -LiteralPath $resolvedRealDeviceUXP
             "--json"
         )
 } elseif (-not $SkipRealDeviceUX) {
-    Write-Host ""
-    Write-Host "[echolabs-suite-gate] AIBenchie real-device UX proof skipped (no proof at $resolvedRealDeviceUXProofPath)" -ForegroundColor DarkYellow
+    Stop-MissingPrerequisite "aibenchie_real_device_ux" "Required real-device proof was not produced or disappeared during the run."
 }
 
 if (-not $SkipDistributionHygiene) {
     $distributionRoots = @(
         [ordered]@{ Id = "aibenchie_distribution_hygiene"; Name = "AIBenchie distribution hygiene"; Owner = "AIBenchie"; Path = $aibenchieRoot },
         [ordered]@{ Id = "web_distribution_hygiene"; Name = "EchoLabs web distribution hygiene"; Owner = "EchoLabs / NullXoid Chat"; Path = $webRepoPath },
-        [ordered]@{ Id = "android_distribution_hygiene"; Name = "NullXoid Android distribution hygiene"; Owner = "NullXoid Android"; Path = (Join-Path $workspaceRoot "NullXoidAndroid") },
-        [ordered]@{ Id = "desktop_distribution_hygiene"; Name = "NullXoid Desktop distribution hygiene"; Owner = "NullXoid Desktop / LV7"; Path = (Join-Path $workspaceRoot "AiAssistant") },
-        [ordered]@{ Id = "nullbridge_distribution_hygiene"; Name = "BridgeEcho / NullBridge distribution hygiene"; Owner = "BridgeEcho"; Path = (Join-Path $workspaceRoot "NullBridge") },
-        [ordered]@{ Id = "lv7_distribution_hygiene"; Name = "Lv-7 distribution hygiene"; Owner = "Lv-7"; Path = (Join-Path $workspaceRoot "Lv-7") }
+        [ordered]@{ Id = "android_distribution_hygiene"; Name = "NullXoid Android distribution hygiene"; Owner = "NullXoid Android"; Path = $androidRepoPath },
+        [ordered]@{ Id = "desktop_distribution_hygiene"; Name = "NullXoid Desktop distribution hygiene"; Owner = "NullXoid Desktop / LV7"; Path = $desktopRepoPath },
+        [ordered]@{ Id = "nullbridge_distribution_hygiene"; Name = "BridgeEcho / NullBridge distribution hygiene"; Owner = "BridgeEcho"; Path = $bridgeRepoPath },
+        [ordered]@{ Id = "lv7_distribution_hygiene"; Name = "Lv-7 distribution hygiene"; Owner = "Lv-7"; Path = $lv7RepoPath }
     )
 
     foreach ($target in $distributionRoots) {
         if (-not (Test-Path -LiteralPath $target.Path)) {
-            Write-Host ""
-            Write-Host "[echolabs-suite-gate] $($target.Name) skipped (repo not found at $($target.Path))" -ForegroundColor DarkYellow
-            continue
+            Stop-MissingPrerequisite $target.Id "Required repository disappeared during the run."
         }
         Invoke-SuiteGate `
             -Id $target.Id `
@@ -448,6 +534,11 @@ Write-Host "[echolabs-suite-gate] summary" -ForegroundColor Cyan
 foreach ($result in $results) {
     Write-Host "- $($result.status) $($result.name) $($result.duration_ms)ms"
 }
+if (@($results | Where-Object { $_.status -ne "PASS" }).Count -gt 0 -or $results.Count -eq 0) {
+    Write-SuiteGateReport -Verdict "incomplete"
+    Write-Host "[echolabs-suite-gate] INCOMPLETE: selected checks finished, but required release coverage was skipped." -ForegroundColor DarkYellow
+    exit 2
+}
 Write-SuiteGateReport -Verdict "pass"
 Write-Host "[echolabs-suite-gate] report $resolvedReportPath" -ForegroundColor Cyan
-Write-Host "[echolabs-suite-gate] all checks passed" -ForegroundColor Green
+Write-Host "[echolabs-suite-gate] selected checks passed; this report does not authorize deployment" -ForegroundColor Green
