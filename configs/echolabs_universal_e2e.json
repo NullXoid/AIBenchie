@@ -42,6 +42,17 @@
           "command": ["powershell", "-ExecutionPolicy", "Bypass", "-File", "scripts/nullbridge_release_gate.ps1"],
           "timeout_seconds": 420,
           "notes": "Runs BridgeEcho/NullBridge API, service identity, approval routing, signed-envelope, and redaction gates."
+        },
+        {
+          "id": "bridge-canvas-account-native",
+          "name": "Account-owned Bridge to Windows Canvas",
+          "type": "api",
+          "adapter": "command",
+          "required": true,
+          "cwd": "..",
+          "command": ["python", "-m", "aibenchie.bridge_canvas"],
+          "timeout_seconds": 660,
+          "notes": "AUTH-10/WIN-12/WIN-13 combined-chain gate. Set AIBENCHIE_CANVAS_ACCOUNT_ROOT, AIBENCHIE_CANVAS_BRIDGE_ROOT and AIBENCHIE_CANVAS_NATIVE_PROBE. Disposable accounts/files with actual HTTPS, Olm and compiled Windows I/O. Missing inputs block; skips cannot pass. Physical A17 acceptance remains separate."
         }
       ]
     },

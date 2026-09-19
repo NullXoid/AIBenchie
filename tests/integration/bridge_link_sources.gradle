@@ -1,0 +1,5 @@
+// Opt-in AIBenchie sources; never included in product builds or runtime requests.
+gradle.projectsEvaluated {
+    def candidate = gradle.rootProject.project(':agent-crypto-canary-jvm')
+    candidate.sourceSets.test.kotlin.srcDir(new File(initscript.sourceFile.parentFile, 'kotlin'))
+}

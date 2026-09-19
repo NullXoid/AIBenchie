@@ -3,6 +3,31 @@ from __future__ import annotations
 from aibenchie import hosted_nullxoid_chat
 
 
+def test_stream_arrival_diagnostic_records_events_without_response_text():
+    import io
+    from types import SimpleNamespace
+
+    wire = b'event: token\ndata: {"delta":"Hello"}\n\nevent: token\ndata: {"delta":" world"}\n\nevent: done\ndata: {}\n\n'
+
+    class Response(io.BytesIO):
+        status = 200
+        headers = {"content-type": "text/event-stream"}
+
+    def opener(request, timeout):
+        return Response(wire)
+
+    timings = []
+    result = hosted_nullxoid_chat.request_stream(
+        SimpleNamespace(open=opener), "https://example.test", "", "/chat/stream",
+        csrf="synthetic", payload={}, event_timings=timings,
+    )
+    assert result == (200, "text/event-stream", wire.decode())
+    assert [item["event"] for item in timings] == ["token", "token", "done"]
+    assert [item["delta_chars"] for item in timings] == [5, 6, 0]
+    assert all(set(item) == {"event", "elapsed_ms", "delta_chars"} for item in timings)
+    assert [item["elapsed_ms"] for item in timings] == sorted(item["elapsed_ms"] for item in timings)
+
+
 GOOD_NOTIFICATION_EVENTS = (
     'event: notification_snapshot\ndata: {"notifications":[]}\n\n'
     'event: resource_status\ndata: {"ok":true,"used_percent":12}\n\n'

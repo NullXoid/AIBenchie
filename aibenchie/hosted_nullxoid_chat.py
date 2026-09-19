@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -113,6 +114,7 @@ def request_stream(
     csrf: str,
     payload: dict[str, Any],
     timeout: int = 45,
+    event_timings: list[dict[str, Any]] | None = None,
 ) -> tuple[int, str, str]:
     request = urllib.request.Request(
         f"{origin}{base_path}{path}",
@@ -125,8 +127,35 @@ def request_stream(
         },
         method="POST",
     )
+    started = time.monotonic()
     try:
         with opener.open(request, timeout=timeout) as response:
+            if event_timings is not None:
+                lines: list[bytes] = []
+                event = "message"
+                data: list[str] = []
+                # Arrival evidence only; never record credentials or response text.
+                for line in response:
+                    lines.append(line)
+                    text = line.decode("utf-8", errors="replace").rstrip("\r\n")
+                    if text.startswith("event:"):
+                        event = text.removeprefix("event:").strip()
+                    elif text.startswith("data:"):
+                        data.append(text.removeprefix("data:").lstrip())
+                    elif not text and data:
+                        try:
+                            body = json.loads("\n".join(data))
+                        except json.JSONDecodeError:
+                            body = {}
+                        event_timings.append({
+                            "event": event,
+                            "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
+                            "delta_chars": len(str(body.get("delta", ""))) if isinstance(body, dict) else 0,
+                        })
+                        event, data = "message", []
+                return int(response.status), str(response.headers.get("content-type", "")), b"".join(lines).decode(
+                    "utf-8", errors="replace"
+                )
             return int(response.status), str(response.headers.get("content-type", "")), response.read().decode(
                 "utf-8", errors="replace"
             )
